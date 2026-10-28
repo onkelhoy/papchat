@@ -1,0 +1,47 @@
+{
+    "name": "@papchat/root",
+    "version": "0.0.0",
+    "description": "a simple chat system hosted on static server exploring into the vast ecosystem of papit with main focus on the new webrtc, basically a webrtc demo ",
+    "private": true,
+    "scripts": {
+        "analyse": "npm run analyse --workspaces --if-present",
+        "publish": "to come",
+        "clean": "node bin/clean.mjs",
+        "build": "npx @papit/build",
+        "test": "node bin/test.mjs",
+        "create": "npm create @papit -- --package",
+        "start": "npx @papit/server --serve --info",
+        "version:reset": "npx @papit/version --reset",
+        "version:sync": "npx @papit/version --sync"
+    },
+    "keywords": [
+        "typescript",
+        "papit"
+    ],
+    "packageManager": "npm@11.6.2",
+    "engines": {
+        "node": ">=20"
+    },
+    "author": "henry",
+    "license": "MIT",
+    "workspaces": [
+        "packages/**/*",
+        "!packages/**/asset/**"
+    ],
+    "devDependencies": {
+        "esbuild": "0.27.2",
+        "typescript": "5.9.3",
+        "@papit/bundle-ts": "*",
+        "@papit/bundle-js": "*",
+        "@papit/arguments": "*",
+        "@papit/terminal": "*",
+        "@papit/information": "*",
+        "@papit/build": "*",
+        "@papit/server": "*",
+        "@papit/create": "*",
+        "@papit/version": "*",
+        "@papit/analyse": "*",
+        "@papit/react": "*"
+    },
+    "papit": {}
+}

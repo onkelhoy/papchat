@@ -1,0 +1,69 @@
+name: pull-request
+
+on:
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Short-lived build cache (retry helper only)
+      - name: Cache build output
+        uses: actions/cache@v4
+        with:
+          path: packages/**/lib
+          key: build-${{ runner.os }}-${{ github.run_attempt }}
+          restore-keys: |
+            build-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env: 
+          CI: true
+        run: npm run build -- --ci --remote
+
+      # Long-lived Playwright cache (read-only in PRs)
+      - name: Restore Playwright cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright
+          restore-keys: |
+            ${{ runner.os }}-playwright
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run tests
+        env: 
+          CI: true
+        run: npm test -- --ci --remote
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            packages/**/tests/test-results
+            packages/**/tests/snapshots
+          retention-days: 3
