@@ -1,7 +1,22 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "member-item": "member-item"
+  "pc-member-item": {
+    "you": "You",
+    "incall": "In a call",
+    "actions": "More actions for {name}",
+    "chat": "Chat",
+    "call": "Call",
+    "video": "Video call",
+    "invite": "Invite to current room",
+    "status": {
+      "available": "Available",
+      "busy": "Busy",
+      "away": "Away",
+      "dnd": "Do not disturb",
+      "offline": "Offline"
+    }
+  }
 }

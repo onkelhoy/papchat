@@ -3,25 +3,35 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MemberItem | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-member-item | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>MemberItem | experiment</h1>
+    <h1>pc-member-item</h1>
+    <p class="hint">Icons need <code>/icons/spritesheet.svg</code> (served by the app page, not this demo). Double-click or Enter on a row = chat, right-click / Shift+F10 opens the menu.</p>
+    <p id="log" class="hint">member-action events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-member-item></pc-member-item>
-        </pap-codeblock>
+        <h2>Statuses</h2>
+        <div class="list" role="list" id="statuses"></div>
+    </section>
+
+    <section>
+        <h2>self, incall, canInvite, long name</h2>
+        <div class="list" role="list" id="flags"></div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="list" role="list" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="list" role="list" id="dark"></div>
     </section>
 </body>
 

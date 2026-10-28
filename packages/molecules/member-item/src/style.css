@@ -1,4 +1,121 @@
 :host {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    box-sizing: border-box;
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border-radius: var(--radius-medium, 0.5rem);
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    cursor: default;
+    user-select: none;
+    outline: none;
+}
+
+:host(:hover) {
+    background-color: color-mix(in oklch, var(--text) 6%, transparent);
+}
+
+:host(:state(menu-open)) {
+    background-color: var(--secondary);
+}
+
+:host(:focus-visible) {
+    outline: 2px solid var(--focus-color);
+    outline-offset: -2px;
+}
+
+/* the presence dot sits on the avatar: ring it with the row surface */
+pc-presence {
+    border-radius: var(--radius-full, 50%);
+    box-shadow: 0 0 0 2px var(--member-item-ring, var(--background));
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.line {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    min-inline-size: 0;
+}
+
+.name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.status {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
+pc-badge,
+.incall {
+    flex: none;
+}
+
+.incall {
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: var(--pc-available);
+}
+
+/* ⋯ button */
+[part="trigger"] {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    inline-size: 2rem;
+    block-size: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-medium, 0.5rem);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+[part="trigger"]:hover {
+    background-color: color-mix(in oklch, var(--text) 10%, transparent);
+}
+
+[part="trigger"]:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
+}
+
+/* with a mouse the ⋯ only shows on hover/focus; touch screens always show it */
+@media (hover: hover) {
+    [part="trigger"] {
+        opacity: 0;
+    }
+
+    :host(:hover) [part="trigger"],
+    :host(:focus-within) [part="trigger"],
+    :host(:state(menu-open)) [part="trigger"] {
+        opacity: 1;
+    }
+}
+
+pap-menuitem {
+    gap: var(--space-2, 0.5rem);
+}
+
+pap-menuitem pap-icon {
+    flex: none;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
 }
