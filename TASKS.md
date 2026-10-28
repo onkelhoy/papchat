@@ -160,9 +160,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `change` with `detail.value`. Does not call the translator itself.
 - Done: `languages[].flag` is a `pap-icon` name (default `/icons/flags/en.svg`, `sv.svg`, files in the package `asset/icons/flags/`, must be served at `/icons/flags/`: copy/serve them in the page). Trigger is a native `<button popovertarget>` (works with `pap-menu`); `change` bubbles+composed. Page must register `sv` translation for the `label` key only in T6.7.
 
-### [~] T1.9 pc-app-shell · `sonnet` · needs T1.2
+### [x] T1.9 pc-app-shell · `sonnet` · needs T1.2
 - **read:** `@papit/sidebar`, `@papit/drawer` READMEs.
 - **slots:** `header`, `sidebar`, `main`, `overlay` (incoming calls), `toasts`. CSS grid: header on top, sidebar left (`pap-sidebar`), main fills. Under 800 px the sidebar slot moves into a `pap-drawer` opened by a menu button in the header area. **props:** `sidebaropen` (boolean, reflect). **events:** `sidebar-toggle` `{ open }`.
+- Done: `sidebaropen` default false (set it on wide screens or the sidebar is a 4rem rail), `sidebar-toggle` does not bubble, host is `100dvh`. Own menu button on mobile (T1.11's `menu-toggle` can just set `sidebaropen`). `overlay`/`toasts` are fixed full-viewport layers, only slotted content takes pointer events.
 
 ### [ ] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
 - **read:** `@papit/group`, `@papit/input` READMEs.
@@ -357,7 +358,8 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
+- All `en.json` use `"language": "en"` (static names the merged file after it; `en-UK` produced `en-UK.json`).
 - T1.1 papit gap: after a socket reconnect, `Client` keeps its old `id`/router `me`, so every later message to the server carries the stale sender and the signal server rejects it as `spoof`. `leave()` + rejoin on the same Client can't work, so the lobby closes the client and builds a new one. Fix upstream: adopt the new id on reconnect (or expose a `rejoin()`).
-- T0.5: `@papit/static` (via `meta()` in `@papit/server`) skips assets of `papit.type: "theme"` packages, so `packages/foundations/theme/asset/icons/spritesheet.svg` never reaches `dist/public/icons/`. Fix needed outside T0.5 (e.g. change `@papchat/theme` papit type to `browser`/`web-component`-style, or copy the spritesheet into `pages/app/asset/icons/`). Needed before any icon works on the deployed page.
+- T0.5: `@papit/static` (via `meta()` in `@papit/server`) skips assets of `papit.type: "theme"` packages, so `packages/foundations/theme/asset/icons/spritesheet.svg` never reaches `dist/public/icons/`. Fix needed outside T0.5 (e.g. change `@papchat/theme` papit type to `browser`/`web-component`-style, or copy the spritesheet into `pages/app/asset/icons/`). Needed before any icon works on the deployed page. **Resolved:** spritesheet moved to `packages/pages/app/asset/icons/`, theme's `npm run icons` writes there.
 - Root has `npm run signal` (local signal server on :3000) and `npm run pages` (build + static site).
 - Scaffolded `tests/` folders stay and are ignored (T0.2).

@@ -3,26 +3,57 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppShell | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-app-shell | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>AppShell | experiment</h1>
+    <h1>pc-app-shell</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-app-shell></pc-app-shell>
-        </pap-codeblock>
+        <h2>Desktop (sidebar open)</h2>
+        <p>Needs a viewport of 800 px or wider. Resize the window under 800 px: the sidebar moves into a drawer and a menu button appears.</p>
+        <div class="frame">
+            <pc-app-shell sidebaropen>
+                <div slot="header" class="box">header</div>
+                <div slot="sidebar" class="box">sidebar</div>
+                <div slot="main" class="box">main</div>
+                <div slot="overlay" class="box overlay">overlay</div>
+                <div slot="toasts" class="box toast">toasts</div>
+            </pc-app-shell>
+        </div>
     </section>
+
+    <section>
+        <h2>Collapsed sidebar</h2>
+        <div class="frame">
+            <pc-app-shell>
+                <div slot="header" class="box">header</div>
+                <div slot="sidebar" class="box">sidebar</div>
+                <div slot="main" class="box">main</div>
+            </pc-app-shell>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="frame" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="frame">
+            <pc-app-shell sidebaropen>
+                <div slot="header" class="box">header</div>
+                <div slot="sidebar" class="box">sidebar</div>
+                <div slot="main" class="box">main</div>
+            </pc-app-shell>
+        </div>
+    </section>
+
+    <p id="log">sidebar-toggle: (none yet)</p>
 </body>
 
 </html>

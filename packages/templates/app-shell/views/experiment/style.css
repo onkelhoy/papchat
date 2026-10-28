@@ -26,3 +26,37 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+/* the shell is 100dvh by default; in the demo it fills a fixed frame instead */
+.frame {
+    position: relative;
+    block-size: 24rem;
+    overflow: hidden;
+    border: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
+    border-radius: var(--radius-medium, 0.5rem);
+    transform: translateZ(0); /* contains the fixed overlay layers */
+
+    pc-app-shell {
+        block-size: 100%;
+    }
+}
+
+.box {
+    padding: var(--space-3, 0.75rem);
+    background-color: light-dark(oklch(92% 0.02 264), oklch(28% 0.02 264));
+    border-radius: var(--radius-small, 0.25rem);
+    margin: var(--space-2, 0.5rem);
+}
+
+.overlay,
+.toast {
+    position: absolute;
+    inset-block-end: var(--space-4, 1rem);
+    inset-inline-end: var(--space-4, 1rem);
+    background-color: var(--primary);
+    color: var(--primary-contrast);
+}
+
+.toast {
+    inset-block-end: auto;
+    inset-block-start: var(--space-4, 1rem);
+}

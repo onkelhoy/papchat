@@ -1,4 +1,72 @@
 :host {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+        "sidebar header"
+        "sidebar main";
+    block-size: 100dvh;
     color: var(--text);
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+[part="header"] {
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    min-inline-size: 0;
+}
+
+/* the header slot takes the remaining width */
+[part="header"] ::slotted([slot="header"]) {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+pap-sidebar {
+    grid-area: sidebar;
+}
+
+[part="main"] {
+    grid-area: main;
+    min-inline-size: 0;
+    min-block-size: 0;
+    overflow: auto;
+}
+
+/* overlay and toasts sit above the page; only their content takes pointer events */
+[part="overlay"],
+[part="toasts"] {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+[part="overlay"] {
+    z-index: 2000;
+}
+
+[part="toasts"] {
+    z-index: 2100;
+}
+
+::slotted([slot="overlay"]),
+::slotted([slot="toasts"]) {
+    pointer-events: auto;
+}
+
+/* under 800 px the sidebar is a drawer: header and main use the full width */
+@media (max-width: 799.98px) {
+    :host {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "header"
+            "main";
+    }
+
+    /* the drawer's dialog is in the top layer; keep its host out of the grid flow */
+    pap-drawer {
+        position: fixed;
+    }
 }
