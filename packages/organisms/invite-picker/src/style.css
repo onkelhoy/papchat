@@ -1,4 +1,63 @@
 :host {
+    display: contents;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+.body {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    inline-size: min(24rem, 80vw);
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-1, 0.25rem);
+    max-block-size: 50vh;
+    overflow-y: auto;
+}
+
+li {
+    padding: var(--space-2, 0.5rem);
+    border-radius: var(--radius-medium, 0.5rem);
+}
+
+li:hover {
+    background: var(--background-light, transparent);
+}
+
+pap-checkbox {
+    display: flex;
+    inline-size: 100%;
+}
+
+.member {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    min-inline-size: 0;
+}
+
+.name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.empty {
+    margin: 0;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.empty:empty {
+    display: none;
+}
+
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3, 0.75rem);
 }

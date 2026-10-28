@@ -3,5 +3,14 @@
     "region": "GB",
     "language": "en"
   },
-  "invite-picker": "invite-picker"
+  "pc-invite-picker": {
+    "title": "Invite people",
+    "search": "Search people",
+    "members": "People to invite",
+    "none": "Everyone is already in this room.",
+    "no-results": "No one matches your search.",
+    "cancel": "Cancel",
+    "invite": "Invite",
+    "invite-count": "Invite {count}"
+  }
 }

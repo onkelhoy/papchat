@@ -28,6 +28,20 @@ npm install @papchat/invite-picker
 <pc-invite-picker></pc-invite-picker>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `open` | `open` | `boolean` | `false` | whether the dialog is shown; reset (selection, search) on every change |
+| `members` | - | `Profile[]` | `[]` | people who can be invited (already filtered to those not in the room); property only |
+
+| Event | Detail | Description |
+| --- | --- | --- |
+| `invite` | `{ uids: string[] }` | invite button pressed (at least one picked); the page sends the invites and sets `open = false` |
+| `close` | - | dismissed by the user (Cancel, X, Escape, backdrop); the component has already set `open = false` |
+
+Both bubble and are composed. CSS: `::part(dialog)`. Strings under `pc-invite-picker`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

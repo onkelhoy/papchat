@@ -8,20 +8,46 @@
     <title>InvitePicker | experiment</title>
 
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
     <link rel="stylesheet" href="style.css" />
 
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>InvitePicker | experiment</h1>
+    <h1>pc-invite-picker</h1>
+    <p>The dialog is modal, so each variant has a button. <code>members</code> is set from JS.</p>
+    <p id="log">events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-invite-picker></pc-invite-picker>
-        </pap-codeblock>
+        <h2>Several members</h2>
+        <div class="row">
+            <button type="button" data-open="many">Open</button>
+            <pc-invite-picker id="many"></pc-invite-picker>
+        </div>
+    </section>
+
+    <section>
+        <h2>Empty (nobody to invite)</h2>
+        <div class="row">
+            <button type="button" data-open="empty">Open</button>
+            <pc-invite-picker id="empty"></pc-invite-picker>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row">
+            <button type="button" id="open-created">Open</button>
+            <span id="created"></span>
+        </div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <button type="button" data-open="dark">Open</button>
+            <pc-invite-picker id="dark"></pc-invite-picker>
+        </div>
     </section>
 </body>
 
