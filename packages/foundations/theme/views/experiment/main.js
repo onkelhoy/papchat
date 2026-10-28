@@ -1,3 +1,5 @@
+import "@papit/icon";
+
 window.onload = () => {
     document.querySelector("select").onchange = (e) => {
         const { value } = e.currentTarget;

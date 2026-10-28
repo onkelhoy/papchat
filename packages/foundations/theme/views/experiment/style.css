@@ -239,3 +239,69 @@ div.theme-opposite {
 .radius-item--full {
     border-radius: var(--radius-full);
 }
+
+/* ── Papchat tokens ── */
+
+.swatch--primary-contrast::before {
+    background: var(--primary-contrast);
+}
+
+.swatch--focus-color::before {
+    background: var(--focus-color);
+}
+
+.swatch--primary-chip::before {
+    content: 'Aa';
+    display: grid;
+    place-items: center;
+    background: var(--primary);
+    color: var(--primary-contrast);
+    font-size: 20px;
+}
+
+.swatch--pc-available::before {
+    background: var(--pc-available);
+}
+
+.swatch--pc-busy::before {
+    background: var(--pc-busy);
+}
+
+.swatch--pc-away::before {
+    background: var(--pc-away);
+}
+
+.swatch--pc-dnd::before {
+    background: var(--pc-dnd);
+}
+
+.swatch--pc-offline::before {
+    background: var(--pc-offline);
+}
+
+.swatch--secondary::before {
+    border-bottom: 1px solid var(--background-dark);
+}
+
+/* ── Icons ── */
+
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: var(--space-2);
+}
+
+.icon-item {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-2);
+    border-radius: var(--radius-small);
+    background: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
+    color: var(--primary);
+}
+
+.icon-label {
+    color: var(--tertiary);
+    font-size: 10px;
+}

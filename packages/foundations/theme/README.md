@@ -18,6 +18,22 @@ papchat brand tokens and icons on top of @papit/theme
 npm install @papchat/theme
 ```
 
+## usage
+
+```css
+@import "@papchat/theme"; /* pulls in @papit/theme and applies the papchat brand */
+```
+
+Added tokens: `--primary-contrast`, `--pc-available`, `--pc-busy`, `--pc-away`, `--pc-dnd`, `--pc-offline`. `--primary`, `--secondary` and `--focus-color` are overridden.
+
+Icons live in `asset/icons/svg/*.svg`. `npm run icons` merges them into `asset/icons/spritesheet.svg`:
+
+```html
+<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>
+```
+
+Ids: mic, mic-off, camera, camera-off, screen, screen-off, phone, phone-off, user-plus, paperclip, send, settings, broadcast, download, x, users, chat, search, menu, play, stop, volume.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

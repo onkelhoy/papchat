@@ -26,3 +26,18 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4, 16px);
+}
+
+.dot {
+    display: block;
+    inline-size: 12px;
+    block-size: 12px;
+    border-radius: 50%;
+    background: green;
+    border: 2px solid var(--background, white);
+}

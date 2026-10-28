@@ -1,4 +1,39 @@
 :host {
-    color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    --_size: var(--avatar-size, 2.5rem);
+
+    position: relative;
+    display: inline-block;
+    flex: none;
+    inline-size: var(--_size);
+    block-size: var(--_size);
+}
+
+:host([size="s"]) {
+    --_size: var(--avatar-size-s, 1.75rem);
+}
+
+:host([size="l"]) {
+    --_size: var(--avatar-size-l, 4.5rem);
+}
+
+[part="circle"] {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: var(--radius-full, 50%);
+    background-color: var(--_bg);
+    color: var(--avatar-text, white);
+    font-size: calc(var(--_size) * 0.4);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    user-select: none;
+    overflow: hidden;
+}
+
+::slotted([slot="badge"]) {
+    position: absolute;
+    inset-block-end: -2px;
+    inset-inline-end: -2px;
 }

@@ -1,14 +1,10 @@
-// core
-import { translator } from '@papit/translator';
-import "@papit/codeblock";
-
-// component
 import '@papchat/avatar';
 
-window.onload = () => {
-    console.log('[demo]: window loaded');
-
-    translator.add({ id: "en", url: "/en.json" });
-    translator.change("en");
+const created = document.getElementById("created");
+for (const name of ["Created One", "two", "Third Person Here"])
+{
+    const avatar = document.createElement("pc-avatar");
+    avatar.name = name;
+    avatar.uid = name;
+    created.append(avatar);
 }
-

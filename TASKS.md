@@ -39,9 +39,16 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name>`, already scaffolded (T0.2) under `packages/<layer>/<name>`. Files: `src/component.ts`, `src/style.css`, `src/types.ts`, `src/index.ts`, `asset/translations/en.json`, `views/experiment/index.html` (+ `main.js`) as its demo page. Add papit dependencies to that package's `package.json` `dependencies`.
 
 **Done when** (for every component, on top of the task's own list):
-- builds; `npm start` from its package shows the demo page with every state/variant side by side, in light and dark (`data-theme`), at 360 px and desktop width;
-- works when created with `document.createElement` and when parsed from HTML;
+- `npm run build` in the package passes (also `npx tsc --noEmit -p .` for type errors the build may hide);
+- the demo page `views/experiment/index.html` shows every state/variant side by side, including a `data-theme="dark"` section and one element made with `document.createElement`. **Don't run a browser to check it**: the user reviews pages live with `npm start` from the root;
 - every property/event in the spec is in the package `README.md` (short: one table for properties, one for events).
+
+**Gotchas found so far**
+- Icons: `import "@papit/icon"`, then `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (ids in T0.3's note). Size via `width`/`height`, colour via `color`. Meaningful icon → `role="img" aria-label="…"`.
+- Use `--primary-contrast` for text on a `--primary` surface. Presence colours: `--pc-available|busy|away|dnd|offline`.
+- Edit `TASKS.md` with small exact edits only (other agents edit it at the same time), never rewrite the whole file.
+- `@property()` needs an options object: `@property({ type: String })`.
+- `html` attribute bindings must be the **whole** value: `style="${`--x: ${v}`}"`, never `style="--x: ${v}"` (that renders the value as text).
 
 ### Papit reference (read when the task says so)
 | Ref | Path |
@@ -74,11 +81,12 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
 Done by hand with `npm create @papit -- --package=<type> --html-prefix=pc --no --name=<name> --description=…` (folder picked from the menu). 34 packages: foundations `theme` (theme), `core` (browser); atoms `avatar presence badge time level-meter progress video`; molecules `member-item connection-status message composer file-card call-controls video-tile incoming-call toast language-picker ringtone-picker device-picker stage-card`; organisms `member-list room-list conversation call-stage room invite-picker settings onboarding app-header toaster`; templates `app-shell`; pages `app` (browser). Then one root `npm install`. Scaffolded `tests/` stay and are ignored.
 - **done when:** all 34 exist, `npm install` and `npm run build` pass.
 
-### [ ] T0.3 Theme and icons · `sonnet` · needs T0.2
+### [x] T0.3 Theme and icons · `sonnet` · needs T0.2
 - **read:** DS (theme tokens), `@papit/theme` and `@papit/icon` READMEs, `@papit/svg-spritesheet` README (`/Users/henry/Developer/projects/papit/packages/runtime/svg-spritesheet/`).
 - **files:** `packages/foundations/theme/**`
 - **do:** `src/theme.css` imports `@papit/theme` and overrides only brand tokens (`--primary` family with a papchat accent, chosen to pass WCAG AA in light and dark). Add presence colours as tokens: `--pc-available`, `--pc-busy`, `--pc-away`, `--pc-dnd`, `--pc-offline`. Add 24×24 stroke SVG icons (`currentColor`) to `asset/icons/`: mic, mic-off, camera, camera-off, screen, screen-off, phone, phone-off, user-plus, paperclip, send, settings, broadcast, download, x, users, chat, search, menu, play, stop, volume. Build them into a spritesheet that `pap-icon` can use.
 - **done when:** demo page shows every token swatch and every icon via `pap-icon`, light and dark.
+- **note:** tokens added/overridden in `@papchat/theme` (`@layer theme`): `--primary`, `--secondary`, `--focus-color` (indigo), new `--primary-contrast` (text on primary), `--pc-available|busy|away|dnd|offline`. Icon markup: `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (import `@papit/icon`; size/colour via `width`/`height`/`color` on `pap-icon`; 24px, `currentColor`). Use `role="img" aria-label` when meaningful. Ids: mic mic-off camera camera-off screen screen-off phone phone-off user-plus paperclip send settings broadcast download x users chat search menu play stop volume. Sources are `asset/icons/svg/*.svg`; after changing them run `npm run icons` in the theme package (spritesheet is committed). Add `@papchat/theme` and `@papit/icon` to the component demo/page as needed.
 
 ### [x] T0.4 Core skeleton · `opus` · needs T0.2
 - **read:** PLAN §2.1, §2.3, §3.1, §3.2; SIG; NET (Client options).
@@ -106,17 +114,18 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 1: lobby (PLAN §2.2, §2.3, §6.1–2)
 
-### [ ] T1.1 Core: lobby · `opus` · needs T0.4
+### [~] T1.1 Core: lobby · `opus` · needs T0.4
 - **read:** NET (all of Client, Status, Lifecycle), DEMO, PLAN §2.2–2.4.
 - **files:** `core/src/lobby.ts`, `core/src/identity.ts`, exports.
 - **do:** `identity.ts`: create/read profile (`uid` via `crypto.randomUUID`, random colour from a fixed palette), `setName/setColor/setStatus` that write storage, update `me` and call `lobby.setProfile`. `lobby.ts`: `startLobby()` per §2.2 steps 1–5 (canonical = smallest `meta.created`, then id; race guard re-`list()` after 2 s; one retry; space server calls ≥ 1 s apart); status → `lobbyStatus`; `members` event → `members` signal (exclude self, dedupe by uid); on `error` type `reconnect` → `leave()` + rerun boot; `send(uid, type, payload)` resolving uid → newest peer id; `broadcast`; an `on(type, handler)` dispatcher for app messages; `unreachable` → toast. No invites yet (T2.1).
 - **done when:** with `npx papit-signal-server --port 3000` and 3 tabs: all land in one lobby, each sees the other two in `papchat.state.members()`; two tabs opened within 100 ms converge on one lobby; closing the host tab keeps the others connected; killing and restarting the server reconnects everyone into one lobby.
 
-### [ ] T1.2 pc-avatar · `opus` (reference atom) · needs T0.3
+### [x] T1.2 pc-avatar · `opus` (reference atom) · needs T0.3
 - **read:** WC, DS, SWITCH.
 - **props:** `name` (string), `color` (string, CSS colour; fallback: hue from hashing `uid`), `uid`, `size` (`"s" | "m" | "l"`, reflect). **slot:** `badge` (bottom-right, for `pc-presence`).
 - **render:** initials (first letters of first and last word, max 2, uppercase), text colour chosen for contrast. `role="img"`, `aria-label` = name.
 - This is the pattern every later component copies: keep it clean and commented where it matters.
+- Done: `packages/atoms/avatar`. Exports `initials(name)` and `colorFor(seed)` too. Size via `--avatar-size` (`-s`, `-l`). ARIA set in `connectedCallback`, not the constructor.
 
 ### [ ] T1.3 pc-presence · `sonnet` · needs T1.2
 - **props:** `status` (`available|busy|away|dnd|offline`, reflect). Dot using `--pc-<status>` tokens, `dnd` gets a bar, `away` a hollow ring (not colour-only). `role="img"`, translated `aria-label`.

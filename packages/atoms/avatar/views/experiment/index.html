@@ -3,25 +3,56 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avatar | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-avatar | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Avatar | experiment</h1>
+    <h1>pc-avatar</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Sizes</h2>
+        <div class="row">
+            <pc-avatar size="s" name="Anna Berg" uid="a1"></pc-avatar>
+            <pc-avatar name="Anna Berg" uid="a1"></pc-avatar>
+            <pc-avatar size="l" name="Anna Berg" uid="a1"></pc-avatar>
+        </div>
+    </section>
+
+    <section>
+        <h2>Colour from uid / explicit colour</h2>
+        <div class="row">
+            <pc-avatar name="Henry" uid="u-henry"></pc-avatar>
+            <pc-avatar name="Bob Stone" uid="u-bob"></pc-avatar>
+            <pc-avatar name="Åsa Öberg" uid="u-asa"></pc-avatar>
+            <pc-avatar name="李 小龙" uid="u-li"></pc-avatar>
+            <pc-avatar name="Custom" color="oklch(45% 0.2 300)"></pc-avatar>
             <pc-avatar></pc-avatar>
-        </pap-codeblock>
+        </div>
+    </section>
+
+    <section>
+        <h2>Badge slot</h2>
+        <div class="row">
+            <pc-avatar name="Anna Berg" uid="a1"><span slot="badge" class="dot"></span></pc-avatar>
+            <pc-avatar size="l" name="Anna Berg" uid="a1"><span slot="badge" class="dot"></span></pc-avatar>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-avatar name="Henry" uid="u-henry"></pc-avatar>
+            <pc-avatar name="Bob Stone" uid="u-bob"></pc-avatar>
+            <pc-avatar size="l" name="Åsa Öberg" uid="u-asa"></pc-avatar>
+        </div>
     </section>
 </body>
 
