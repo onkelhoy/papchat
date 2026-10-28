@@ -3,25 +3,53 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Progress | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-progress | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Progress | experiment</h1>
+    <h1>pc-progress</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Determinate</h2>
+        <div class="stack">
+            <pc-progress value="0" label="Empty"></pc-progress>
+            <pc-progress value="0.25" label="Quarter"></pc-progress>
+            <pc-progress value="0.6" label="Sixty percent"></pc-progress>
+            <pc-progress value="1" label="Complete"></pc-progress>
+            <pc-progress value="1.7" label="Clamped above 1"></pc-progress>
+        </div>
+    </section>
+
+    <section>
+        <h2>Indeterminate (no value)</h2>
+        <div class="stack">
+            <pc-progress label="Waiting"></pc-progress>
             <pc-progress></pc-progress>
-        </pap-codeblock>
+        </div>
+    </section>
+
+    <section>
+        <h2>Custom size and colour</h2>
+        <div class="stack">
+            <pc-progress value="0.5" style="--progress-height: 0.75rem; --progress-color: var(--success)"></pc-progress>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement (animated)</h2>
+        <div class="stack" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="stack">
+            <pc-progress value="0.4" label="Forty percent"></pc-progress>
+            <pc-progress value="1" label="Complete"></pc-progress>
+            <pc-progress label="Waiting"></pc-progress>
+        </div>
     </section>
 </body>
 

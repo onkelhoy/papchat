@@ -25,8 +25,23 @@ npm install @papchat/progress
   import "@papchat/progress";
 </script>
 
-<pc-progress></pc-progress>
+<pc-progress value="0.4" label="report.pdf"></pc-progress>
+<pc-progress></pc-progress> <!-- indeterminate -->
 ```
+
+## properties
+
+| Property | Type     | Default | Description                                                                                   |
+| -------- | -------- | ------- | --------------------------------------------------------------------------------------------- |
+| `value`  | `number` |         | Progress from `0` to `1` (clamped). Unset or `NaN` makes the bar indeterminate.                |
+| `label`  | `string` |         | Accessible name (`aria-label`). Falls back to a translated "Progress" (`pc-progress.label`).   |
+
+The host has `role="progressbar"`, `aria-valuemin="0"`, `aria-valuemax="100"` and `aria-valuenow` (0 to 100, omitted while indeterminate). It also gets the `indeterminate` attribute.
+CSS parts: `track`, `bar`. CSS variables: `--progress-height`, `--progress-background`, `--progress-color`.
+
+## events
+
+None. The progress bar is display only.
 
 ## License
 

@@ -1,7 +1,9 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "progress": "progress"
+  "pc-progress": {
+    "label": "Progress"
+  }
 }

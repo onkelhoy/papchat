@@ -1,3 +1,4 @@
+@import "@papchat/theme";
 @import "@papit/theme";
 
 body {
@@ -25,4 +26,17 @@ body {
         border: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
+}
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4, 16px);
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 16px);
+    max-width: 24rem;
 }

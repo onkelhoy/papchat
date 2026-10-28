@@ -3,5 +3,7 @@
     "region": "GB",
     "language": "en"
   },
-  "progress": "progress"
+  "pc-progress": {
+    "label": "Progress"
+  }
 }
