@@ -3,25 +3,39 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RoomList | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-room-list | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>RoomList | experiment</h1>
+    <h1>pc-room-list</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-room-list></pc-room-list>
-        </pap-codeblock>
+        <h2>Rooms (unread, in a call, live, title fallback, overflow)</h2>
+        <div class="row">
+            <div><pc-room-list data-demo active="r2"></pc-room-list></div>
+            <div><pc-room-list data-demo></pc-room-list></div>
+            <span id="log">select / leave events show here</span>
+        </div>
+    </section>
+
+    <section>
+        <h2>Empty</h2>
+        <div class="row"><div><pc-room-list></pc-room-list></div></div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row"><div id="created"></div></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <div><pc-room-list data-demo active="r1"></pc-room-list></div>
+        </div>
     </section>
 </body>
 

@@ -3,5 +3,14 @@
     "region": "GB",
     "language": "en"
   },
-  "room-list": "room-list"
+  "pc-room-list": {
+    "label": "Open rooms",
+    "empty": "No open chats yet",
+    "untitled": "Chat",
+    "incall": "In a call",
+    "live": "Live",
+    "unread": "{count} unread",
+    "options": "Options for {title}",
+    "leave": "Leave"
+  }
 }

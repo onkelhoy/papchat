@@ -44,7 +44,7 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
 - every property/event in the spec is in the package `README.md` (short: one table for properties, one for events).
 
 **Gotchas found so far**
-- Icons: `import "@papit/icon"`, then `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (ids in T0.3's note). The spritesheet lives in `packages/pages/app/asset/icons/` (theme-type assets aren't served); regenerate with `npm run icons` in the theme package. Size via `width`/`height`, colour via `color`. Meaningful icon → `role="img" aria-label="…"`.
+- Icons: `import "@papit/icon"`, then `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (ids in T0.3's note). The spritesheet lives in `packages/pages/app/asset/icons/` (theme-type assets aren't served); regenerate with `npm run icons` in the theme package. Don't copy it into a demo's `public/`: the dev server answers `/icons/spritesheet.svg` from the app package's assets. Size via `width`/`height`, colour via `color`. Meaningful icon → `role="img" aria-label="…"`.
 - Status tokens exist in `@papit/theme`: `--success`, `--warning`, `--error`, `--info`; text colours `--text`, `--text-secondary` (there is no `--text-muted`).
 - READMEs: copy the API tables format from `packages/atoms/avatar/README.md` (## API).
 - Use `--primary-contrast` for text on a `--primary` surface. Presence colours: `--pc-available|busy|away|dnd|offline`.
@@ -172,7 +172,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - Leave a `slot="live"` above the list for stage cards (T5.3).
 - **events:** re-dispatches `member-action` (bubbles, composed).
 
-### [ ] T1.11 pc-app-header · `sonnet` · needs T1.6, T1.8
+### [~] T1.11 pc-app-header · `sonnet` · needs T1.6, T1.8
 - **read:** `@papit/theme-picker`, `@papit/menu`.
 - **props:** `me` (`Profile`), `status` (lobby status), `language`, `live` (boolean: you are presenting).
 - **render:** logo/name "papchat", `pc-connection-status`, a "Go live" button, `pc-language-picker`, `pap-theme-picker storage="local"`, settings button, own `pc-avatar` with a status menu (`pap-menu`: available/busy/away/dnd).
@@ -201,22 +201,25 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
   - On boot, rejoin rooms from `papchat:session` that still exist.
 - **done when:** from the console, tab A `papchat.openChat(<B's uid>)` → B gets the room; messages and typing flow both ways; a third tab invited joins and sees the system "joined" message; refresh of B rejoins.
 
-### [~] T2.2 pc-message · `sonnet` · needs T1.2, T1.5
+### [x] T2.2 pc-message · `sonnet` · needs T1.2, T1.5
 - **props:** `message` (`ChatMessage`), `author` (`Profile`), `mine` (boolean), `grouped` (boolean: same author within 2 min, hide avatar and name), `variant` (`"text" | "system"`).
 - Text: plain text with URLs auto-linked by splitting the string into text and `<a target="_blank" rel="noopener noreferrer">` parts, never HTML. Preserve newlines. `mine` aligns right with the primary colour.
+- Done: `packages/molecules/message`. No events. `variant` defaults to `message.variant` (`file` renders as text, the conversation shows `pc-file-card` itself); `grouped` is computed by the parent (conversation: same uid within 2 min). Wrap in a flex column; host is `display:flex`. Also exports `linkify(text)`. Added `@papchat/core` as devDependency (type import).
 
-### [~] T2.3 pc-composer · `sonnet` · needs T0.3
+### [x] T2.3 pc-composer · `sonnet` · needs T0.3
 - **read:** `@papit/input`, `@papit/file-input`, `@papit/button`.
 - **props:** `disabled`, `placeholder`. Multiline input; Enter sends, Shift+Enter newline; send button (disabled when empty/whitespace); attach button via `pap-file-input` (multiple).
 - **events:** `send` `{ text }` (trimmed, then clears), `typing` (at most once per second while typing), `files` `{ files: File[] }`.
+- Done: `packages/molecules/composer`. Field is a native `<textarea>` (`pap-input` is single-line); attach opens a hidden `pap-file-input` (multiple) from a `pap-button`. Needs `/icons/spritesheet.svg` (paperclip, send). Events bubble+composed; `focus()` method; `disabled` reflected; strings `pc-composer.{placeholder,send,attach}`. T2.6: Enter during IME is ignored, `files` also needs the T4.4 drop zone to be done in the conversation.
 
 ### [~] T2.4 pc-toast and pc-toaster · `sonnet` · needs T0.3
 - `pc-toast` props: `kind` (`info|success|warning|error`), `text`, `action` (optional label), `duration` (ms, default 5000, 0 = sticky). Pauses timer on hover/focus. Events: `dismiss`, `action`.
 - `pc-toaster` props: `toasts` (`Toast[]` with `id`). Stack bottom-right (bottom-center on mobile), max 4 visible, `role="status"` region. Re-dispatches `dismiss` / `action` with `{ id }`.
 
-### [ ] T2.5 pc-room-list · `sonnet` · needs T1.2, T1.4
+### [x] T2.5 pc-room-list · `sonnet` · needs T1.2, T1.4
 - **props:** `rooms` (`RoomSummary[]`: id, kind, title, participants `Profile[]`, unread, incall, live), `active` (id). Each row: stacked avatars (max 3), title (fallback: participant names), unread `pc-badge`, phone icon if in a call, `Live` badge for stages. `pap-group` roving, `aria-current` on the active one.
 - **events:** `select` `{ id }`, `leave` `{ id }` (via a row menu).
+- Done: `packages/organisms/room-list`. `rooms` (`RoomSummary[]`, property only) and `active` (id); events `select`/`leave` `{ id }` (bubble, composed). The list never changes `active` itself: the page sets it on `select`. Needs `/icons/spritesheet.svg` served (phone icon). Empty `title` falls back to participant names; empty list shows a translated empty text. Added `@papchat/core` (types only) and `@papchat/theme` as devDependencies.
 
 ### [ ] T2.6 pc-conversation · `sonnet` · needs T2.2, T2.3
 - **props:** `messages` (`ChatMessage[]`), `profiles` (`Record<uid, Profile>`), `me` (uid), `typing` (uid[]), `title`.
@@ -240,10 +243,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
   - `devices.ts`: `list()` via `enumerateDevices` (refresh on `devicechange`), chosen ids in prefs, `constraints(name)` for `media.start`, `setSink(el)` with `setSinkId` when supported.
 - **done when:** console: A calls B, B rings, accepts, both get each other's mic+camera streams in the signals; screen share from A shows up on B; stopping it from the browser bar clears it; decline and timeout both toast on A.
 
-### [ ] T3.2 pc-video · `sonnet` · needs T0.3
+### [~] T3.2 pc-video · `sonnet` · needs T0.3
 - **props:** `stream` (`MediaStream`, property only), `muted`, `mirror`, `fit` (`cover|contain`), `sinkid`. Sets `srcObject`; calls `play()` and on rejection shows a "click to play" overlay button. Clears `srcObject` on disconnect.
 
-### [ ] T3.3 pc-level-meter · `sonnet` · needs T0.3
+### [~] T3.3 pc-level-meter · `sonnet` · needs T0.3
 - **props:** `stream` (`MediaStream`), `bars` (default 5). One shared `AudioContext` per page, an `AnalyserNode` per instance, `requestAnimationFrame` loop paused while hidden; closes its nodes on disconnect or stream change. `aria-hidden`.
 - **events:** `speaking` `{ speaking: boolean }` with ~300 ms hysteresis.
 

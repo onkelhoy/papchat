@@ -3,25 +3,48 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Composer | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-composer | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Composer | experiment</h1>
+    <h1>pc-composer</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Default</h2>
+        <div class="row">
+            <pc-composer id="main"></pc-composer>
+            <pre id="log">events show here</pre>
+        </div>
+    </section>
+
+    <section>
+        <h2>Custom placeholder</h2>
+        <div class="row">
+            <pc-composer placeholder="Message Anna"></pc-composer>
+        </div>
+    </section>
+
+    <section>
+        <h2>Disabled</h2>
+        <div class="row">
+            <pc-composer disabled></pc-composer>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
             <pc-composer></pc-composer>
-        </pap-codeblock>
+            <pc-composer disabled></pc-composer>
+        </div>
     </section>
 </body>
 

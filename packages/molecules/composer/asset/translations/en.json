@@ -3,5 +3,9 @@
     "region": "GB",
     "language": "en"
   },
-  "composer": "composer"
+  "pc-composer": {
+    "placeholder": "Write a message",
+    "send": "Send",
+    "attach": "Attach files"
+  }
 }
