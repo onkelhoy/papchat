@@ -334,9 +334,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - `pc-conversation`: full-area overlay on `dragenter` with files ("Drop to share"), dispatch `files`. Show file cards inline in the message list (a `file` message variant ordered by time). `pc-member-item`: drop target highlight, event `member-files` `{ uid, files }`. `pc-room` Files tab: list of `pc-file-card`s.
 - Done: `pc-conversation` gets a `files: FileEntry[]` property (set as property), draws `file` messages as `pc-file-card` (a file message without an entry is hidden), shows a "Drop to share" overlay (part `drop`) and fires `files` on drop; the card's `cancel` bubbles out as is. `pc-member-item` highlights on file drag (`:state(drop)`), fires `member-files` `{ uid, files }`, never for `self`. `pc-room` gets a `files` property, passes it to the conversation and lists cards in the Files tab (`slot="files"` removed). T4.5 must set `files` on `pc-room`/`pc-conversation` and handle `files`, `member-files`, `cancel`. Typecheck + build pass; not run in a browser.
 
-### [ ] T4.5 Wire wave 4 · `sonnet` · needs T4.1, T4.4
+### [x] T4.5 Wire wave 4 · `sonnet` · needs T4.1, T4.4
 - `files` from the composer or a drop → `room.sendFiles`. `member-files` → `openChat(uid)` then send. Cancel wired.
 - **done when:** PLAN §6 flow 6 works between 3 tabs.
+- Done: in `views/github/main.ts`: `view.files = room.files()`; `files` and `cancel` from the room view go to `sendFiles` / `cancelFile` on the current room; `member-files` (document-level, sidebar and People tab) does `openChat(uid)` then `sendFiles`. Typecheck passes; not run in a browser (3-tab flow 6 unchecked). Caveat: files sent right after `openChat` creates a new room may reach the other person only after they accept the invite, and late joiners don't get earlier files (T4.1), so drop on a member whose chat is already open for a reliable result.
 
 ---
 

@@ -148,6 +148,7 @@ effect(() =>
     view.participants = room.participants();
     view.messages = room.messages();
     view.typing = room.typing();
+    view.files = room.files();
     view.heading = room.title || room.participants().map(p => p.name).join(", ");
 });
 
@@ -353,6 +354,8 @@ roomList.addEventListener("leave", (e) => getRoom((e as CustomEvent<{ id: string
 
 view.addEventListener("send", (e) => current()?.send((e as CustomEvent<{ text: string }>).detail.text));
 view.addEventListener("typing", () => current()?.notifyTyping());
+view.addEventListener("files", (e) => current()?.sendFiles((e as CustomEvent<{ files: File[] }>).detail.files));
+view.addEventListener("cancel", (e) => current()?.cancelFile((e as CustomEvent<{ fid: string }>).detail.fid));
 
 // header Call / Video: a 1:1 chat rings the other person in a new call room; a group starts here
 view.addEventListener("call", async (e) =>
@@ -442,6 +445,14 @@ document.addEventListener("member-action", (e) =>
         const room = current();
         if (room) invite(room, uid);
     }
+});
+
+// files dropped on a member (sidebar or People tab): open their chat, then send
+document.addEventListener("member-files", async (e) =>
+{
+    const { uid, files } = (e as CustomEvent<{ uid: string; files: File[] }>).detail;
+    const room = await openChat(uid);
+    room?.sendFiles(files);
 });
 
 onboarding.addEventListener("language-change", (e) =>
