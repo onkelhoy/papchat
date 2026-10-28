@@ -3,25 +3,59 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badge | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-badge | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Badge | experiment</h1>
+    <h1>pc-badge</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-badge></pc-badge>
-        </pap-codeblock>
+        <h2>Variants (label)</h2>
+        <div class="row">
+            <pc-badge>Neutral</pc-badge>
+            <pc-badge variant="primary">Host</pc-badge>
+            <pc-badge variant="live">Live</pc-badge>
+            <pc-badge variant="error">Error</pc-badge>
+        </div>
+    </section>
+
+    <section>
+        <h2>Count</h2>
+        <div class="row">
+            <pc-badge count="1"></pc-badge>
+            <pc-badge variant="primary" count="7"></pc-badge>
+            <pc-badge variant="error" count="42"></pc-badge>
+            <pc-badge variant="primary" count="99"></pc-badge>
+            <pc-badge variant="primary" count="100"></pc-badge>
+            <pc-badge variant="error" count="1234"></pc-badge>
+        </div>
+    </section>
+
+    <section>
+        <h2>Hidden at 0 (nothing between the brackets)</h2>
+        <div class="row">
+            [<pc-badge variant="primary" count="0"></pc-badge>]
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-badge>You</pc-badge>
+            <pc-badge variant="primary">Host</pc-badge>
+            <pc-badge variant="live">Live</pc-badge>
+            <pc-badge variant="error">Error</pc-badge>
+            <pc-badge variant="primary" count="5"></pc-badge>
+            <pc-badge variant="error" count="120"></pc-badge>
+        </div>
     </section>
 </body>
 

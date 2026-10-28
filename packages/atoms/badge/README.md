@@ -25,8 +25,23 @@ npm install @papchat/badge
   import "@papchat/badge";
 </script>
 
-<pc-badge></pc-badge>
+<pc-badge variant="primary" count="3"></pc-badge>
+<pc-badge variant="live">Live</pc-badge>
 ```
+
+## properties
+
+| Property  | Type                                         | Default     | Description                                                          |
+| --------- | -------------------------------------------- | ----------- | -------------------------------------------------------------------- |
+| `count`   | `number`                                     |             | Unread count. `0` hides the badge, above `99` shows `99+`. When set, the slot is ignored. |
+| `variant` | `"neutral" \| "primary" \| "live" \| "error"` | `"neutral"` | Colour variant (reflected). `live` adds a pulsing dot.               |
+
+Slot: default, a short text label ("Live", "Host", "You") shown when `count` is not set.
+CSS part: `dot` (the `live` dot). CSS variables: `--badge-background`, `--badge-color`.
+
+## events
+
+None. The badge is display only.
 
 ## License
 

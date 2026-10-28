@@ -1,4 +1,67 @@
 :host {
-    color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    --_bg: var(--badge-background, var(--secondary, light-dark(oklch(92% 0.01 264), oklch(30% 0.015 264))));
+    --_fg: var(--badge-color, light-dark(oklch(25% 0.02 264), oklch(92% 0.01 264)));
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 4px);
+    box-sizing: border-box;
+    min-inline-size: 1.25rem;
+    block-size: 1.25rem;
+    padding-inline: var(--space-2, 8px);
+    border-radius: var(--radius-full, 999px);
+    background-color: var(--_bg);
+    color: var(--_fg);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    justify-content: center;
+    user-select: none;
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+:host([variant="primary"]) {
+    --_bg: var(--badge-background, var(--primary));
+    --_fg: var(--badge-color, var(--primary-contrast));
+}
+
+:host([variant="error"]) {
+    --_bg: var(--badge-background, var(--error, light-dark(oklch(50% 0.2 28), oklch(62% 0.19 28))));
+    --_fg: var(--badge-color, light-dark(oklch(99% 0 0), oklch(15% 0.03 28)));
+}
+
+:host([variant="live"]) {
+    --_bg: var(--badge-background, var(--pc-busy));
+    --_fg: var(--badge-color, light-dark(oklch(99% 0 0), oklch(15% 0.03 28)));
+}
+
+[part="dot"] {
+    flex: none;
+    inline-size: 0.4375rem;
+    block-size: 0.4375rem;
+    border-radius: 50%;
+    background-color: currentColor;
+    animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.4;
+        transform: scale(0.7);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [part="dot"] {
+        animation: none;
+    }
 }

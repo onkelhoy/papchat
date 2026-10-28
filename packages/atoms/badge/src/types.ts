@@ -1,1 +1,1 @@
-export type ClickEvent = { timestamp: number };
+export type BadgeVariant = "neutral" | "primary" | "live" | "error";

@@ -1,14 +1,13 @@
-// core
-import { translator } from '@papit/translator';
-import "@papit/codeblock";
-
-// component
 import '@papchat/badge';
 
-window.onload = () => {
-    console.log('[demo]: window loaded');
+const created = document.getElementById("created");
 
-    translator.add({ id: "en", url: "/en.json" });
-    translator.change("en");
-}
+const counted = document.createElement("pc-badge");
+counted.variant = "primary";
+counted.count = 12;
+created.append(counted);
 
+const labelled = document.createElement("pc-badge");
+labelled.variant = "live";
+labelled.textContent = "Live";
+created.append(labelled);
