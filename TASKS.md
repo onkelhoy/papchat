@@ -175,7 +175,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **read:** `@papit/theme-picker`, `@papit/menu`.
 - **props:** `me` (`Profile`), `status` (lobby status), `language`, `live` (boolean: you are presenting).
 - **render:** logo/name "papchat", `pc-connection-status`, a "Go live" button, `pc-language-picker`, `pap-theme-picker storage="local"`, settings button, own `pc-avatar` with a status menu (`pap-menu`: available/busy/away/dnd).
-- **events:** `status-change` `{ status }`, `language-change` `{ value }`, `open-settings`, `go-live`, `menu-toggle` (mobile).
+- **events:** `status-change` `{ status }`, `language-change` `{ value }`, `open-settings`, `go-live`. (No mobile menu button: `pc-app-shell` owns it.)
 
 ### [ ] T1.12 pc-onboarding · `sonnet` · needs T1.2, T1.8
 - **read:** `@papit/dialog`, `@papit/input`.
