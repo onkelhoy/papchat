@@ -1,7 +1,9 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "video": "video"
+  "pc-video": {
+    "play": "Click to play"
+  }
 }

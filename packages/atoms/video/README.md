@@ -28,6 +28,20 @@ npm install @papchat/video
 <pc-video></pc-video>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `stream` | - | `MediaStream \| null` | - | what to play; property only. Sets `srcObject` and calls `play()` |
+| `muted` | `muted` | `boolean` | `false` | mute the audio (reflected); set it for your own camera |
+| `mirror` | `mirror` | `boolean` | `false` | flip horizontally (reflected) |
+| `fit` | `fit` | `"cover" \| "contain"` | `cover` | how the picture fills the element (reflected) |
+| `sinkid` | `sinkid` | `string` | - | audio output device id, applied with `setSinkId` where supported |
+
+If the browser refuses to autoplay, a "click to play" button overlays the video until it is pressed. `srcObject` is cleared when the element is disconnected and set again if it is re-attached.
+
+No events. CSS: `--video-background`, `::part(video)`, `::part(overlay)`, `::part(play)`. The host needs a size (it is `display: block`). Translation key: `pc-video.play`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

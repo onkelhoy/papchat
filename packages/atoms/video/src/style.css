@@ -1,4 +1,31 @@
 :host {
+    position: relative;
+    display: block;
+    overflow: hidden;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    background-color: var(--video-background, light-dark(oklch(88% 0.01 264), oklch(14% 0.01 264)));
+}
+
+video {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    background-color: transparent;
+}
+
+:host([fit="contain"]) video {
+    object-fit: contain;
+}
+
+:host([mirror]) video {
+    transform: scaleX(-1);
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background-color: light-dark(oklch(100% 0 0 / 0.55), oklch(0% 0 0 / 0.55));
 }

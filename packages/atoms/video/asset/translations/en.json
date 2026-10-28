@@ -3,5 +3,7 @@
     "region": "GB",
     "language": "en"
   },
-  "video": "video"
+  "pc-video": {
+    "play": "Click to play"
+  }
 }

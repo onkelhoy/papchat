@@ -1,4 +1,35 @@
 :host {
-    color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    --_gap: var(--level-meter-gap, 2px);
+
+    display: inline-flex;
+    align-items: flex-end;
+    gap: var(--_gap);
+    block-size: var(--level-meter-height, 1rem);
+    color: var(--level-meter-color, var(--success, currentColor));
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+.bar {
+    flex: 1 1 0;
+    min-inline-size: 2px;
+    inline-size: var(--level-meter-bar-width, 3px);
+    block-size: calc(30% + 70% * var(--_i) / var(--_n));
+    border-radius: var(--radius-small, 1px);
+    background-color: var(--level-meter-off, var(--text-secondary, currentColor));
+    opacity: 0.3;
+    transition: opacity 80ms linear, background-color 80ms linear;
+}
+
+.bar[data-on] {
+    background-color: currentColor;
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bar {
+        transition: none;
+    }
 }

@@ -3,25 +3,62 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-video | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Video | experiment</h1>
+    <h1>pc-video</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-video></pc-video>
-        </pap-codeblock>
+        <h2>Fit: cover / contain</h2>
+        <div class="row">
+            <pc-video class="demo" data-canvas fit="cover"></pc-video>
+            <pc-video class="demo" data-canvas fit="contain"></pc-video>
+        </div>
+    </section>
+
+    <section>
+        <h2>Mirror / muted</h2>
+        <div class="row">
+            <pc-video class="demo" data-canvas></pc-video>
+            <pc-video class="demo" data-canvas mirror></pc-video>
+            <pc-video class="demo" data-canvas mirror muted></pc-video>
+        </div>
+    </section>
+
+    <section>
+        <h2>No stream</h2>
+        <div class="row">
+            <pc-video class="demo"></pc-video>
+        </div>
+    </section>
+
+    <section>
+        <h2>Autoplay blocked (unmuted, with an audio track)</h2>
+        <p>If the browser refuses to autoplay, the click-to-play overlay shows. Chrome usually allows it after you have clicked on the page.</p>
+        <div class="row">
+            <pc-video class="demo" data-canvas data-audio></pc-video>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+        <div class="row">
+            <button id="swap" type="button">Swap stream</button>
+            <button id="remove" type="button">Remove / re-add</button>
+        </div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-video class="demo" data-canvas></pc-video>
+            <pc-video class="demo" data-canvas data-audio></pc-video>
+        </div>
     </section>
 </body>
 

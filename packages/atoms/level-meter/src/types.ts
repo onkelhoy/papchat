@@ -1,1 +1,1 @@
-export type ClickEvent = { timestamp: number };
+export type SpeakingEvent = { speaking: boolean };

@@ -28,6 +28,19 @@ npm install @papchat/level-meter
 <pc-level-meter></pc-level-meter>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `stream` | - | `MediaStream \| null` | - | stream to measure, property only; a stream without audio shows an empty meter |
+| `bars` | `bars` | `number` | `5` | number of bars (1 to 16) |
+
+| Event | Detail | Description |
+| --- | --- | --- |
+| `speaking` | `{ speaking: boolean }` | the speaking state changed; turns off about 300 ms after the sound stops (bubbles, composed) |
+
+One shared `AudioContext` per page and one `AnalyserNode` per meter. The loop pauses while the meter or tab is hidden, and the nodes are closed on disconnect or stream change. Decorative (`aria-hidden`). CSS: `--level-meter-height`, `--level-meter-bar-width`, `--level-meter-gap`, `--level-meter-color`, `--level-meter-off`, `::part(bar)`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)
