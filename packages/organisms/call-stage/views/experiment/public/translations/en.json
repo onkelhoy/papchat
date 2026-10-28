@@ -1,7 +1,10 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "call-stage": "call-stage"
+  "pc-call-stage": {
+    "label": "Call participants",
+    "empty": "Nobody is in the call yet"
+  }
 }

@@ -3,5 +3,8 @@
     "region": "GB",
     "language": "en"
   },
-  "call-stage": "call-stage"
+  "pc-call-stage": {
+    "label": "Call participants",
+    "empty": "Nobody is in the call yet"
+  }
 }

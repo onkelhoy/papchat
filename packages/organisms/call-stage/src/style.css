@@ -1,4 +1,96 @@
 :host {
+    display: block;
+    position: relative;
+    box-sizing: border-box;
+    min-inline-size: 0;
+    min-block-size: 0;
+    container-type: inline-size;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+.players {
+    display: none;
+}
+
+.tiles {
+    --gap: var(--call-stage-gap, var(--space-2, 0.5rem));
+    position: relative;
+    display: grid;
+    box-sizing: border-box;
+    inline-size: 100%;
+    block-size: 100%;
+    gap: var(--gap);
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+}
+
+.empty {
+    grid-column: 1 / -1;
+    place-self: center;
+    color: var(--text-secondary);
+}
+
+pc-video-tile {
+    min-inline-size: 0;
+    min-block-size: 0;
+}
+
+/* big tile + strip */
+.tiles[data-mode="focus"] {
+    grid-template-columns: minmax(0, 1fr) minmax(7rem, var(--call-stage-strip-width, 14rem));
+    grid-template-rows: repeat(var(--others), minmax(0, 1fr));
+}
+
+.tiles[data-mode="focus"] pc-video-tile[data-role="main"] {
+    grid-column: 1;
+    grid-row: 1 / span var(--others);
+}
+
+.tiles[data-mode="focus"] pc-video-tile[data-role="side"] {
+    grid-column: 2;
+}
+
+/* 1:1 with self overlay */
+.tiles[data-mode="overlay"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+}
+
+.tiles[data-mode="overlay"] pc-video-tile[data-role="self"] {
+    position: absolute;
+    z-index: 1;
+    inset-inline-end: var(--space-3, 0.75rem);
+    inset-block-end: var(--space-3, 0.75rem);
+    inline-size: min(30%, var(--call-stage-self-width, 14rem));
+    min-inline-size: 7rem;
+    aspect-ratio: 16 / 9;
+    box-shadow: 0 0 0 2px var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+@container (max-width: 36rem) {
+    .tiles:not([data-mode]),
+    .tiles[data-mode="grid"] {
+        grid-template-columns: repeat(var(--cols-narrow), minmax(0, 1fr));
+        grid-template-rows: repeat(var(--rows-narrow), minmax(0, 1fr));
+    }
+
+    .tiles[data-mode="focus"] {
+        grid-template-columns: repeat(var(--others), minmax(5rem, 1fr));
+        grid-template-rows: minmax(0, 1fr) 5.5rem;
+        overflow-x: auto;
+    }
+
+    .tiles[data-mode="focus"] pc-video-tile[data-role="main"] {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .tiles[data-mode="focus"] pc-video-tile[data-role="side"] {
+        grid-column: auto;
+        grid-row: 2;
+    }
 }

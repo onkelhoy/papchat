@@ -7,7 +7,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 ## ▶ Resume here (paused 2026-10-28)
 
 - **Done:** 32/54 tasks (all `[x]` below, each committed).
-- **Interrupted, not finished:** T2.1 core invites/rooms (partial edits in `packages/foundations/core/src/`), T5.2 pc-stage-card (partial edits in `packages/molecules/stage-card/`). Saved in the `wip:` commit; review and finish, or revert those files. T1.10, T3.7, T6.3 were stopped before writing anything.
+- **Interrupted, not finished:** T2.1 core invites/rooms (partial edits in `packages/foundations/core/src/`), T5.2 pc-stage-card (`packages/molecules/stage-card/`), T3.7 pc-call-stage (`packages/organisms/call-stage/`). Saved in the `wip:` commit; review and finish, or revert those files. T1.10 and T6.3 were stopped before writing anything.
 - **Next, in order:** T1.10 pc-member-list → T1.13 wire wave 1 (first runnable app) → T2.1 → T2.7. Unblocked components meanwhile: T3.7, T5.2, T6.3.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
