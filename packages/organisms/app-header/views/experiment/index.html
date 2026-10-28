@@ -3,25 +3,44 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppHeader | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-app-header | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>AppHeader | experiment</h1>
+    <h1>pc-app-header</h1>
+    <p id="log">events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-app-header></pc-app-header>
-        </pap-codeblock>
+        <h2>Connected, available</h2>
+        <pc-app-header data-me status="connected"></pc-app-header>
+    </section>
+
+    <section>
+        <h2>Waking, Swedish selected</h2>
+        <pc-app-header data-me status="waking" language="sv"></pc-app-header>
+    </section>
+
+    <section>
+        <h2>Live (presenting), idle status</h2>
+        <pc-app-header data-me status="idle" live></pc-app-header>
+    </section>
+
+    <section>
+        <h2>No profile, closed</h2>
+        <pc-app-header status="closed"></pc-app-header>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <pc-app-header data-me status="connected"></pc-app-header>
     </section>
 </body>
 

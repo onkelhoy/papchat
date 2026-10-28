@@ -49,6 +49,8 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
 - READMEs: copy the API tables format from `packages/atoms/avatar/README.md` (## API).
 - Use `--primary-contrast` for text on a `--primary` surface. Presence colours: `--pc-available|busy|away|dnd|offline`.
 - Edit `TASKS.md` with small exact edits only (other agents edit it at the same time), never rewrite the whole file.
+- **Passing objects/arrays/streams to a child element:** `html` has no property bindings, and an attribute binding calls `setAttribute` (an object becomes `"[object Object]"`). For JSON-safe data (profiles, lists) declare the child property `{ type: Object }` / `{ type: Array }` and bind `attr="${JSON.stringify(value)}"`. For non-serialisable values (`MediaStream`, `File`, functions) set the property imperatively on a `@query` ref after render.
+- Don't copy icons, flags or spritesheets into a demo's `public/`; the dev server serves every package's `asset/` paths.
 - `@property()` needs an options object: `@property({ type: String })`.
 - `html` attribute bindings must be the **whole** value: `style="${`--x: ${v}`}"`, never `style="--x: ${v}"` (that renders the value as text).
 
@@ -249,7 +251,8 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 ### [~] T3.2 pc-video · `sonnet` · needs T0.3
 - **props:** `stream` (`MediaStream`, property only), `muted`, `mirror`, `fit` (`cover|contain`), `sinkid`. Sets `srcObject`; calls `play()` and on rejection shows a "click to play" overlay button. Clears `srcObject` on disconnect.
 
-### [~] T3.3 pc-level-meter · `sonnet` · needs T0.3
+### [x] T3.3 pc-level-meter · `sonnet` · needs T0.3
+- Done: `stream` (property only, `null` clears), `bars` (1 to 16), `speaking` event bubbles+composed (on at once, off 300 ms after quiet). Sizing via `--level-meter-height`, `--level-meter-color`; it renders no strings. Listen for `speaking` on the host (tile can re-dispatch or toggle its ring).
 - **props:** `stream` (`MediaStream`), `bars` (default 5). One shared `AudioContext` per page, an `AnalyserNode` per instance, `requestAnimationFrame` loop paused while hidden; closes its nodes on disconnect or stream change. `aria-hidden`.
 - **events:** `speaking` `{ speaking: boolean }` with ~300 ms hysteresis.
 

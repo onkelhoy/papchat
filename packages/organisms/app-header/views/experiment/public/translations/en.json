@@ -1,7 +1,16 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "app-header": "app-header"
+  "pc-app-header": {
+    "golive": "Go live",
+    "live": "You are live",
+    "settings": "Settings",
+    "account": "{name}, {status}. Change status",
+    "available": "Available",
+    "busy": "Busy",
+    "away": "Away",
+    "dnd": "Do not disturb"
+  }
 }

@@ -61,8 +61,6 @@
     "@papit/menu": "*",
     "@papit/button": "*",
     "@papit/icon": "*",
-    "@papit/dialog": "*",
-    "@papit/input": "*",
     "@papchat/avatar": "*",
     "@papchat/presence": "*",
     "@papchat/connection-status": "*",
@@ -82,7 +80,9 @@
     "typescript": "5.9.3",
     "@papit/theme": "*",
     "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/codeblock": "*",
+    "@papchat/core": "*",
+    "@papchat/theme": "*"
   },
   "browserslist": [
     "defaults",

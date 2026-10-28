@@ -8,20 +8,54 @@
     <title>Onboarding | experiment</title>
 
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
     <link rel="stylesheet" href="style.css" />
 
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Onboarding | experiment</h1>
+    <h1>pc-onboarding</h1>
+    <p>The dialog is modal, so each variant has a button. It can't be dismissed (Escape, close button) until the demo closes it on <code>submit</code>.</p>
+    <p id="log">events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-onboarding></pc-onboarding>
-        </pap-codeblock>
+        <h2>Empty</h2>
+        <div class="row">
+            <button type="button" data-open="empty">Open</button>
+            <pc-onboarding id="empty"></pc-onboarding>
+        </div>
+    </section>
+
+    <section>
+        <h2>Prefilled (name, colour, Swedish)</h2>
+        <div class="row">
+            <button type="button" data-open="prefilled">Open</button>
+            <pc-onboarding id="prefilled" name="Anna Maria Berg" color="#16a34a" language="sv"></pc-onboarding>
+        </div>
+    </section>
+
+    <section>
+        <h2>Custom colours</h2>
+        <div class="row">
+            <button type="button" data-open="custom">Open</button>
+            <pc-onboarding id="custom"></pc-onboarding>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row">
+            <button type="button" id="open-created">Open</button>
+            <span id="created"></span>
+        </div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <button type="button" data-open="dark">Open</button>
+            <pc-onboarding id="dark" name="Dark Mode"></pc-onboarding>
+        </div>
     </section>
 </body>
 

@@ -1,7 +1,15 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "onboarding": "onboarding"
+  "pc-onboarding": {
+    "title": "Who are you?",
+    "name": "Your name",
+    "placeholder": "e.g. Anna Berg",
+    "error": "Enter a name of 1 to 32 characters.",
+    "color": "Colour",
+    "language": "Language",
+    "submit": "Continue"
+  }
 }

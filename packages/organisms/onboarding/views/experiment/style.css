@@ -26,3 +26,15 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4, 16px);
+}
+
+#log {
+    max-width: 1200px;
+    margin-inline: auto;
+    width: 100%;
+}

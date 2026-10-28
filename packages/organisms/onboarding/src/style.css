@@ -1,4 +1,54 @@
 :host {
+    display: contents;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+form {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    inline-size: min(24rem, 80vw);
+    padding-block-end: var(--space-2, 0.5rem);
+}
+
+.preview {
+    display: flex;
+    justify-content: center;
+}
+
+label,
+.label {
+    font-weight: 600;
+}
+
+.error {
+    margin: 0;
+    min-block-size: 1.25em;
+    color: var(--error);
+    font-size: 0.875em;
+}
+
+.swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3, 0.75rem);
+}
+
+/* each radio takes its swatch colour: ring when unchecked, dot when checked */
+pap-radio {
+    --info: var(--_swatch);
+}
+
+pap-radio::part(marker) {
+    border-color: var(--_swatch);
+}
+
+.language {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+}
+
+pap-button {
+    justify-self: stretch;
 }

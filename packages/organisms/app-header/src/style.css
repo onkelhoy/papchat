@@ -1,4 +1,74 @@
 :host {
+    display: block;
     color: var(--text);
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    min-block-size: 3.5rem;
+    padding-inline: var(--space-4, 1rem);
+    box-sizing: border-box;
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: -0.01em;
+    color: var(--primary);
+}
+
+.spacer {
+    flex: 1;
+}
+
+pap-button pap-icon {
+    inline-size: 1rem;
+    block-size: 1rem;
+    vertical-align: middle;
+}
+
+.settings pap-icon {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+}
+
+.me {
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.me:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
+}
+
+pap-menuitem {
+    gap: var(--space-2, 0.5rem);
+}
+
+pap-menuitem[aria-checked="true"] {
+    font-weight: 600;
+}
+
+/* narrow screens: the shell owns the menu button, keep only what fits */
+@media (max-width: 800px) {
+    .bar {
+        gap: var(--space-2, 0.5rem);
+        padding-inline: var(--space-2, 0.5rem);
+    }
+
+    pc-connection-status {
+        min-inline-size: 0;
+    }
+
+    .logo {
+        display: none;
+    }
 }

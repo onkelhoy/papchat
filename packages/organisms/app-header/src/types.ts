@@ -1,1 +1,2 @@
-export type ClickEvent = { timestamp: number };
+export type StatusChangeEvent = { status: "available" | "busy" | "away" | "dnd" };
+export type LanguageChangeEvent = { value: string };
