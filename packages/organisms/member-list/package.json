@@ -55,7 +55,13 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*"
+    "@papit/web-component": "*",
+    "@papit/translator": "*",
+    "@papit/group": "*",
+    "@papit/input": "*",
+    "@papit/accordion": "*",
+    "@papchat/member-item": "*",
+    "@papchat/stage-card": "*"
   },
   "peerDependencies": {
     "react": "^19"

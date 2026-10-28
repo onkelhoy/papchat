@@ -55,7 +55,9 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*"
+    "@papit/web-component": "*",
+    "@papit/translator": "*",
+    "@papchat/toast": "*"
   },
   "peerDependencies": {
     "react": "^19"

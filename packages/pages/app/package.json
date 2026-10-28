@@ -52,7 +52,23 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@papit/theme": "*",
+    "@papit/translator": "*",
+    "@papit/signals": "*",
+    "@papchat/theme": "*",
+    "@papchat/core": "*",
+    "@papchat/app-shell": "*",
+    "@papchat/app-header": "*",
+    "@papchat/member-list": "*",
+    "@papchat/room-list": "*",
+    "@papchat/room": "*",
+    "@papchat/toaster": "*",
+    "@papchat/incoming-call": "*",
+    "@papchat/invite-picker": "*",
+    "@papchat/settings": "*",
+    "@papchat/onboarding": "*"
+  },
   "devDependencies": {
     "@playwright/test": "1.64.1",
     "playwright": "1.64.1",

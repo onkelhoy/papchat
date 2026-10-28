@@ -55,7 +55,21 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*"
+    "@papit/web-component": "*",
+    "@papit/translator": "*",
+    "@papit/dialog": "*",
+    "@papit/tabs": "*",
+    "@papit/switch": "*",
+    "@papit/input": "*",
+    "@papit/radio": "*",
+    "@papit/button": "*",
+    "@papit/theme-picker": "*",
+    "@papchat/avatar": "*",
+    "@papchat/ringtone-picker": "*",
+    "@papchat/device-picker": "*",
+    "@papchat/language-picker": "*",
+    "@papchat/video": "*",
+    "@papchat/level-meter": "*"
   },
   "peerDependencies": {
     "react": "^19"

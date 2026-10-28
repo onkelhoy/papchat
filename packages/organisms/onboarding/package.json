@@ -55,7 +55,14 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*"
+    "@papit/web-component": "*",
+    "@papit/translator": "*",
+    "@papit/dialog": "*",
+    "@papit/input": "*",
+    "@papit/radio": "*",
+    "@papit/button": "*",
+    "@papchat/avatar": "*",
+    "@papchat/language-picker": "*"
   },
   "peerDependencies": {
     "react": "^19"

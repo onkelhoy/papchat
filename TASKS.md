@@ -18,6 +18,11 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 - `sonnet` components that follow an existing pattern, docs, polish.
 - `haiku` mechanical work (translations, renames).
 
+### Running in parallel (several sessions/agents in one working tree)
+- **Don't run `npm install`.** Every package's dependencies are already in its `package.json` and installed. If one is missing, add it to your package's `package.json`, write it under *Notes*, and tell the orchestrator.
+- **Build only your package:** `npm run build` inside its folder (it builds what it depends on). Not the root build.
+- **Don't commit** when told you're running as a subagent; the orchestrator reviews and commits. Otherwise commit as in step 6.
+
 ### Rules that apply to every task
 - **No tests.** Leave the scaffolded `tests/` folders and test scripts alone: ignore them, don't write or run tests, don't delete them.
 - **Components are dumb.** Properties in, events out. They never import `@papit/webrtc` or `@papchat/core` at runtime. `import type { … } from "@papchat/core"` is allowed (erased at build).
