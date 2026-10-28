@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-room-list": {
+    "label": "Öppna rum",
+    "empty": "Inga öppna chattar än",
+    "untitled": "Chatt",
+    "incall": "I ett samtal",
+    "live": "Live",
+    "unread": "{count} olästa",
+    "options": "Alternativ för {title}",
+    "leave": "Lämna"
+  }
+}

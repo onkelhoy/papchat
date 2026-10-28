@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-file-card": {
+    "cancel": "Avbryt",
+    "download": "Ladda ner",
+    "unnamed": "Namnlös fil",
+    "sending": "Skickar…",
+    "receiving": "Tar emot…",
+    "cancelled": "Avbruten",
+    "failed": "Misslyckades"
+  }
+}

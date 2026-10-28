@@ -14,7 +14,7 @@ A Teams-style chat, call and broadcast app that runs **entirely peer to peer** i
 - **Call** with mic, camera and screen share. Ringing, ringback, ringtone picker, incoming-call cards, and inviting more people mid-call.
 - **Share files** by dropping them on a conversation or on a person (up to 100 MB), with progress on both ends and previews for images, video and audio.
 - **Go live**: broadcast to anyone who clicks "Watch", with chat for the audience.
-- **Settings**: profile, ringtone and volume, devices, theme (light, dark, system), language, notifications and keyboard shortcuts (`M` mic, `V` camera, `S` screen, `Esc` closes dialogs).
+- **Settings**: profile, ringtone and volume, devices, theme (light, dark, system), language (English or Swedish, switched live), notifications and keyboard shortcuts (`M` mic, `V` camera, `S` screen, `Esc` closes dialogs).
 
 Everything about you lives in `localStorage` in your own browser.
 

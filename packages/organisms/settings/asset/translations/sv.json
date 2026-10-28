@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-settings": {
+    "title": "Inställningar",
+    "tabs": "Inställningsavsnitt",
+    "close": "Stäng",
+    "profile": "Profil",
+    "sound": "Ljud",
+    "devices": "Enheter",
+    "appearance": "Utseende",
+    "notifications": "Notiser",
+    "shortcuts": "Kortkommandon",
+    "name": "Namn",
+    "color": "Färg",
+    "status": "Status",
+    "status-available": "Tillgänglig",
+    "status-busy": "Upptagen",
+    "status-away": "Borta",
+    "status-dnd": "Stör ej",
+    "auto-decline": "Avvisa samtal automatiskt när jag är upptagen",
+    "microphone": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Högtalare",
+    "test-camera": "Testa kameran",
+    "test-mic": "Testa mikrofonen",
+    "theme": "Tema",
+    "language": "Språk",
+    "notify": "Visa notiser för meddelanden och samtal",
+    "notify-hint": "Webbläsaren frågar om tillåtelse."
+  }
+}

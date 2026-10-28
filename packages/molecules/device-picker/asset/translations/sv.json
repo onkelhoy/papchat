@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-device-picker": {
+    "default": "Standard",
+    "kind": {
+      "audioinput": "Mikrofon",
+      "videoinput": "Kamera",
+      "audiooutput": "Högtalare"
+    },
+    "fallback": {
+      "audioinput": "Mikrofon",
+      "videoinput": "Kamera",
+      "audiooutput": "Högtalare"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-conversation": {
+    "label": "Meddelanden",
+    "empty": "Inga meddelanden än. Säg hej!",
+    "new-messages": "Nya meddelanden",
+    "drop": "Släpp för att dela",
+    "typing-one": "{name} skriver…",
+    "typing-two": "{first} och {second} skriver…",
+    "typing-many": "Flera personer skriver…"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-connection-status": {
+    "connecting": "Ansluter…",
+    "waking": "Väcker servern… (kan ta upp till en minut)",
+    "connected": "Ansluten",
+    "reconnecting": "Ansluter igen…",
+    "closed": "Frånkopplad"
+  }
+}

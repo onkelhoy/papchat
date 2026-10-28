@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "app": "app",
+  "empty": "Välj någon att chatta med",
+  "enableSound": "Ljudet är blockerat av webbläsaren",
+  "enableSoundAction": "Klicka för att slå på ljudet",
+  "inviteFailed": "Kunde inte nå {name}",
+  "cameraFailed": "Kunde inte starta kameran",
+  "micFailed": "Kunde inte starta mikrofonen",
+  "notificationsDenied": "Notiser är blockerade i webbläsarens inställningar",
+  "shortcutMic": "Stäng av eller slå på mikrofonen (i samtal eller på scen)",
+  "shortcutCamera": "Slå på eller av kameran",
+  "shortcutScreen": "Starta eller sluta dela skärmen",
+  "shortcutClose": "Stäng en dialogruta",
+  "filesOnStage": "Filer kan inte delas på en scen"
+}

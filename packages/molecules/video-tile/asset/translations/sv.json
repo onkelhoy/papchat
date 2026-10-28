@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-video-tile": {
+    "muted": "Mikrofonen är av",
+    "you": "Du",
+    "pin": "Fäst",
+    "unpin": "Släpp",
+    "fullscreen": "Helskärm",
+    "exit-fullscreen": "Lämna helskärm"
+  }
+}

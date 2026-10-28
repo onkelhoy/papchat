@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-invite-picker": {
+    "title": "Bjud in personer",
+    "search": "Sök personer",
+    "members": "Personer att bjuda in",
+    "none": "Alla är redan med i det här rummet.",
+    "no-results": "Ingen matchar din sökning.",
+    "cancel": "Avbryt",
+    "invite": "Bjud in",
+    "invite-count": "Bjud in {count}"
+  }
+}

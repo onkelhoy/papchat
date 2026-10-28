@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-onboarding": {
+    "title": "Vem är du?",
+    "name": "Ditt namn",
+    "placeholder": "t.ex. Anna Berg",
+    "error": "Ange ett namn på 1 till 32 tecken.",
+    "color": "Färg",
+    "language": "Språk",
+    "submit": "Fortsätt"
+  }
+}

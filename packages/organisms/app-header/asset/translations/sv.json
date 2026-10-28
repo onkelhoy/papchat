@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-app-header": {
+    "golive": "Sänd live",
+    "end": "Avsluta sändning",
+    "dialog-title": "Sänd live",
+    "title-label": "Vad ska du presentera?",
+    "cancel": "Avbryt",
+    "start": "Starta sändning",
+    "settings": "Inställningar",
+    "account": "{name}, {status}. Ändra status",
+    "available": "Tillgänglig",
+    "busy": "Upptagen",
+    "away": "Borta",
+    "dnd": "Stör ej"
+  }
+}

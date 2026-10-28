@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-call-controls": {
+    "label": "Samtalsknappar",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "screen": "Skärmdelning",
+    "chat": "Chatt",
+    "invite": "Bjud in",
+    "devices": "Enheter",
+    "hangup": "Lämna samtalet",
+    "micOn": "Stäng av ljudet (M)",
+    "micOff": "Slå på ljudet (M)",
+    "cameraOn": "Stäng av kameran (V)",
+    "cameraOff": "Slå på kameran (V)",
+    "screenOn": "Sluta dela (S)",
+    "screenOff": "Dela skärm (S)",
+    "chatOn": "Dölj chatten",
+    "chatOff": "Visa chatten",
+    "inviteTip": "Bjud in någon",
+    "devicesTip": "Enheter",
+    "hangupTip": "Lämna samtalet"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-call-stage": {
+    "label": "Samtalsdeltagare",
+    "empty": "Ingen är med i samtalet än"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-composer": {
+    "placeholder": "Skriv ett meddelande",
+    "send": "Skicka",
+    "attach": "Bifoga filer"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-member-list": {
+    "live": "Live nu · {count}",
+    "online": "Online · {count}",
+    "search": "Sök personer",
+    "label": "Personer online",
+    "empty": "Ingen annan här än — dela länken",
+    "no-results": "Ingen matchar din sökning."
+  }
+}

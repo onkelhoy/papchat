@@ -62,8 +62,8 @@ import {
 } from "@papchat/core";
 import type { CaptureName, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
 
-// languages with a file in asset/translations (sv.json arrives in T6.7)
-const LANGUAGES = ["en"];
+// languages with a file in asset/translations
+const LANGUAGES = ["en", "sv"];
 
 const shell = document.querySelector<AppShell>("pc-app-shell")!;
 const header = document.querySelector<AppHeader>("pc-app-header")!;

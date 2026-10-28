@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-member-item": {
+    "you": "Du",
+    "incall": "I ett samtal",
+    "actions": "Fler åtgärder för {name}",
+    "chat": "Chatta",
+    "call": "Ring",
+    "video": "Videosamtal",
+    "invite": "Bjud in till det öppna rummet",
+    "status": {
+      "available": "Tillgänglig",
+      "busy": "Upptagen",
+      "away": "Borta",
+      "dnd": "Stör ej",
+      "offline": "Offline"
+    }
+  }
+}

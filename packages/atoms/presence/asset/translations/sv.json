@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-presence": {
+    "available": "Tillgänglig",
+    "busy": "Upptagen",
+    "away": "Borta",
+    "dnd": "Stör ej",
+    "offline": "Offline"
+  }
+}

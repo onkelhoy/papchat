@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-ringtone-picker": {
+    "tones": "Ringsignaler",
+    "play": "Lyssna",
+    "stop": "Stoppa uppspelning",
+    "volume": "Volym"
+  }
+}

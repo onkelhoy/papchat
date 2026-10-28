@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-stage-card": {
+    "live": "Live",
+    "watch": "Titta",
+    "mine": "Du sänder live",
+    "presenter": "{name} presenterar",
+    "viewers": "{count} tittar",
+    "label": "{title}, presenteras av {name}, {count} tittar"
+  }
+}

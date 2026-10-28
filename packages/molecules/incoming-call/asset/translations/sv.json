@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-incoming-call": {
+    "label": "Inkommande samtal från {name}",
+    "chat": "{name} bjuder in dig till {title}",
+    "call": "{name} ringer…",
+    "video": "{name} videoringer…",
+    "stage": "{name} bjuder in dig att titta på {title}",
+    "accept": "Svara",
+    "acceptVideo": "Svara med video",
+    "decline": "Avvisa"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-toast": {
+    "dismiss": "Stäng",
+    "info": "Info",
+    "success": "Klart",
+    "warning": "Varning",
+    "error": "Fel"
+  }
+}

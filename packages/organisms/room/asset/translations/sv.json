@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-room": {
+    "label": "Rum",
+    "call": "Ring",
+    "video": "Video",
+    "tabs": "Rummets paneler",
+    "chat": "Chatt",
+    "files": "Filer",
+    "people": "Personer",
+    "no-files": "Inga filer delade än",
+    "stage": "Samtal"
+  }
+}

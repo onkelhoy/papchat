@@ -1,0 +1,10 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-app-shell": {
+    "menu": "Öppna menyn",
+    "sidebar": "Sidopanel"
+  }
+}
