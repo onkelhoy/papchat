@@ -26,7 +26,7 @@ npm install @papchat/theme
 
 Added tokens: `--primary-contrast`, `--pc-available`, `--pc-busy`, `--pc-away`, `--pc-dnd`, `--pc-offline`. `--primary`, `--secondary` and `--focus-color` are overridden.
 
-Icons live in `asset/icons/svg/*.svg`. `npm run icons` merges them into `asset/icons/spritesheet.svg`:
+Icons live in `asset/icons/svg/*.svg`. `npm run icons` merges them into `packages/pages/app/asset/icons/spritesheet.svg` (theme-type packages' assets aren't served or published, the page package's are):
 
 ```html
 <pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>

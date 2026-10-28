@@ -44,7 +44,7 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
 - every property/event in the spec is in the package `README.md` (short: one table for properties, one for events).
 
 **Gotchas found so far**
-- Icons: `import "@papit/icon"`, then `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (ids in T0.3's note). Size via `width`/`height`, colour via `color`. Meaningful icon → `role="img" aria-label="…"`.
+- Icons: `import "@papit/icon"`, then `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (ids in T0.3's note). The spritesheet lives in `packages/pages/app/asset/icons/` (theme-type assets aren't served); regenerate with `npm run icons` in the theme package. Size via `width`/`height`, colour via `color`. Meaningful icon → `role="img" aria-label="…"`.
 - Status tokens exist in `@papit/theme`: `--success`, `--warning`, `--error`, `--info`; text colours `--text`, `--text-secondary` (there is no `--text-muted`).
 - READMEs: copy the API tables format from `packages/atoms/avatar/README.md` (## API).
 - Use `--primary-contrast` for text on a `--primary` surface. Presence colours: `--pc-available|busy|away|dnd|offline`.

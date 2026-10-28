@@ -8,7 +8,7 @@
   ],
   "version": "0.0.1",
   "scripts": {
-    "icons": "npx @papit/svg-spritesheet --input ./asset/icons/svg --output ./asset/icons/spritesheet.svg",
+    "icons": "npx @papit/svg-spritesheet --input ./asset/icons/svg --output ../../pages/app/asset/icons/spritesheet.svg",
     "watch": "tsc -w",
     "start": "npx @papit/server --info --live",
     "test": "npx playwright test -c tests/playwright.config.ts $@",

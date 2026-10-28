@@ -1,3 +1,2 @@
-// exports
-export * from "./component";
-export * from "./types";
+// the page itself lives in views/github (see main.ts there)
+export { }

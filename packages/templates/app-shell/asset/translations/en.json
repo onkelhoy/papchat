@@ -1,7 +1,10 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "app-shell": "app-shell"
+  "pc-app-shell": {
+    "menu": "Open menu",
+    "sidebar": "Sidebar"
+  }
 }
