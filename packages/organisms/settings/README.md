@@ -28,6 +28,37 @@ npm install @papchat/settings
 <pc-settings></pc-settings>
 ```
 
+## API
+
+### Properties
+
+| Property        | Type                  | Default | Description                                                          |
+| --------------- | --------------------- | ------- | -------------------------------------------------------------------- |
+| `open`          | `boolean`             | `false` | dialog is shown                                                      |
+| `profile`       | `Profile`             | -       | own profile (property only)                                          |
+| `prefs`         | `Prefs`               | -       | preferences (property only)                                          |
+| `tones`         | `{ id, label }[]`     | `[]`    | ringtone choices (property only)                                     |
+| `devices`       | `{ audioinput, videoinput, audiooutput }` | empty lists | `{ deviceId, label }[]` per kind (property only)  |
+| `language`      | `string`              | `"en"`  | current language code                                                |
+| `playing`       | `string`              | `""`    | ringtone id being previewed, set by the page                         |
+| `camerastream`  | `MediaStream \| null` | `null`  | camera test stream (property only)                                   |
+| `micstream`     | `MediaStream \| null` | `null`  | microphone test stream (property only)                               |
+| `sinkSupported` | `boolean`             | `true`  | browser can pick an output device (property only)                    |
+
+### Events
+
+| Event                   | Detail                        | Description                                                           |
+| ----------------------- | ----------------------------- | --------------------------------------------------------------------- |
+| `profile-change`        | `{ partial }`                 | `name`, `color` or `status` changed                                   |
+| `prefs-change`          | `{ partial }`                 | ringtone, volume, `devices` (whole object) or `autoDeclineBusy`       |
+| `language-change`       | `{ value }`                   | another language chosen                                               |
+| `request-notifications` | none                          | switch turned on; the page asks permission and sets `prefs.notifications`. Turning it off emits `prefs-change` |
+| `preview-device`        | `{ kind: "camera" \| "mic" }` | a test button was pressed; the page sets `camerastream` / `micstream` |
+| `preview`, `preview-stop` | `{ id }` / none             | pass through from the ringtone picker                                 |
+| `close`                 | none                          | dismissed by the user; the page sets `open = false`                   |
+
+All events bubble and are composed. Changes apply immediately; the page stores them and passes the new `profile` / `prefs` back. The theme picker applies and stores the theme itself.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

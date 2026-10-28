@@ -3,5 +3,31 @@
     "region": "GB",
     "language": "en"
   },
-  "settings": "settings"
+  "pc-settings": {
+    "title": "Settings",
+    "tabs": "Settings sections",
+    "close": "Close",
+    "profile": "Profile",
+    "sound": "Sound",
+    "devices": "Devices",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "name": "Name",
+    "color": "Colour",
+    "status": "Status",
+    "status-available": "Available",
+    "status-busy": "Busy",
+    "status-away": "Away",
+    "status-dnd": "Do not disturb",
+    "auto-decline": "Auto-decline calls when busy",
+    "microphone": "Microphone",
+    "camera": "Camera",
+    "speaker": "Speaker",
+    "test-camera": "Test camera",
+    "test-mic": "Test microphone",
+    "theme": "Theme",
+    "language": "Language",
+    "notify": "Show notifications for messages and calls",
+    "notify-hint": "Your browser will ask for permission."
+  }
 }

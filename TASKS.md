@@ -367,10 +367,11 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **props:** `kind` (`audioinput|videoinput|audiooutput`), `devices` (`{ deviceId, label }[]`), `value`. Labelled `pap-menu` button acting as a select (`aria-haspopup="listbox"`), "Default" first. Hidden for `audiooutput` when `setSinkId` isn't supported (`supported` prop). **events:** `change` `{ value }`.
 - Done: `value` is the deviceId, `""` = Default (change emits `""` for it); `supported` is property-only (default true, hides audiooutput when false); `devices` must be set as a property; a `deviceId: "default"` entry is dropped (our Default replaces it). Page passes lists already filtered by kind and handles `change`.
 
-### [ ] T6.3 pc-settings · `sonnet` · needs T6.1, T6.2, T1.8
+### [x] T6.3 pc-settings · `sonnet` · needs T6.1, T6.2, T1.8
 - **read:** `@papit/dialog`, `@papit/tabs`, `@papit/switch`.
 - **props:** `open`, `profile`, `prefs`, `tones`, `devices`, `language`. Dialog with tabs: Profile (name, colour, status), Sound (ringtone picker, volume, "auto-decline when busy" switch), Devices (3 device pickers + camera preview `pc-video` + mic `pc-level-meter`), Appearance (theme picker, language picker), Notifications (switch; asks permission via an event). Everything applies immediately (no Save button).
 - **events:** `profile-change` `{ partial }`, `prefs-change` `{ partial }`, `language-change`, `request-notifications`, `preview-device` `{ kind }`, `close`.
+- Done: `packages/organisms/settings`. `devices` is `{ audioinput, videoinput, audiooutput }`; extra props `playing`, `camerastream`, `micstream`, `sinkSupported`. `preview-device` `{ kind: "camera"|"mic" }` comes from explicit Test buttons, so the page starts the stream and sets the prop. `prefs-change` for devices carries the whole `devices` object. Ringtone `preview`/`preview-stop` pass through. Theme picker self-applies. Build + typecheck pass; demo not viewed.
 
 ### [ ] T6.4 Wire settings and notifications · `opus` · needs T6.3, T3.1
 - **files:** `core/src/notify.ts`, page.
