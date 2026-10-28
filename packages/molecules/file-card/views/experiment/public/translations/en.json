@@ -1,7 +1,15 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "file-card": "file-card"
+  "pc-file-card": {
+    "cancel": "Cancel",
+    "download": "Download",
+    "unnamed": "Unnamed file",
+    "sending": "Sending…",
+    "receiving": "Receiving…",
+    "cancelled": "Cancelled",
+    "failed": "Failed"
+  }
 }

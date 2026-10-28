@@ -17,11 +17,27 @@
 
 <body>
     <h1>FileCard | experiment</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-file-card></pc-file-card>
-        </pap-codeblock>
+        <h2>Other: sending, receiving, indeterminate, done (text, image, audio), cancelled, failed, long name, HTML-looking name</h2>
+        <div class="stack" data-set="other"></div>
+    </section>
+
+    <section>
+        <h2>Mine</h2>
+        <div class="stack" data-set="mine"></div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="stack" id="created"></div>
+        <p id="log">cancel events: none</p>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="stack" data-set="other"></div>
+        <div class="stack" data-set="mine"></div>
     </section>
 </body>
 

@@ -1,4 +1,103 @@
 :host {
-    color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    display: block;
+    max-inline-size: min(100%, var(--file-card-max-width, 24rem));
+    box-sizing: border-box;
+    color: var(--file-card-color, var(--text, inherit));
+}
+
+:host([mine]) {
+    margin-inline-start: auto;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+    padding: var(--space-3, 12px);
+    border-radius: var(--radius-medium, 12px);
+    background-color: var(--file-card-background, var(--background-light, light-dark(oklch(94% 0 0), oklch(26% 0 0))));
+    color: var(--file-card-color, var(--text, inherit));
+}
+
+:host([mine]) .card {
+    background-color: var(--file-card-background, var(--primary));
+    color: var(--file-card-color, var(--primary-contrast, white));
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 12px);
+    min-inline-size: 0;
+}
+
+.type {
+    flex: none;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meta {
+    display: flex;
+    gap: var(--space-2, 8px);
+    font-size: 0.8125rem;
+    opacity: 0.8;
+}
+
+.status[data-state="failed"] {
+    font-weight: 600;
+}
+
+.download {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 4px);
+    padding: var(--space-1, 4px) var(--space-2, 8px);
+    border-radius: var(--radius-small, 8px);
+    border: 1px solid currentColor;
+    color: inherit;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.download:hover {
+    background-color: color-mix(in oklab, currentColor 12%, transparent);
+}
+
+.download:focus-visible {
+    outline: 2px solid var(--focus-color, currentColor);
+    outline-offset: 2px;
+}
+
+:host([mine]) pc-progress {
+    --progress-background: color-mix(in oklab, currentColor 30%, transparent);
+    --progress-color: currentColor;
+}
+
+[part="preview"] {
+    display: block;
+    inline-size: 100%;
+    max-block-size: var(--file-card-preview-height, 16rem);
+    border-radius: var(--radius-small, 8px);
+    object-fit: contain;
+}
+
+img[part="preview"] {
+    inline-size: auto;
+    max-inline-size: 100%;
 }

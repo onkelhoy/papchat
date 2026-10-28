@@ -26,3 +26,8 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+}
