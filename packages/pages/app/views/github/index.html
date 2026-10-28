@@ -13,7 +13,15 @@
 <body>
     <pc-app-shell>
         <pc-app-header slot="header"></pc-app-header>
-        <pc-member-list slot="sidebar"></pc-member-list>
+        <div slot="sidebar" class="sidebar">
+            <pc-room-list></pc-room-list>
+            <pc-member-list></pc-member-list>
+        </div>
+        <main slot="main" class="main">
+            <pc-conversation hidden></pc-conversation>
+            <p class="empty"></p></p>
+        </main>
+        <pc-toaster slot="toasts"></pc-toaster>
     </pc-app-shell>
     <pc-onboarding></pc-onboarding>
 </body>

@@ -62,6 +62,7 @@
     "@papchat/app-header": "*",
     "@papchat/member-list": "*",
     "@papchat/room-list": "*",
+    "@papchat/conversation": "*",
     "@papchat/room": "*",
     "@papchat/toaster": "*",
     "@papchat/incoming-call": "*",

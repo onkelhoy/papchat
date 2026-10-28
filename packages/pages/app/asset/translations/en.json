@@ -3,5 +3,6 @@
     "region": "GB",
     "language": "en"
   },
-  "app": "app"
+  "app": "app",
+  "empty": "Pick someone to chat with"
 }
