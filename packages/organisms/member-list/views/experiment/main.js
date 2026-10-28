@@ -22,7 +22,19 @@ const members = [
     profile("u-long", "Maximiliana Wilhelmina von Habsburg-Lothringen-Stuart", "away"),
 ];
 
+const stage = (id, title, presenter, viewers, mine = false) => ({ id, title, presenter, viewers, mine });
+const stages = [
+    stage("s1", "Friday demo", members[3], 12),
+    stage("s2", "My own broadcast", me, 3, true),
+];
+
+document.addEventListener("watch", (e) =>
+{
+    log.textContent = `watch → ${e.detail.id}`;
+});
+
 const full = document.getElementById("full");
+full.stages = stages;
 full.me = me;
 full.members = members;
 full.incall = ["u-bob"];
@@ -33,6 +45,7 @@ const dark = document.getElementById("dark");
 dark.me = me;
 dark.members = members;
 dark.incall = ["u-anna"];
+dark.stages = stages;
 
 // createElement + members arriving over time
 const created = document.createElement("pc-member-list");

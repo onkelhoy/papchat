@@ -46,16 +46,18 @@ A search box filters by name (client side). `me` is listed first as a `self` row
 | `me`        | -           | `Profile`                   | -       | you; shown first with a "You" badge, counted in the heading |
 | `incall`    | -           | `string[]`                  | `[]`    | uids shown with the in-call phone icon              |
 | `canInvite` | `caninvite` | `boolean`                   | `false` | adds "Invite to current room" to each row menu      |
+| `stages`    | -           | `StageSummary[]`            | `[]`    | live broadcasts: a "Live now" `pap-accordion` of `pc-stage-card`s above the list, hidden when empty |
 
 | Event           | Detail                                                             | Description                                                              |
 | --------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `watch`         | `{ id: string }`                                                   | from a stage card's Watch button (bubbles, composed) |
 | `member-action` | `{ uid: string, action: "chat" \| "call" \| "video" \| "invite" }` | from a row (bubbles, composed; `pc-member-item` dispatches it, nothing re-dispatches) |
 
 | Slot   | Description                                                   |
 | ------ | ------------------------------------------------------------- |
-| `live` | above the heading; for the "Live now" stage cards (T5.3)      |
+| `live` | inside the "Live now" panel, above the cards (shown in place when there are no stages) |
 
-CSS: `::part(search|list|empty)`. Translations: `pc-member-list.*` in `asset/translations/en.json`.
+CSS: `::part(live|search|list|empty)`. Translations: `pc-member-list.*` in `asset/translations/en.json`.
 
 ## License
 

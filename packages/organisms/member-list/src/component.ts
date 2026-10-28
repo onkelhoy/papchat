@@ -1,11 +1,13 @@
 // system
 import { CustomElement, bind, html, property } from "@papit/web-component";
 import { translate, useTranslator } from "@papit/translator";
+import "@papit/accordion";
 import "@papit/group";
 import "@papit/input";
 import "@papchat/member-item";
 import type { MemberItem } from "@papchat/member-item";
-import type { Profile, Status } from "@papchat/core";
+import "@papchat/stage-card";
+import type { Profile, StageSummary, Status } from "@papchat/core";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -26,11 +28,14 @@ const ORDER: Status[] = ["available", "busy", "away", "dnd"];
  * @property {Profile[]} members everyone else online; property only
  * @property {Profile} me        you; property only
  * @property {string[]} incall   uids currently in a call; property only
+ * @property {StageSummary[]} stages live broadcasts, shown above the list in a "Live now" section (hidden when empty); property only
  * @property {boolean} canInvite adds "Invite to current room" to each row menu (attribute `caninvite`)
  *
  * @fires member-action `CustomEvent<{ uid, action }>` from a row (bubbles, composed)
+ * @fires watch `CustomEvent<{ id }>` from a stage card (bubbles, composed)
  *
- * @slot live stage cards, above the list (T5.3)
+ * @slot live extra content in the "Live now" area, above the cards
+ * @csspart live   the "Live now" `pap-accordion`
  * @csspart search the search input
  * @csspart list   the `pap-group` holding the rows
  * @csspart empty  the empty state text
@@ -43,6 +48,7 @@ export class MemberList extends CustomElement {
     @property({ type: Array, attribute: false }) members: Profile[] = [];
     @property({ type: Object, attribute: false }) me?: Profile;
     @property({ type: Array, attribute: false }) incall: string[] = [];
+    @property({ type: Array, attribute: false }) stages: StageSummary[] = [];
     @property({ type: Boolean, attribute: "caninvite" }) canInvite: boolean = false;
 
     @property({ type: String, attribute: false }) private query: string = "";
@@ -76,6 +82,12 @@ export class MemberList extends CustomElement {
     update() {
         super.update();
 
+        const cards = this.shadowRoot?.querySelectorAll<HTMLElement & { stage?: StageSummary }>("pc-stage-card");
+        cards?.forEach((card, i) => {
+            const stage = (this.stages ?? [])[i];
+            if (stage) card.stage = stage;
+        });
+
         const items = this.shadowRoot?.querySelectorAll<MemberItem>("pc-member-item");
         const rows = this.rows;
         items?.forEach((item, i) => {
@@ -94,9 +106,20 @@ export class MemberList extends CustomElement {
     render() {
         const rows = this.rows;
         const others = this.sorted.length;
+        const stages = this.stages ?? [];
 
         return html`
-            <slot name="live"></slot>
+            ${stages.length ? html`
+                <pap-accordion part="live" class="live" mode="multiple">
+                    <pap-accordion-header open aria-level="2">${this.t("live", { count: stages.length })}</pap-accordion-header>
+                    <pap-accordion-panel>
+                        <slot name="live"></slot>
+                        <div class="cards">
+                            ${stages.map(stage => html`<pc-stage-card key="${stage.id}"></pc-stage-card>`)}
+                        </div>
+                    </pap-accordion-panel>
+                </pap-accordion>
+            ` : html`<slot name="live"></slot>`}
             <h2 class="heading">${this.t("online", { count: others + (this.me ? 1 : 0) })}</h2>
             <pap-input
                 part="search"

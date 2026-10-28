@@ -5,7 +5,11 @@
   },
   "pc-app-header": {
     "golive": "Go live",
-    "live": "You are live",
+    "end": "End broadcast",
+    "dialog-title": "Go live",
+    "title-label": "What are you presenting?",
+    "cancel": "Cancel",
+    "start": "Start broadcast",
     "settings": "Settings",
     "account": "{name}, {status}. Change status",
     "available": "Available",

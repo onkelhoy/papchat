@@ -12,7 +12,7 @@ for (const header of document.querySelectorAll("pc-app-header[data-me]"))
     header.me = me;
 }
 
-for (const type of ["status-change", "language-change", "open-settings", "go-live"])
+for (const type of ["status-change", "language-change", "open-settings", "go-live", "end-live"])
 {
     document.addEventListener(type, (e) =>
     {

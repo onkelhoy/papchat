@@ -57,6 +57,16 @@ pap-menuitem[aria-checked="true"] {
     font-weight: 600;
 }
 
+.ask {
+    inline-size: min(24rem, 80vw);
+}
+
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2, 0.5rem);
+}
+
 /* narrow screens: the shell owns the menu button, keep only what fits */
 @media (max-width: 800px) {
     .bar {

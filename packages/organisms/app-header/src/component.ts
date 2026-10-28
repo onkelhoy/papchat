@@ -1,8 +1,10 @@
 // system
-import { CustomElement, html, property, query } from "@papit/web-component";
+import { bind, CustomElement, html, property, query } from "@papit/web-component";
 import { translate, useTranslator } from "@papit/translator";
 import type { Profile, Status, LobbyStatus } from "@papchat/core";
 import "@papit/button";
+import "@papit/dialog";
+import "@papit/input";
 import "@papit/icon";
 import "@papit/menu";
 import type { Menu } from "@papit/menu";
@@ -14,7 +16,7 @@ import "@papchat/language-picker";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { StatusChangeEvent, LanguageChangeEvent } from "./types";
+import type { GoLiveEvent, StatusChangeEvent, LanguageChangeEvent } from "./types";
 
 export const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 
@@ -28,12 +30,13 @@ export const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
  * @property {Profile} me the signed-in profile (avatar and status menu are hidden without it)
  * @property {LobbyStatus} status lobby connection state; `idle` is shown as `connecting`
  * @property {string} language language code for the language picker (default "en")
- * @property {boolean} live you are presenting: the button reads "You are live" and is disabled (reflected)
+ * @property {boolean} live you are presenting: the button reads "End broadcast" and fires `end-live` (reflected)
  *
  * @fires status-change `CustomEvent<{ status }>` a presence status was chosen
  * @fires language-change `CustomEvent<{ value }>` a language was chosen
  * @fires open-settings the settings button was clicked
- * @fires go-live the "Go live" button was clicked
+ * @fires go-live `CustomEvent<{ title }>` a title was confirmed in the "Go live" dialog (the title is trimmed, never empty)
+ * @fires end-live the "End broadcast" button was clicked (only while `live`)
  *
  * @csspart bar the header row
  */
@@ -46,6 +49,10 @@ export class AppHeader extends CustomElement {
     @property({ type: String }) status: LobbyStatus = "connecting";
     @property({ type: String }) language: string = "en";
     @property({ type: Boolean, reflect: true }) live: boolean = false;
+
+    // the "Go live" title dialog
+    @property({ type: Boolean, attribute: false }) private asking: boolean = false;
+    @property({ type: String, attribute: false }) private liveTitle: string = "";
 
     @query("pap-menu.status") private statusMenu!: Menu;
 
@@ -72,8 +79,36 @@ export class AppHeader extends CustomElement {
         this.dispatchEvent(new CustomEvent("open-settings"));
     }
 
-    private handleGoLive = () => {
-        this.dispatchEvent(new CustomEvent("go-live"));
+    private handleLiveButton = () => {
+        if (this.live)
+        {
+            this.dispatchEvent(new CustomEvent("end-live"));
+            return;
+        }
+
+        this.liveTitle = "";
+        this.asking = true;
+    }
+
+    @bind
+    private handleTitle(e: Event) {
+        this.liveTitle = String((e.currentTarget as HTMLInputElement).value ?? "");
+    }
+
+    @bind
+    private handleDialogClose() {
+        // also fires when we close it ourselves
+        this.asking = false;
+    }
+
+    @bind
+    private handleStart(e?: Event) {
+        e?.preventDefault();
+        const title = this.liveTitle.trim();
+        if (!title) return;
+
+        this.asking = false;
+        this.dispatchEvent(new CustomEvent<GoLiveEvent>("go-live", { detail: { title } }));
     }
 
     render() {
@@ -85,9 +120,9 @@ export class AppHeader extends CustomElement {
                 <pc-connection-status status="${this.connection}"></pc-connection-status>
                 <span class="spacer"></span>
 
-                <pap-button class="live" size="small" color="${this.live ? "error" : "primary"}" ?disabled="${this.live}" @click="${this.handleGoLive}">
+                <pap-button class="live" size="small" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">
                     <pap-icon name="/icons/spritesheet.svg#broadcast" aria-hidden="true"></pap-icon>
-                    ${this.live ? this.t("live") : this.t("golive")}
+                    ${this.live ? this.t("end") : this.t("golive")}
                 </pap-button>
 
                 <pc-language-picker value="${this.language}" @change="${this.handleLanguage}"></pc-language-picker>
@@ -112,6 +147,30 @@ export class AppHeader extends CustomElement {
                     </pap-menu>
                 ` : ""}
             </div>
+            <pap-dialog
+                part="dialog"
+                open="${this.asking && "true"}"
+                header="${this.t("dialog-title")}"
+                close-outside-click="true"
+                @close="${this.handleDialogClose}"
+            >
+                <form class="ask" @submit="${this.handleStart}">
+                    <pap-input
+                        name="title"
+                        autocomplete="off"
+                        maxlength="80"
+                        aria-label="${this.t("title-label")}"
+                        placeholder="${this.t("title-label")}"
+                        value="${this.liveTitle}"
+                        @input="${this.handleTitle}"
+                        @change="${this.handleTitle}"
+                    ></pap-input>
+                </form>
+                <div slot="footer" class="footer">
+                    <pap-button variant="clear" @click="${this.handleDialogClose}">${this.t("cancel")}</pap-button>
+                    <pap-button disabled="${!this.liveTitle.trim() && "true"}" @click="${this.handleStart}">${this.t("start")}</pap-button>
+                </div>
+            </pap-dialog>
         `;
     }
 }

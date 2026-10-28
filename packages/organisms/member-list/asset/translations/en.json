@@ -4,6 +4,7 @@
     "language": "en"
   },
   "pc-member-list": {
+    "live": "Live now · {count}",
     "online": "Online · {count}",
     "search": "Search people",
     "label": "People online",

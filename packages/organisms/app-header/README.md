@@ -35,14 +35,15 @@ npm install @papchat/app-header
 | `me`       | -          | `Profile \| null` | -            | signed-in profile; without it the avatar and status menu are hidden             |
 | `status`   | `status`   | `LobbyStatus`     | `connecting` | lobby connection state, `idle` is shown as `connecting`                         |
 | `language` | `language` | `string`          | `en`         | language code shown in the language picker                                      |
-| `live`     | `live`     | `boolean`         | `false`      | you are presenting: the button reads "You are live" and is disabled (reflected) |
+| `live`     | `live`     | `boolean`         | `false`      | you are presenting: the button reads "End broadcast" and fires `end-live` (reflected) |
 
 | Event             | Detail                                                 | Description                                                  |
 | ----------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
 | `status-change`   | `{ status: "available" \| "busy" \| "away" \| "dnd" }` | a presence status was chosen (not fired for the current one) |
 | `language-change` | `{ value: string }`                                    | a language was chosen                                        |
 | `open-settings`   | -                                                      | settings button clicked                                      |
-| `go-live`         | -                                                      | "Go live" button clicked                                     |
+| `go-live`         | `{ title: string }`                                    | "Go live" opens a dialog asking for a title; confirming fires this with the trimmed, non-empty title |
+| `end-live`        | -                                                      | "End broadcast" clicked (only while `live`)                  |
 
 None of the events bubble. The header composes `pc-avatar`, `pc-presence`, `pc-connection-status`, `pc-language-picker` and `pap-theme-picker storage="local"`. The page must serve `/icons/spritesheet.svg` (`broadcast`, `settings`), the flag svgs under `/icons/flags/` and the theme-picker's `/icons/sun.svg|moon.svg|computer.svg`. `::part(bar)` styles the row.
 
