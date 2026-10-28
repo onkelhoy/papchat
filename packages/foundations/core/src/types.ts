@@ -40,6 +40,7 @@ export type Session = {
 export type LobbyStatus = "idle" | "connecting" | "waking" | "connected" | "reconnecting" | "closed";
 
 export type RoomKind = "chat" | "call" | "video" | "stage";
+export type RoomStatus = "connecting" | "connected" | "reconnecting" | "closed";
 export type InviteKind = RoomKind;
 export type DeclineReason = "declined" | "busy" | "dnd" | "timeout";
 
@@ -50,6 +51,8 @@ export type Invite = {
     title: string;
     from: string;
     members: string[];
+    // set when a room was rebuilt after its network vanished (server restart): the old network id
+    replaces?: string;
 };
 
 export type IncomingCall = {

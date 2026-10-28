@@ -16,6 +16,15 @@ export const LIMITS = {
     // the server strikes messages sent < 200 ms apart, keep our own calls well above that
     serverGapMs: 1_000,
     raceGuardMs: 2_000,
+    messageChars: 4_000,
+    // messages kept per room (no history: this is only what this tab saw)
+    messagesKept: 500,
+    typingSendMs: 1_000,
+    typingMs: 4_000,
+    // a "left" system message waits this long, so a quick reconnect doesn't show left + joined
+    leaveGraceMs: 5_000,
+    // after a room rebuild, missing participants get this long to come back before they count as left
+    rejoinGraceMs: 30_000,
 } as const;
 
 export const LOBBY_NAME = "papchat";

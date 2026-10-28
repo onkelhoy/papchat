@@ -1,5 +1,6 @@
 import { setLobbyProfile } from "./lobby";
 import { log } from "./log";
+import { setRoomsProfile } from "./room";
 import { me, setMe } from "./state";
 import { storage } from "./storage";
 import type { Profile, Status } from "./types";
@@ -30,11 +31,12 @@ function randomColor(): string {
     return PALETTE[Math.floor(Math.random() * PALETTE.length)];
 }
 
-// writes storage, updates `me` and tells the lobby
+// writes storage, updates `me` and tells the lobby and every room
 function commit(profile: Profile): Profile {
     storage.profile.set(profile);
     setMe(profile);
     setLobbyProfile(profile);
+    setRoomsProfile(profile);
     log("profile", profile);
     return profile;
 }

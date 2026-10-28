@@ -1,6 +1,8 @@
 import { LIMITS, signalUrl } from "./config";
 import * as identity from "./identity";
+import * as invites from "./invites";
 import * as lobby from "./lobby";
+import * as room from "./room";
 import { setLogging } from "./log";
 import { state, toast } from "./state";
 import { storage } from "./storage";
@@ -12,6 +14,8 @@ export * from "./state";
 export * from "./log";
 export * from "./identity";
 export * from "./lobby";
+export * from "./room";
+export * from "./invites";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …
 declare global {
@@ -31,6 +35,8 @@ if (typeof window !== "undefined")
         LIMITS,
         ...identity,
         ...lobby,
+        ...room,
+        ...invites,
         lobby,
         identity,
     });

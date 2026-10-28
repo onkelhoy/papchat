@@ -20,7 +20,7 @@ export type LobbyHandler<Payload = any> = (payload: Payload, from: LobbyFrom) =>
 
 type NetworkInfo = Awaited<ReturnType<Client["list"]>>[number];
 
-type Member = { peer: string; at: number; profile: Profile };
+export type Member = { peer: string; at: number; profile: Profile };
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const RETRY_MIN_MS = 3_000;
@@ -412,7 +412,8 @@ function wire(p: Profile): Record<string, unknown> {
     return { ...p, at: startedAt };
 }
 
-function readMember(peer: string, raw: unknown): Member | null {
+/** Reads a wire profile (Profile + `at`) as sent by `wire()`; null when it is not a usable profile. Rooms reuse it. */
+export function readMember(peer: string, raw: unknown): Member | null {
     if (typeof raw !== "object" || raw === null) return null;
     const value = raw as Record<string, unknown>;
     if (typeof value.uid !== "string" || !value.uid) return null;

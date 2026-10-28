@@ -1,7 +1,14 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "stage-card": "stage-card"
+  "pc-stage-card": {
+    "live": "Live",
+    "watch": "Watch",
+    "mine": "You're live",
+    "presenter": "{name} is presenting",
+    "viewers": "{count} watching",
+    "label": "{title}, presented by {name}, {count} watching"
+  }
 }

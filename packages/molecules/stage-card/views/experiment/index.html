@@ -3,25 +3,29 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StageCard | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-stage-card | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>StageCard | experiment</h1>
+    <h1>pc-stage-card</h1>
+    <p id="log" class="hint">watch events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-stage-card></pc-stage-card>
-        </pap-codeblock>
+        <h2>Watching, mine, long title, zero viewers</h2>
+        <div class="list" id="states"></div>
+    </section>
+
+    <section>
+        <h2>createElement (viewers tick up every 2 s)</h2>
+        <div class="list" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="list" id="dark"></div>
     </section>
 </body>
 
