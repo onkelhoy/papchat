@@ -25,8 +25,30 @@ npm install @papchat/language-picker
   import "@papchat/language-picker";
 </script>
 
-<pc-language-picker></pc-language-picker>
+<pc-language-picker value="en"></pc-language-picker>
+
+<script>
+  document.querySelector("pc-language-picker").addEventListener("change", (e) => {
+    console.log(e.detail.value); // e.g. "sv"
+  });
+</script>
 ```
+
+The picker only reports the choice; call `translator.change(value)` yourself.
+Flag icons live in `asset/icons/flags/<code>.svg` and must be served at `/icons/flags/`.
+
+## Properties
+
+| Property    | Attribute | Type         | Default      | Description |
+| ----------- | --------- | ------------ | ------------ | ----------- |
+| `value`     | `value`   | `string`     | `"en"`       | Code of the current language |
+| `languages` | -         | `Language[]` | en, sv       | `{ code, label, flag }[]`; `flag` is a `pap-icon` name, e.g. `/icons/flags/sv.svg` |
+
+## Events
+
+| Event    | Detail              | Description |
+| -------- | ------------------- | ----------- |
+| `change` | `{ value: string }` | Another language was chosen (bubbles, composed) |
 
 ## License
 

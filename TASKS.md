@@ -45,6 +45,8 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
 
 **Gotchas found so far**
 - Icons: `import "@papit/icon"`, then `<pap-icon name="/icons/spritesheet.svg#mic" aria-hidden="true"></pap-icon>` (ids in T0.3's note). Size via `width`/`height`, colour via `color`. Meaningful icon → `role="img" aria-label="…"`.
+- Status tokens exist in `@papit/theme`: `--success`, `--warning`, `--error`, `--info`; text colours `--text`, `--text-secondary` (there is no `--text-muted`).
+- READMEs: copy the API tables format from `packages/atoms/avatar/README.md` (## API).
 - Use `--primary-contrast` for text on a `--primary` surface. Presence colours: `--pc-available|busy|away|dnd|offline`.
 - Edit `TASKS.md` with small exact edits only (other agents edit it at the same time), never rewrite the whole file.
 - `@property()` needs an options object: `@property({ type: String })`.
@@ -101,11 +103,12 @@ Done by hand with `npm create @papit -- --package=<type> --html-prefix=pc --no -
 - **done when:** builds; from the demo page console, `papchat.state.prefs()` returns defaults and survives a corrupted localStorage value.
 - Done. State setters are exported next to readers (`setMe`, `setMembers`, …, `setPrefs(partial)` persists). `Prefs.language` defaults to `""` = not chosen yet. `ChatMessage.variant` includes `"file"`; `FileEntry = FileInfo & TransferState`.
 
-### [ ] T0.5 Page shell · `sonnet` · needs T0.3, T0.4
+### [x] T0.5 Page shell · `sonnet` · needs T0.3, T0.4
 - **read:** STATIC, PLAN §4.2 Page, §5.
 - **files:** `packages/pages/app/**`
 - **do:** `views/github/index.html` (theme stylesheet, `<pc-app-shell>` placeholder markup, `<script type="module" src="main.ts">` as static expects), `src/main.ts` (imports core, logs "papchat ready"), `tsconfig.json`. Create `asset/audio/ringtones/ringtones.json` as `[]` and `asset/audio/README.md` naming the files the user should drop in (PLAN §5). Remove the scaffolded component files that don't apply to a page.
 - **done when:** `npm run pages` writes `packages/pages/app/dist/` and serving that folder at `/papchat/` shows the page with the theme applied and no 404s in the network tab.
+- Done. `main.ts` + `style.css` (`@import "@papchat/theme"`) live in `views/github/` (static bundles page-folder scripts), not `src/`; `src/index.ts` is `export {}`. Static build works, BUT `@papit/static` skips assets of `papit.type: "theme"` packages, so `public/icons/spritesheet.svg` is NOT published (see Notes).
 
 ### [ ] T0.6 Go live · `user` · needs T0.1, T0.5
 Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source: GitHub Actions. Check the empty shell is live.
@@ -114,11 +117,12 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 1: lobby (PLAN §2.2, §2.3, §6.1–2)
 
-### [~] T1.1 Core: lobby · `opus` · needs T0.4
+### [x] T1.1 Core: lobby · `opus` · needs T0.4
 - **read:** NET (all of Client, Status, Lifecycle), DEMO, PLAN §2.2–2.4.
 - **files:** `core/src/lobby.ts`, `core/src/identity.ts`, exports.
 - **do:** `identity.ts`: create/read profile (`uid` via `crypto.randomUUID`, random colour from a fixed palette), `setName/setColor/setStatus` that write storage, update `me` and call `lobby.setProfile`. `lobby.ts`: `startLobby()` per §2.2 steps 1–5 (canonical = smallest `meta.created`, then id; race guard re-`list()` after 2 s; one retry; space server calls ≥ 1 s apart); status → `lobbyStatus`; `members` event → `members` signal (exclude self, dedupe by uid); on `error` type `reconnect` → `leave()` + rerun boot; `send(uid, type, payload)` resolving uid → newest peer id; `broadcast`; an `on(type, handler)` dispatcher for app messages; `unreachable` → toast. No invites yet (T2.1).
 - **done when:** with `npx papit-signal-server --port 3000` and 3 tabs: all land in one lobby, each sees the other two in `papchat.state.members()`; two tabs opened within 100 ms converge on one lobby; closing the host tab keeps the others connected; killing and restarting the server reconnects everyone into one lobby.
+- Done (build only; 3-tab live check left to the user). API: `startLobby(): Promise<boolean>` (needs a profile, never rejects, keeps retrying), `stopLobby()`, `send(uid, type, payload?): boolean` (uid → newest peer id), `broadcast(type, payload?): boolean`, `on(type, (payload, from: { peer, uid, profile }) => void): () => void` (unsubscribe; handlers survive reconnects), `peerOf(uid)`, `uidOf(peer)`, `profileOf(uid)`, `lobbyClient()`, `setLobbyProfile(profile)`. identity: `PALETTE` (8 hex colours), `NAME_MAX`, `getProfile()`, `hasProfile()`, `createProfile(name, color?)` (keeps an existing uid), `updateProfile({name,color,status})`, `setName/setColor/setStatus`. `lobbyStatus` is "connected" only once inside the lobby. Wire profile = Profile + `at` (client start time) to pick the newest peer per uid. Members exclude only your own peer id, so another tab with your uid shows up as one entry. Race guard runs after create and after join, and again when promoted to host. Reconnect: closes the client and starts a fresh `Client` (see Notes: papit gap).
 
 ### [x] T1.2 pc-avatar · `opus` (reference atom) · needs T0.3
 - **read:** WC, DS, SWITCH.
@@ -127,14 +131,17 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - This is the pattern every later component copies: keep it clean and commented where it matters.
 - Done: `packages/atoms/avatar`. Exports `initials(name)` and `colorFor(seed)` too. Size via `--avatar-size` (`-s`, `-l`). ARIA set in `connectedCallback`, not the constructor.
 
-### [ ] T1.3 pc-presence · `sonnet` · needs T1.2
+### [x] T1.3 pc-presence · `sonnet` · needs T1.2
 - **props:** `status` (`available|busy|away|dnd|offline`, reflect). Dot using `--pc-<status>` tokens, `dnd` gets a bar, `away` a hollow ring (not colour-only). `role="img"`, translated `aria-label`.
+- Done: `packages/atoms/presence`. Size via `--presence-size` (default 0.75rem), unknown status falls back to offline; put it in `pc-avatar`'s `badge` slot (give it a ring with `--background` if needed). Translations keys `pc-presence.<status>` in `en.json` (add to `sv.json` in T6.7).
 
-### [ ] T1.4 pc-badge · `sonnet` · needs T1.2
+### [x] T1.4 pc-badge · `sonnet` · needs T1.2
 - **props:** `count` (number; shows `99+` above 99, hidden at 0), `variant` (`neutral|primary|live|error`). Default slot for a text label ("Live", "Host", "You"). `live` variant has a pulsing dot (respect `prefers-reduced-motion`).
+- Done: `count` (Number) hides the host via `[hidden]` at <= 0; with `count` unset the default slot is the label. `variant` reflected. Colours overridable via `--badge-background`/`--badge-color`; no events. Demo imports `@papchat/theme` (added as devDependency).
 
-### [ ] T1.5 pc-time · `sonnet` · needs T1.2
+### [x] T1.5 pc-time · `sonnet` · needs T1.2
 - **props:** `at` (number, epoch ms). Renders `<time datetime>` with `Intl.RelativeTimeFormat` in the translator's current language ("just now" under 45 s). Re-renders every 30 s while connected (one shared interval for all instances). `title` = full local date-time.
+- Done: `packages/atoms/time`. Exports `relative(diff, locale, now)`. Locale comes from `translator.locale()` (`meta.language`); string key `pc-time.now`. Renders nothing for missing/invalid `at`. Inherits colour via `--time-color` (default `--text-muted`).
 
 ### [ ] T1.6 pc-connection-status · `sonnet` · needs T1.3
 - **props:** `status` (`connecting|waking|connected|reconnecting|closed`). Pill with dot + translated text; `waking` says "Waking up the server… (can take up to a minute)". `role="status"`, `aria-live="polite"`.
@@ -147,12 +154,13 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `member-action` `{ uid, action: "chat" | "call" | "video" | "invite" }`. Double-click / Enter on the row = `chat`.
 - Drop target comes in T4.4, leave a `// T4.4 drop target` marker.
 
-### [ ] T1.8 pc-language-picker · `sonnet` · needs T0.3
+### [x] T1.8 pc-language-picker · `sonnet` · needs T0.3
 - **read:** `@papit/menu`, `@papit/icon`, TR.
 - **props:** `value` (language code), `languages` (`{ code, label, flag }[]`, default en 🇬🇧 / sv 🇸🇪). Flags as `pap-icon` SVGs in this package's `asset/icons/flags/`.
 - **events:** `change` with `detail.value`. Does not call the translator itself.
+- Done: `languages[].flag` is a `pap-icon` name (default `/icons/flags/en.svg`, `sv.svg`, files in the package `asset/icons/flags/`, must be served at `/icons/flags/`: copy/serve them in the page). Trigger is a native `<button popovertarget>` (works with `pap-menu`); `change` bubbles+composed. Page must register `sv` translation for the `label` key only in T6.7.
 
-### [ ] T1.9 pc-app-shell · `sonnet` · needs T1.2
+### [~] T1.9 pc-app-shell · `sonnet` · needs T1.2
 - **read:** `@papit/sidebar`, `@papit/drawer` READMEs.
 - **slots:** `header`, `sidebar`, `main`, `overlay` (incoming calls), `toasts`. CSS grid: header on top, sidebar left (`pap-sidebar`), main fills. Under 800 px the sidebar slot moves into a `pap-drawer` opened by a menu button in the header area. **props:** `sidebaropen` (boolean, reflect). **events:** `sidebar-toggle` `{ open }`.
 
@@ -349,5 +357,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
+- T1.1 papit gap: after a socket reconnect, `Client` keeps its old `id`/router `me`, so every later message to the server carries the stale sender and the signal server rejects it as `spoof`. `leave()` + rejoin on the same Client can't work, so the lobby closes the client and builds a new one. Fix upstream: adopt the new id on reconnect (or expose a `rejoin()`).
+- T0.5: `@papit/static` (via `meta()` in `@papit/server`) skips assets of `papit.type: "theme"` packages, so `packages/foundations/theme/asset/icons/spritesheet.svg` never reaches `dist/public/icons/`. Fix needed outside T0.5 (e.g. change `@papchat/theme` papit type to `browser`/`web-component`-style, or copy the spritesheet into `pages/app/asset/icons/`). Needed before any icon works on the deployed page.
 - Root has `npm run signal` (local signal server on :3000) and `npm run pages` (build + static site).
 - Scaffolded `tests/` folders stay and are ignored (T0.2).

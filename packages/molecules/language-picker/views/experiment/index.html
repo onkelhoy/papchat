@@ -3,25 +3,42 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LanguagePicker | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-language-picker | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>LanguagePicker | experiment</h1>
+    <h1>pc-language-picker</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Default (en, sv)</h2>
+        <div class="row">
             <pc-language-picker></pc-language-picker>
-        </pap-codeblock>
+            <pc-language-picker value="sv"></pc-language-picker>
+            <span id="log">change events show here</span>
+        </div>
+    </section>
+
+    <section>
+        <h2>Custom languages</h2>
+        <div class="row">
+            <pc-language-picker id="custom"></pc-language-picker>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-language-picker></pc-language-picker>
+            <pc-language-picker value="sv"></pc-language-picker>
+        </div>
     </section>
 </body>
 
