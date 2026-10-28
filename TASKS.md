@@ -4,11 +4,11 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ---
 
-## ▶ Resume here (paused 2026-10-28)
+## ▶ Resume here (refreshed 2026-10-28)
 
-- **Done:** 32/54 tasks (all `[x]` below, each committed).
-- **Interrupted, not finished:** T2.1 core invites/rooms (partial edits in `packages/foundations/core/src/`), T5.2 pc-stage-card (`packages/molecules/stage-card/`), T3.7 pc-call-stage (`packages/organisms/call-stage/`). Saved in the `wip:` commit; review and finish, or revert those files. T1.10 and T6.3 were stopped before writing anything.
-- **Next, in order:** T1.13 wire wave 1 (first runnable app) → T2.1 → T2.7. Unblocked components meanwhile: T3.7, T5.2, T6.3.
+- **Done:** 46/54 tasks (all `[x]` below, each committed). Waves 0-4 and T5.1, T5.2, T6.1-T6.4 are in; nothing is half-finished.
+- **Next, in order:** T5.3 stage UI → T5.4 wire wave 5 → T6.5, T6.6, T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
+- **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
 
