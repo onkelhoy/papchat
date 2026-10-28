@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-28)
 
-- **Done:** 49/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
-- **Next, in order:** T6.6, T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
+- **Done:** 50/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
+- **Next, in order:** T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
@@ -390,8 +390,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - Walk every view at 360 px and 768 px: drawer sidebar, room stage/tabs stacking, incoming call full-width, toasts. Fix within the affected components' `style.css` only.
 - Done (by reading the CSS; no browser): `pc-app-header` at ≤32rem uses tighter gaps and "Go live" collapses to its icon (label wrapped in `span.label`, visually hidden); `pc-settings` camera preview shrinks to the dialog (`max-inline-size: 100%`) and the preview row wraps. Checked and left alone: drawer shell, `pc-room` splitter flips to stacked at 40rem, call-stage container queries, toaster centred under 800 px, invite-picker/onboarding/settings use `min(…, 80vw)`. One fix is outside my files, see Notes (incoming call width). Build + typecheck pass.
 
-### [ ] T6.6 Keyboard shortcuts · `sonnet` · needs T3.10
+### [x] T6.6 Keyboard shortcuts · `sonnet` · needs T3.10
 - **files:** page only. M / V / S toggle mic / camera / screen in the active call, `Escape` closes dialogs (check pap-dialog does it), ignored while typing in an input. Listed in the settings dialog (add a "Shortcuts" section via a prop).
+- Done: `views/github/main.ts` has a document `keydown`: M / V / S toggle mic / camera / screen on the stage you present or the room you're in a call in (no modifiers, ignored while typing in input/textarea/select/contenteditable, while settings/picker/onboarding are open, and for S without screen-share support). Escape needed nothing: `pap-dialog` is a native modal, so it closes (and fires `close`) on its own; `pc-invite-picker` and the header dialog reset their own `open`. `pc-settings` got a `shortcuts: Shortcut[]` property (tab hidden when empty) which the page fills in `changeLanguage`; strings `app.shortcut*` and `pc-settings.shortcuts`. Typecheck + build pass; not run in a browser.
 
 ### [ ] T6.7 Swedish · `haiku` · needs T6.3
 - Add `asset/translations/sv.json` next to every `en.json` with the same keys. Natural Swedish, informal "du". Check the language switch changes every visible string live.

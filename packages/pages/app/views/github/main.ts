@@ -104,6 +104,12 @@ async function changeLanguage(code: string) {
     settings.language = code;
     onboarding.language = code;
     empty.textContent = t("empty");
+    settings.shortcuts = [
+        { keys: "M", label: t("shortcutMic") },
+        { keys: "V", label: t("shortcutCamera") },
+        { keys: "S", label: t("shortcutScreen") },
+        { keys: "Esc", label: t("shortcutClose") },
+    ];
 }
 
 async function boot() {
@@ -485,14 +491,41 @@ view.addEventListener("call", async (e) =>
     if (await room.start("mic") && kind === "video") await room.start("camera");
 });
 
+// mic / camera / screen of the stage you present or the room you're in
+function toggleCapture(name: CaptureName) {
+    const target: Room | Stage | null = shownStage() ?? current();
+    if (!target) return;
+    if (target.captures()[name]) target.stop(name);
+    else void target.start(name);
+}
+
 view.addEventListener("toggle", (e) =>
 {
     const control = (e as unknown as CustomEvent<{ control?: string }>).detail?.control;
-    const target: Room | Stage | null = shownStage() ?? current();
-    if (!target || (control !== "mic" && control !== "camera" && control !== "screen")) return;
-    const name = control as CaptureName;
-    if (target.captures()[name]) target.stop(name);
-    else void target.start(name);
+    if (control === "mic" || control === "camera" || control === "screen") toggleCapture(control);
+});
+
+// keyboard: M / V / S toggle mic / camera / screen while in a call or presenting (Escape closes dialogs natively)
+const SHORTCUTS: Record<string, CaptureName> = { m: "mic", v: "camera", s: "screen" };
+const TYPING = /^(INPUT|TEXTAREA|SELECT)$|^PAP-(INPUT|TEXTAREA|SELECT)$/;
+
+function typing(e: KeyboardEvent): boolean {
+    return e.composedPath().some(node => node instanceof HTMLElement && (TYPING.test(node.tagName) || node.isContentEditable));
+}
+
+document.addEventListener("keydown", (e) =>
+{
+    const name = SHORTCUTS[e.key.toLowerCase()];
+    if (!name || e.repeat || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (typing(e) || settings.open || picker.open || onboarding.open) return;
+
+    const stage = shownStage();
+    const room = current();
+    const active = stage ? stage.mine : !!room?.incall;
+    if (!active || (name === "screen" && !canScreen)) return;
+
+    e.preventDefault();
+    toggleCapture(name);
 });
 
 // hang up: a stage ends (presenter) or is left (viewer); a call room is left (cancels ringing); in a chat room only the call ends

@@ -3,6 +3,9 @@ import type { Prefs, Profile, Status } from "@papchat/core";
 export type { Prefs, Profile, Status };
 
 export type Tone = { id: string; label: string };
+
+/** a keyboard shortcut for the Shortcuts tab: `keys` are shown as-is, `label` is already translated */
+export type Shortcut = { keys: string; label: string };
 export type Device = { deviceId: string; label: string };
 
 /** device lists, already split by kind */

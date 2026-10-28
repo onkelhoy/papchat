@@ -11,5 +11,9 @@
   "cameraFailed": "Couldn't start the camera",
   "micFailed": "Couldn't start the microphone",
   "notificationsDenied": "Notifications are blocked in the browser settings",
+  "shortcutMic": "Mute or unmute the microphone (in a call or on stage)",
+  "shortcutCamera": "Turn the camera on or off",
+  "shortcutScreen": "Start or stop screen sharing",
+  "shortcutClose": "Close a dialog",
   "filesOnStage": "Files can't be shared on a stage"
 }

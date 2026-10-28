@@ -18,7 +18,7 @@ import "@papchat/level-meter";
 import sheet from "./style.css" with { type: "css" };
 import type {
     DeviceLists, LanguageChangeEvent, Prefs, PrefsChangeEvent, PreviewDeviceEvent,
-    Profile, ProfileChangeEvent, Status, Tone,
+    Profile, ProfileChangeEvent, Shortcut, Status, Tone,
 } from "./types";
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
@@ -42,6 +42,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {MediaStream | null} camerastream camera test stream, set by the page after `preview-device` (property only)
  * @property {MediaStream | null} micstream microphone test stream (property only)
  * @property {boolean} sinkSupported the browser can pick an output device (default true)
+ * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
  * @fires prefs-change `{ partial }` ringtone, volume, devices or auto-decline changed
@@ -67,6 +68,7 @@ export class Settings extends CustomElement {
     @property({ type: Object, attribute: false }) camerastream?: MediaStream;
     @property({ type: Object, attribute: false }) micstream?: MediaStream;
     @property({ type: Boolean, attribute: false }) sinkSupported: boolean = true;
+    @property({ type: Array, attribute: false }) shortcuts: Shortcut[] = [];
 
     @query("pc-ringtone-picker") private ringtones?: Synced;
     @query("pc-language-picker") private languages?: Synced;
@@ -234,6 +236,7 @@ export class Settings extends CustomElement {
                         <pap-tab value="devices">${this.t("devices")}</pap-tab>
                         <pap-tab value="appearance">${this.t("appearance")}</pap-tab>
                         <pap-tab value="notifications">${this.t("notifications")}</pap-tab>
+                        ${this.shortcuts?.length ? html`<pap-tab value="shortcuts">${this.t("shortcuts")}</pap-tab>` : ""}
 
                         <pap-tabpanel value="profile">
                             <div class="field">
@@ -303,6 +306,14 @@ export class Settings extends CustomElement {
                             <pap-switch checked="${prefs?.notifications && "true"}" @change="${this.handleNotifications}">${this.t("notify")}</pap-switch>
                             <p class="hint">${this.t("notify-hint")}</p>
                         </pap-tabpanel>
+
+                        ${this.shortcuts?.length ? html`
+                            <pap-tabpanel value="shortcuts">
+                                <dl class="shortcuts">
+                                    ${this.shortcuts.map(item => html`<dt><kbd>${item.keys}</kbd></dt><dd>${item.label}</dd>`)}
+                                </dl>
+                            </pap-tabpanel>
+                        ` : ""}
                     </pap-tabs>
                 </div>
 
