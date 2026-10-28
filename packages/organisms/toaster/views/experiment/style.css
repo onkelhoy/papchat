@@ -1,3 +1,4 @@
+@import "@papchat/theme";
 @import "@papit/theme";
 
 body {
@@ -25,4 +26,24 @@ body {
         border: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
+}
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3, 12px);
+}
+
+/* demo only: show the toaster inside its section instead of fixed to the viewport */
+.frame {
+    position: relative;
+    block-size: 22rem;
+    transform: translateZ(0);
+    overflow: hidden;
+    border: 1px dashed var(--text-secondary, gray);
+    border-radius: 0.5rem;
+    background-color: var(--background);
+}
+
+.frame pc-toaster {
+    position: absolute;
 }

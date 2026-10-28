@@ -1,7 +1,16 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "toaster": "toaster"
+  "pc-toaster": {
+    "label": "Notifications"
+  },
+  "pc-toast": {
+    "dismiss": "Dismiss",
+    "info": "Info",
+    "success": "Success",
+    "warning": "Warning",
+    "error": "Error"
+  }
 }

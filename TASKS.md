@@ -172,16 +172,18 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - Leave a `slot="live"` above the list for stage cards (T5.3).
 - **events:** re-dispatches `member-action` (bubbles, composed).
 
-### [~] T1.11 pc-app-header · `sonnet` · needs T1.6, T1.8
+### [x] T1.11 pc-app-header · `sonnet` · needs T1.6, T1.8
 - **read:** `@papit/theme-picker`, `@papit/menu`.
 - **props:** `me` (`Profile`), `status` (lobby status), `language`, `live` (boolean: you are presenting).
 - **render:** logo/name "papchat", `pc-connection-status`, a "Go live" button, `pc-language-picker`, `pap-theme-picker storage="local"`, settings button, own `pc-avatar` with a status menu (`pap-menu`: available/busy/away/dnd).
 - **events:** `status-change` `{ status }`, `language-change` `{ value }`, `open-settings`, `go-live`. (No mobile menu button: `pc-app-shell` owns it.)
+- Done: `packages/organisms/app-header`. Props `me` (Profile|null, property only), `status` (LobbyStatus, `idle` shown as connecting), `language`, `live` (reflected; disables the button, text "You are live"). Events (none bubble): `status-change` `{status}`, `language-change` `{value}`, `open-settings`, `go-live` (no detail; T5.3 can intercept the button). Page must serve `/icons/spritesheet.svg` (needs `broadcast`, `settings`), `/icons/flags/*` and the theme-picker `/icons/sun|moon|computer.svg`; strings under `pc-app-header` (golive, live, settings, account, 4 statuses).
 
-### [~] T1.12 pc-onboarding · `sonnet` · needs T1.2, T1.8
+### [x] T1.12 pc-onboarding · `sonnet` · needs T1.2, T1.8
 - **read:** `@papit/dialog`, `@papit/input`.
 - **props:** `open` (boolean), `name`, `color`, `language`. Modal `pap-dialog` "Who are you?": name (required, 1–32 chars, trimmed), colour swatches (radio group, 8 colours, live `pc-avatar` preview), language picker. Can't be dismissed without a name.
 - **events:** `submit` `{ name, color, language }`. (The submit click is the user gesture that unlocks audio; the page uses it.)
+- Done: `packages/organisms/onboarding`. Props `open, name, color, language, colors` (`colors` = copy of core `PALETTE`, default same 8; core is not imported). Events `submit` `{name,color,language}` and extra `language-change` `{value}` (page should `translator.change` live and call `open = false` on submit: the dialog reopens itself if closed by Escape/X while `open`). Page must serve `/icons/flags/` for the picker.
 
 ### [ ] T1.13 Wire wave 1 · `opus` · needs T1.1, T1.9–T1.12
 - **files:** `packages/pages/app/**`
@@ -212,7 +214,8 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `send` `{ text }` (trimmed, then clears), `typing` (at most once per second while typing), `files` `{ files: File[] }`.
 - Done: `packages/molecules/composer`. Field is a native `<textarea>` (`pap-input` is single-line); attach opens a hidden `pap-file-input` (multiple) from a `pap-button`. Needs `/icons/spritesheet.svg` (paperclip, send). Events bubble+composed; `focus()` method; `disabled` reflected; strings `pc-composer.{placeholder,send,attach}`. T2.6: Enter during IME is ignored, `files` also needs the T4.4 drop zone to be done in the conversation.
 
-### [~] T2.4 pc-toast and pc-toaster · `sonnet` · needs T0.3
+### [x] T2.4 pc-toast and pc-toaster · `sonnet` · needs T0.3
+- Done. `pc-toast` events `dismiss`/`action` have no detail and do not bubble; the toast never removes itself. `pc-toaster` `toasts: Toast[]` (newest 4 shown, keyed by id so timers survive rerenders) re-dispatches `dismiss`/`action` `{ id }`; it does NOT call `onAction`, the page must (find the toast, run `onAction`, then drop it). Toaster is `position: fixed`, so it needs no slot styling.
 - `pc-toast` props: `kind` (`info|success|warning|error`), `text`, `action` (optional label), `duration` (ms, default 5000, 0 = sticky). Pauses timer on hover/focus. Events: `dismiss`, `action`.
 - `pc-toaster` props: `toasts` (`Toast[]` with `id`). Stack bottom-right (bottom-center on mobile), max 4 visible, `role="status"` region. Re-dispatches `dismiss` / `action` with `{ id }`.
 
@@ -221,13 +224,13 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `select` `{ id }`, `leave` `{ id }` (via a row menu).
 - Done: `packages/organisms/room-list`. `rooms` (`RoomSummary[]`, property only) and `active` (id); events `select`/`leave` `{ id }` (bubble, composed). The list never changes `active` itself: the page sets it on `select`. Needs `/icons/spritesheet.svg` served (phone icon). Empty `title` falls back to participant names; empty list shows a translated empty text. Added `@papchat/core` (types only) and `@papchat/theme` as devDependencies.
 
-### [ ] T2.6 pc-conversation · `sonnet` · needs T2.2, T2.3
+### [~] T2.6 pc-conversation · `sonnet` · needs T2.2, T2.3
 - **props:** `messages` (`ChatMessage[]`), `profiles` (`Record<uid, Profile>`), `me` (uid), `typing` (uid[]), `title`.
 - Message list with grouping computed here; auto-scroll to bottom on new messages unless the user scrolled up (then show a "New messages ↓" button). Typing line ("Anna is typing…", "Anna and Bob are typing…", "Several people…"). `pc-composer` at the bottom. Leave a `// T4.4 drop zone` marker.
 - **events:** re-dispatches `send`, `typing`, `files`.
 
 ### [ ] T2.7 Wire wave 2 · `opus` · needs T2.1, T2.4–T2.6
-- Sidebar: `pc-room-list` above `pc-member-list`. Main: `pc-conversation` for `activeRoom` (empty state "Pick someone to chat with" otherwise). `member-action: chat` → `openChat`. `toasts` → `pc-toaster`. Unread badge counts update, `markRead` on select. Document title shows total unread `(3) papchat`.
+- Sidebar: `pc-room-list` above `pc-member-list`. Main: `pc-conversation` for `activeRoom` (empty state "Pick someone to chat with" otherwise). `member-action: chat` → `openChat`. `toasts` → `pc-toaster`; on its `action` `{ id }` run that toast's `onAction` then dismiss it, on `dismiss` call `dismissToast(id)`. Unread badge counts update, `markRead` on select. Document title shows total unread `(3) papchat`.
 - **done when:** PLAN §6 flow 3 works between 3 tabs and on the deployed page.
 
 ---

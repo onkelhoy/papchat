@@ -28,6 +28,22 @@ npm install @papchat/toast
 <pc-toast></pc-toast>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `kind` | `kind` | `"info" \| "success" \| "warning" \| "error"` | `info` | reflected; sets accent colour and glyph |
+| `text` | `text` | `string` | - | the message |
+| `action` | `action` | `string` | - | label of an optional action button |
+| `duration` | `duration` | `number` | `5000` | ms until `dismiss` fires; `0` = sticky. Pauses while hovered or focused |
+
+| Event | Detail | Description |
+| --- | --- | --- |
+| `dismiss` | - | close button pressed or the timer ran out. Does not bubble; the toast does not remove itself |
+| `action` | - | action button pressed. Does not bubble |
+
+CSS: `--toast-background`, `--toast-max-width`, `--toast-glyph`, `::part(message|action|close)`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

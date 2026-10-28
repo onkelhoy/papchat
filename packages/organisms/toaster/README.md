@@ -28,6 +28,19 @@ npm install @papchat/toaster
 <pc-toaster></pc-toaster>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `toasts` | - | `Toast[]` | `[]` | `Toast` from `@papchat/core` (`id`, `kind`, `text`, `action?`, `duration?`). At most the newest 4 are shown, oldest on top |
+
+| Event | Detail | Description |
+| --- | --- | --- |
+| `dismiss` | `{ id: string }` | a toast timed out or was closed; the page removes it from `toasts` |
+| `action` | `{ id: string }` | a toast's action button was pressed; the page runs that toast's `onAction` (the toaster does not) |
+
+Fixed bottom-right (bottom-centre under 800 px) in a `role="status"` region labelled "Notifications". CSS: `--toaster-gap`, `--toaster-offset`, `--toaster-z`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

@@ -3,5 +3,7 @@
     "region": "GB",
     "language": "en"
   },
-  "toaster": "toaster"
+  "pc-toaster": {
+    "label": "Notifications"
+  }
 }
