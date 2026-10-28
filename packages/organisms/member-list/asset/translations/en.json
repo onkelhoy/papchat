@@ -3,5 +3,11 @@
     "region": "GB",
     "language": "en"
   },
-  "member-list": "member-list"
+  "pc-member-list": {
+    "online": "Online · {count}",
+    "search": "Search people",
+    "label": "People online",
+    "empty": "No one else here yet — share the link",
+    "no-results": "No one matches your search."
+  }
 }

@@ -3,25 +3,35 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MemberList | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-member-list | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>MemberList | experiment</h1>
+    <h1>pc-member-list</h1>
+    <p class="hint">Icons need <code>/icons/spritesheet.svg</code> (served by the app page). Arrow keys move between rows; search filters by name.</p>
+    <p id="log" class="hint">member-action events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-member-list></pc-member-list>
-        </pap-codeblock>
+        <h2>Full list (me, in a call, canInvite, status sorting)</h2>
+        <div class="box"><pc-member-list id="full" caninvite></pc-member-list></div>
+    </section>
+
+    <section>
+        <h2>Empty</h2>
+        <div class="box"><pc-member-list id="empty"></pc-member-list></div>
+    </section>
+
+    <section>
+        <h2>createElement, live updates (a member joins every 3 s)</h2>
+        <div class="box" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="box"><pc-member-list id="dark"></pc-member-list></div>
     </section>
 </body>
 

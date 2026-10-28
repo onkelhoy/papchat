@@ -25,8 +25,37 @@ npm install @papchat/member-list
   import "@papchat/member-list";
 </script>
 
-<pc-member-list></pc-member-list>
+<pc-member-list caninvite></pc-member-list>
+
+<script type="module">
+  const list = document.querySelector("pc-member-list");
+  list.me = { v: 1, uid: "u0", name: "Henry", color: "", status: "available" };
+  list.members = [{ v: 1, uid: "u1", name: "Anna Berg", color: "", status: "busy" }];
+  list.incall = ["u1"];
+  list.addEventListener("member-action", (e) => console.log(e.detail)); // { uid: "u1", action: "chat" }
+</script>
 ```
+
+A search box filters by name (client side). `me` is listed first as a `self` row, the others are sorted available → busy → away → dnd, then by name. Rows are in a `pap-group`: Tab enters the list once, the arrow keys move between rows. Icons come from `/icons/spritesheet.svg` (served by the app page).
+
+## API
+
+| Property    | Attribute   | Type                        | Default | Description                                         |
+| ----------- | ----------- | --------------------------- | ------- | --------------------------------------------------- |
+| `members`   | -           | `Profile[]` (`@papchat/core`) | `[]`  | everyone else online (an entry with `me`'s uid is ignored) |
+| `me`        | -           | `Profile`                   | -       | you; shown first with a "You" badge, counted in the heading |
+| `incall`    | -           | `string[]`                  | `[]`    | uids shown with the in-call phone icon              |
+| `canInvite` | `caninvite` | `boolean`                   | `false` | adds "Invite to current room" to each row menu      |
+
+| Event           | Detail                                                             | Description                                                              |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `member-action` | `{ uid: string, action: "chat" \| "call" \| "video" \| "invite" }` | from a row (bubbles, composed; `pc-member-item` dispatches it, nothing re-dispatches) |
+
+| Slot   | Description                                                   |
+| ------ | ------------------------------------------------------------- |
+| `live` | above the heading; for the "Live now" stage cards (T5.3)      |
+
+CSS: `::part(search|list|empty)`. Translations: `pc-member-list.*` in `asset/translations/en.json`.
 
 ## License
 

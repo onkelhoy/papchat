@@ -8,7 +8,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 - **Done:** 32/54 tasks (all `[x]` below, each committed).
 - **Interrupted, not finished:** T2.1 core invites/rooms (partial edits in `packages/foundations/core/src/`), T5.2 pc-stage-card (`packages/molecules/stage-card/`), T3.7 pc-call-stage (`packages/organisms/call-stage/`). Saved in the `wip:` commit; review and finish, or revert those files. T1.10 and T6.3 were stopped before writing anything.
-- **Next, in order:** T1.10 pc-member-list → T1.13 wire wave 1 (first runnable app) → T2.1 → T2.7. Unblocked components meanwhile: T3.7, T5.2, T6.3.
+- **Next, in order:** T1.13 wire wave 1 (first runnable app) → T2.1 → T2.7. Unblocked components meanwhile: T3.7, T5.2, T6.3.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
 
@@ -179,11 +179,12 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **slots:** `header`, `sidebar`, `main`, `overlay` (incoming calls), `toasts`. CSS grid: header on top, sidebar left (`pap-sidebar`), main fills. Under 800 px the sidebar slot moves into a `pap-drawer` opened by a menu button in the header area. **props:** `sidebaropen` (boolean, reflect). **events:** `sidebar-toggle` `{ open }`.
 - Done: `sidebaropen` default false (set it on wide screens or the sidebar is a 4rem rail), `sidebar-toggle` does not bubble, host is `100dvh`. Own menu button on mobile (T1.11's `menu-toggle` can just set `sidebaropen`). `overlay`/`toasts` are fixed full-viewport layers, only slotted content takes pointer events.
 
-### [ ] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
+### [x] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
 - **read:** `@papit/group`, `@papit/input` READMEs.
 - **props:** `members` (`Profile[]`), `me` (`Profile`), `incall` (uid[]), `canInvite` (boolean). Renders a search `pap-input` (filters by name, client side), count heading ("Online · 3"), `me` first with `self`, then others sorted available → busy → away → dnd, then name. List in a `pap-group` for arrow-key roving. Empty state: "No one else here yet — share the link".
 - Leave a `slot="live"` above the list for stage cards (T5.3).
 - **events:** re-dispatches `member-action` (bubbles, composed).
+- Done: `packages/organisms/member-list`. Props `members`, `me`, `incall` (all property-only), `canInvite` (attr `caninvite`); `member-action` comes straight from `pc-member-item` (nothing re-dispatched). `slot="live"` sits above the heading. Rows are keyed `pc-member-item`s whose props are set in `update()`. Removed `@papit/accordion` and `@papchat/stage-card` from its dependencies (T5.3 re-adds them; stage-card is unfinished). Heading counts `me` too.
 
 ### [x] T1.11 pc-app-header · `sonnet` · needs T1.6, T1.8
 - **read:** `@papit/theme-picker`, `@papit/menu`.

@@ -1,1 +1,1 @@
-export type ClickEvent = { timestamp: number };
+export type { MemberAction, MemberActionEvent } from "@papchat/member-item";

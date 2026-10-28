@@ -59,9 +59,7 @@
     "@papit/translator": "*",
     "@papit/group": "*",
     "@papit/input": "*",
-    "@papit/accordion": "*",
-    "@papchat/member-item": "*",
-    "@papchat/stage-card": "*"
+    "@papchat/member-item": "*"
   },
   "peerDependencies": {
     "react": "^19"
@@ -77,7 +75,9 @@
     "typescript": "5.9.3",
     "@papit/theme": "*",
     "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/codeblock": "*",
+    "@papchat/core": "*",
+    "@papchat/theme": "*"
   },
   "browserslist": [
     "defaults",
