@@ -3,25 +3,49 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevicePicker | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-device-picker | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>DevicePicker | experiment</h1>
+    <h1>pc-device-picker</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-device-picker></pc-device-picker>
-        </pap-codeblock>
+        <h2>Kinds</h2>
+        <div class="row">
+            <pc-device-picker kind="audioinput" id="mic"></pc-device-picker>
+            <pc-device-picker kind="videoinput" id="cam"></pc-device-picker>
+            <pc-device-picker kind="audiooutput" id="spk"></pc-device-picker>
+        </div>
+        <p id="log">change events show here</p>
+    </section>
+
+    <section>
+        <h2>States</h2>
+        <div class="row">
+            <pc-device-picker kind="audioinput" id="selected"></pc-device-picker>
+            <pc-device-picker kind="videoinput" id="unlabelled"></pc-device-picker>
+            <pc-device-picker kind="audioinput" id="empty"></pc-device-picker>
+        </div>
+        <p>Selected device / empty labels (before permission) / no devices. An unsupported <code>audiooutput</code> is hidden (the empty slot below):</p>
+        <div class="row">
+            <pc-device-picker kind="audiooutput" id="unsupported"></pc-device-picker>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-device-picker kind="audioinput" class="fake" value="mic-2"></pc-device-picker>
+            <pc-device-picker kind="videoinput" class="fake"></pc-device-picker>
+        </div>
     </section>
 </body>
 

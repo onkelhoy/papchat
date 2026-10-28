@@ -3,5 +3,17 @@
     "region": "GB",
     "language": "en"
   },
-  "device-picker": "device-picker"
+  "pc-device-picker": {
+    "default": "Default",
+    "kind": {
+      "audioinput": "Microphone",
+      "videoinput": "Camera",
+      "audiooutput": "Speaker"
+    },
+    "fallback": {
+      "audioinput": "Microphone",
+      "videoinput": "Camera",
+      "audiooutput": "Speaker"
+    }
+  }
 }

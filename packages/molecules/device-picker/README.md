@@ -25,8 +25,40 @@ npm install @papchat/device-picker
   import "@papchat/device-picker";
 </script>
 
-<pc-device-picker></pc-device-picker>
+<pc-device-picker kind="audioinput"></pc-device-picker>
+
+<script>
+  const picker = document.querySelector("pc-device-picker");
+  picker.devices = [{ deviceId: "abc", label: "USB Headset" }]; // from enumerateDevices()
+  picker.addEventListener("change", (e) => {
+    console.log(e.detail.value); // deviceId, "" = default
+  });
+</script>
 ```
+
+The component never calls `enumerateDevices` itself: the page passes the (filtered by `kind`) list in.
+"Default" is always the first entry and means `value = ""`; a device with `deviceId: "default"` is dropped from the list. Devices with an empty label (before media permission) show as "Microphone 1", "Camera 2", ...
+
+## API
+
+### Properties
+
+| Property    | Attribute | Type                                          | Default        | Description |
+| ----------- | --------- | --------------------------------------------- | -------------- | ----------- |
+| `kind`      | `kind`    | `"audioinput" \| "videoinput" \| "audiooutput"` | `"audioinput"` | Which kind of device this picks (sets the label) |
+| `devices`   | -         | `{ deviceId: string; label: string }[]`       | `[]`           | Available devices, set as a property |
+| `value`     | `value`   | `string`                                      | `""`           | Chosen `deviceId`, `""` = system default |
+| `supported` | -         | `boolean`                                     | `true`         | Set to `false` when `setSinkId` is unsupported: an `audiooutput` picker is then hidden |
+
+### Events
+
+| Event    | Detail              | Description |
+| -------- | ------------------- | ----------- |
+| `change` | `{ value: string }` | Another device was chosen, `""` for Default (bubbles, composed) |
+
+### CSS parts
+
+`label`, `trigger`.
 
 ## License
 
