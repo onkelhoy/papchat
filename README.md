@@ -1,6 +1,6 @@
 # @papchat/root
 
-![Logo](VARIABLE_GITHUB_REPO/blob/main/asset/logo.svg)
+![Logo](/asset/logo.svg)
 
 ## Introduction
 
