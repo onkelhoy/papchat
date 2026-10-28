@@ -1,0 +1,336 @@
+# papchat: tasks
+
+The work list for building papchat. `PLAN.md` is the spec, this file is the order. Each task is self-contained: a fresh session reads this header, takes the next free task, does it, ticks it off.
+
+---
+
+## How to work a task
+
+1. **Pick** the first task marked `[ ]` whose `needs` are all `[x]`, and that matches your model (see Model below). Tasks in the same wave with no shared `needs` can run in parallel sessions.
+2. **Claim** it: change `[ ]` to `[~]` before you start, so parallel sessions skip it.
+3. **Read** what the task lists under `read`, plus the `PLAN.md` sections it cites. Don't read the whole repo.
+4. **Do** it. Touch only the files the task names (plus `TASKS.md`). If you need a change outside them, write it under *Notes* at the bottom of this file and stop. Don't fix it yourself.
+5. **Check** the *done when* list. `npm run build` from the root must pass for every task.
+6. **Tick** `[~]` → `[x]`, add one line under the task if anything is worth knowing (e.g. "event renamed to X"), and commit only your files plus `TASKS.md`: `add: [pc-avatar] avatar atom` (`feat:`/`fix:` as fitting).
+
+**Model** (suggested, not enforced):
+- `opus` networking, core logic, the first component of a layer (the pattern others copy), page wiring.
+- `sonnet` components that follow an existing pattern, docs, polish.
+- `haiku` mechanical work (translations, renames).
+
+### Rules that apply to every task
+- **No tests.** Leave the scaffolded `tests/` folders and test scripts alone: ignore them, don't write or run tests, don't delete them.
+- **Components are dumb.** Properties in, events out. They never import `@papit/webrtc` or `@papchat/core` at runtime. `import type { … } from "@papchat/core"` is allowed (erased at build).
+- **Only `@papchat/core` imports `@papit/webrtc`.** Only `pages/app` imports core and wires it to components.
+- **House style:** 4-space indent, Allman braces for control flow (`if (x)\n{`), K&R for functions/methods, `handle<Event>` handlers bound with `@bind`, `// section` comments sparingly.
+- **Never put user text into `innerHTML`/`unsafeHTML`.** Use `html` template parts (they escape).
+- **Theme tokens only** (`--primary`, `--space-3`, `--radius-medium`, …), never raw colours or px for spacing. Check light and dark by eye.
+- **A11y:** follow the WAI-ARIA APG pattern for anything interactive; reflect state to ARIA and to `:state()`.
+- **Strings** go through `@papit/translator` (`@translate t = useTranslator("pc-<name>")`), with keys in `asset/translations/en.json` scoped by tag name. `sv.json` comes in T6.7, don't write it earlier.
+- **Never `setAttribute` in a constructor** (breaks `createElement`). Reflect in `connectedCallback`.
+- **Clean up** in `disconnectedCallback` everything `connectedCallback` added (listeners, observers, timers, AudioContexts, object URLs).
+
+### Component task anatomy
+Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name>`, already scaffolded (T0.2) under `packages/<layer>/<name>`. Files: `src/component.ts`, `src/style.css`, `src/types.ts`, `src/index.ts`, `asset/translations/en.json`, `views/experiment/index.html` (+ `main.js`) as its demo page. Add papit dependencies to that package's `package.json` `dependencies`.
+
+**Done when** (for every component, on top of the task's own list):
+- builds; `npm start` from its package shows the demo page with every state/variant side by side, in light and dark (`data-theme`), at 360 px and desktop width;
+- works when created with `document.createElement` and when parsed from HTML;
+- every property/event in the spec is in the package `README.md` (short: one table for properties, one for events).
+
+### Papit reference (read when the task says so)
+| Ref | Path |
+| --- | --- |
+| `WC` | `/Users/henry/Developer/projects/papit/.claude/skills/papit-web-component/SKILL.md` and `packages/web/engines/web-component/docs/` |
+| `DS` | `/Users/henry/Developer/projects/papit/.claude/skills/papit-design-system/SKILL.md` |
+| `SWITCH` | `/Users/henry/Developer/projects/papit/packages/web/design-system/atoms/switch/` (a component done right) |
+| `NET` | `/Users/henry/Developer/projects/papit/packages/network/webrtc/README.md` (Client, Media, Channel, status, events) |
+| `DEMO` | `/Users/henry/Developer/projects/webrtc/demo/src/main.js` (working plain-DOM Client/Media wiring) |
+| `STATIC` | `/Users/henry/Developer/projects/papit/packages/runtime/cli/static/README.md` |
+| `SIG` | `/Users/henry/Developer/projects/papit/packages/web/tools/signals/README.md` |
+| `TR` | `/Users/henry/Developer/projects/papit/packages/web/tools/translator/README.md` |
+| `<pkg>` | any `@papit/<pkg>` README: `/Users/henry/Developer/projects/papit/packages/web/design-system/*/<pkg>/README.md` |
+
+---
+
+## Wave 0: setup
+
+### [ ] T0.1 Root config · `opus` · needs T0.2
+- **files:** `package.json`, `.github/workflows/*`, `.gitignore`
+- **do:**
+  - root `package.json` (`htmlprefix` and `repository` are already set): add `@papit/static` and `@papit/svg-spritesheet` to devDependencies; remove the `publish` script; add `"pages": "npm run build && cd packages/pages/app && npx @papit/static -- --base /papchat/"`.
+  - delete `bin/publish.mjs`, `bin/runners/example-runner/`, and workflows `publish.yml`, `update-playwright-cache.yml`, `update-snapshots.yml`.
+  - `pull-request.yml` → checkout, setup-node from `.nvmrc`, `npm ci`, `npm run build`. Nothing else.
+  - add `pages.yml` (PLAN §7): on push to `main` + `workflow_dispatch`; permissions `pages: write`, `id-token: write`; `npm ci` → `npm run build` → `cd packages/pages/app && npx @papit/static -- --base /papchat/` → `actions/upload-pages-artifact` with `packages/pages/app/dist` → `actions/deploy-pages`.
+  - `.gitignore`: add `packages/**/dist/`.
+- **done when:** `npm run build` passes on the empty workspace; workflows are valid YAML.
+
+### [~] T0.2 Scaffold every package · `user`
+Done by hand with `npm create @papit -- --package=<type> --html-prefix=pc --no --name=<name> --description=…` (folder picked from the menu). 34 packages: foundations `theme` (theme), `core` (browser); atoms `avatar presence badge time level-meter progress video`; molecules `member-item connection-status message composer file-card call-controls video-tile incoming-call toast language-picker ringtone-picker device-picker stage-card`; organisms `member-list room-list conversation call-stage room invite-picker settings onboarding app-header toaster`; templates `app-shell`; pages `app` (browser). Then one root `npm install`. Scaffolded `tests/` stay and are ignored.
+- **done when:** all 34 exist, `npm install` and `npm run build` pass.
+
+### [ ] T0.3 Theme and icons · `sonnet` · needs T0.2
+- **read:** DS (theme tokens), `@papit/theme` and `@papit/icon` READMEs, `@papit/svg-spritesheet` README (`/Users/henry/Developer/projects/papit/packages/runtime/svg-spritesheet/`).
+- **files:** `packages/foundations/theme/**`
+- **do:** `src/theme.css` imports `@papit/theme` and overrides only brand tokens (`--primary` family with a papchat accent, chosen to pass WCAG AA in light and dark). Add presence colours as tokens: `--pc-available`, `--pc-busy`, `--pc-away`, `--pc-dnd`, `--pc-offline`. Add 24×24 stroke SVG icons (`currentColor`) to `asset/icons/`: mic, mic-off, camera, camera-off, screen, screen-off, phone, phone-off, user-plus, paperclip, send, settings, broadcast, download, x, users, chat, search, menu, play, stop, volume. Build them into a spritesheet that `pap-icon` can use.
+- **done when:** demo page shows every token swatch and every icon via `pap-icon`, light and dark.
+
+### [ ] T0.4 Core skeleton · `opus` · needs T0.2
+- **read:** PLAN §2.1, §2.3, §3.1, §3.2; SIG; NET (Client options).
+- **files:** `packages/foundations/core/src/{index,types,config,storage,state,log}.ts`, its `package.json` (deps `@papit/webrtc`, `@papit/signals`).
+- **do:**
+  - `types.ts`: `Profile`, `Status`, `Prefs`, `Debug`, `RoomSummary`, `StageSummary`, `ChatMessage`, `Invite`, `InviteKind`, `DeclineReason`, `Toast`, `IncomingCall`, `FileInfo`, `TransferState`. These are the shared types components `import type`.
+  - `config.ts`: signal URL resolution (default / localhost / `?signal=` stored in `papchat:debug`), `RTC`, `LIMITS = { roomSize: 8, fileBytes: 100 MB, ringMs: 30_000, chunk: 16 KiB, batch: 64 }`.
+  - `storage.ts`: typed, versioned get/set for `papchat:profile`, `papchat:prefs` (with defaults), `papchat:debug`, plus `session` (sessionStorage `papchat:session`: `{ rooms: {id, password, kind}[] }`). Every access in try/catch; corrupt or old-version data falls back to defaults.
+  - `state.ts`: signals for `me`, `prefs`, `lobbyStatus`, `members` (deduped by uid, newest peer wins), `rooms`, `activeRoom`, `stages`, `incoming`, `toasts`, plus `toast(kind, text)` helper.
+  - `log.ts`: `log(...)` only when `papchat:debug.log`.
+  - `index.ts` exports all of it and assigns `window.papchat = { state, … }` for console checks.
+- **done when:** builds; from the demo page console, `papchat.state.prefs()` returns defaults and survives a corrupted localStorage value.
+
+### [ ] T0.5 Page shell · `sonnet` · needs T0.3, T0.4
+- **read:** STATIC, PLAN §4.2 Page, §5.
+- **files:** `packages/pages/app/**`
+- **do:** `views/github/index.html` (theme stylesheet, `<pc-app-shell>` placeholder markup, `<script type="module" src="main.ts">` as static expects), `src/main.ts` (imports core, logs "papchat ready"), `tsconfig.json`. Create `asset/audio/ringtones/ringtones.json` as `[]` and `asset/audio/README.md` naming the files the user should drop in (PLAN §5). Remove the scaffolded component files that don't apply to a page.
+- **done when:** `npm run pages` writes `packages/pages/app/dist/` and serving that folder at `/papchat/` shows the page with the theme applied and no 404s in the network tab.
+
+### [ ] T0.6 Go live · `user` · needs T0.1, T0.5
+Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source: GitHub Actions. Check the empty shell is live.
+
+---
+
+## Wave 1: lobby (PLAN §2.2, §2.3, §6.1–2)
+
+### [ ] T1.1 Core: lobby · `opus` · needs T0.4
+- **read:** NET (all of Client, Status, Lifecycle), DEMO, PLAN §2.2–2.4.
+- **files:** `core/src/lobby.ts`, `core/src/identity.ts`, exports.
+- **do:** `identity.ts`: create/read profile (`uid` via `crypto.randomUUID`, random colour from a fixed palette), `setName/setColor/setStatus` that write storage, update `me` and call `lobby.setProfile`. `lobby.ts`: `startLobby()` per §2.2 steps 1–5 (canonical = smallest `meta.created`, then id; race guard re-`list()` after 2 s; one retry; space server calls ≥ 1 s apart); status → `lobbyStatus`; `members` event → `members` signal (exclude self, dedupe by uid); on `error` type `reconnect` → `leave()` + rerun boot; `send(uid, type, payload)` resolving uid → newest peer id; `broadcast`; an `on(type, handler)` dispatcher for app messages; `unreachable` → toast. No invites yet (T2.1).
+- **done when:** with `npx papit-signal-server --port 3000` and 3 tabs: all land in one lobby, each sees the other two in `papchat.state.members()`; two tabs opened within 100 ms converge on one lobby; closing the host tab keeps the others connected; killing and restarting the server reconnects everyone into one lobby.
+
+### [ ] T1.2 pc-avatar · `opus` (reference atom) · needs T0.3
+- **read:** WC, DS, SWITCH.
+- **props:** `name` (string), `color` (string, CSS colour; fallback: hue from hashing `uid`), `uid`, `size` (`"s" | "m" | "l"`, reflect). **slot:** `badge` (bottom-right, for `pc-presence`).
+- **render:** initials (first letters of first and last word, max 2, uppercase), text colour chosen for contrast. `role="img"`, `aria-label` = name.
+- This is the pattern every later component copies: keep it clean and commented where it matters.
+
+### [ ] T1.3 pc-presence · `sonnet` · needs T1.2
+- **props:** `status` (`available|busy|away|dnd|offline`, reflect). Dot using `--pc-<status>` tokens, `dnd` gets a bar, `away` a hollow ring (not colour-only). `role="img"`, translated `aria-label`.
+
+### [ ] T1.4 pc-badge · `sonnet` · needs T1.2
+- **props:** `count` (number; shows `99+` above 99, hidden at 0), `variant` (`neutral|primary|live|error`). Default slot for a text label ("Live", "Host", "You"). `live` variant has a pulsing dot (respect `prefers-reduced-motion`).
+
+### [ ] T1.5 pc-time · `sonnet` · needs T1.2
+- **props:** `at` (number, epoch ms). Renders `<time datetime>` with `Intl.RelativeTimeFormat` in the translator's current language ("just now" under 45 s). Re-renders every 30 s while connected (one shared interval for all instances). `title` = full local date-time.
+
+### [ ] T1.6 pc-connection-status · `sonnet` · needs T1.3
+- **props:** `status` (`connecting|waking|connected|reconnecting|closed`). Pill with dot + translated text; `waking` says "Waking up the server… (can take up to a minute)". `role="status"`, `aria-live="polite"`.
+
+### [ ] T1.7 pc-member-item · `opus` (reference molecule) · needs T1.2, T1.3, T1.4
+- **read:** `@papit/menu`, `@papit/button` READMEs.
+- **props:** `profile` (`Profile`), `self` (boolean, shows "You" badge, no actions), `incall` (boolean, small phone icon).
+- **render:** `pc-avatar` with `pc-presence` in its badge slot, name, translated status text; a `pap-menu` trigger (⋯) with Chat / Call / Video call / Invite to current room (hidden unless `canInvite`).
+- **props (cont.):** `canInvite` (boolean).
+- **events:** `member-action` `{ uid, action: "chat" | "call" | "video" | "invite" }`. Double-click / Enter on the row = `chat`.
+- Drop target comes in T4.4, leave a `// T4.4 drop target` marker.
+
+### [ ] T1.8 pc-language-picker · `sonnet` · needs T0.3
+- **read:** `@papit/menu`, `@papit/icon`, TR.
+- **props:** `value` (language code), `languages` (`{ code, label, flag }[]`, default en 🇬🇧 / sv 🇸🇪). Flags as `pap-icon` SVGs in this package's `asset/icons/flags/`.
+- **events:** `change` with `detail.value`. Does not call the translator itself.
+
+### [ ] T1.9 pc-app-shell · `sonnet` · needs T1.2
+- **read:** `@papit/sidebar`, `@papit/drawer` READMEs.
+- **slots:** `header`, `sidebar`, `main`, `overlay` (incoming calls), `toasts`. CSS grid: header on top, sidebar left (`pap-sidebar`), main fills. Under 800 px the sidebar slot moves into a `pap-drawer` opened by a menu button in the header area. **props:** `sidebaropen` (boolean, reflect). **events:** `sidebar-toggle` `{ open }`.
+
+### [ ] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
+- **read:** `@papit/group`, `@papit/input` READMEs.
+- **props:** `members` (`Profile[]`), `me` (`Profile`), `incall` (uid[]), `canInvite` (boolean). Renders a search `pap-input` (filters by name, client side), count heading ("Online · 3"), `me` first with `self`, then others sorted available → busy → away → dnd, then name. List in a `pap-group` for arrow-key roving. Empty state: "No one else here yet — share the link".
+- Leave a `slot="live"` above the list for stage cards (T5.3).
+- **events:** re-dispatches `member-action` (bubbles, composed).
+
+### [ ] T1.11 pc-app-header · `sonnet` · needs T1.6, T1.8
+- **read:** `@papit/theme-picker`, `@papit/menu`.
+- **props:** `me` (`Profile`), `status` (lobby status), `language`, `live` (boolean: you are presenting).
+- **render:** logo/name "papchat", `pc-connection-status`, a "Go live" button, `pc-language-picker`, `pap-theme-picker storage="local"`, settings button, own `pc-avatar` with a status menu (`pap-menu`: available/busy/away/dnd).
+- **events:** `status-change` `{ status }`, `language-change` `{ value }`, `open-settings`, `go-live`, `menu-toggle` (mobile).
+
+### [ ] T1.12 pc-onboarding · `sonnet` · needs T1.2, T1.8
+- **read:** `@papit/dialog`, `@papit/input`.
+- **props:** `open` (boolean), `name`, `color`, `language`. Modal `pap-dialog` "Who are you?": name (required, 1–32 chars, trimmed), colour swatches (radio group, 8 colours, live `pc-avatar` preview), language picker. Can't be dismissed without a name.
+- **events:** `submit` `{ name, color, language }`. (The submit click is the user gesture that unlocks audio; the page uses it.)
+
+### [ ] T1.13 Wire wave 1 · `opus` · needs T1.1, T1.9–T1.12
+- **files:** `packages/pages/app/**`
+- **do:** `main.ts`: load prefs, set translator language (stored → `navigator.language` → en) and register `/translations/<lang>.json`; no profile → `pc-onboarding`, then create profile; profile → `startLobby()`. Effects bind `me`, `lobbyStatus`, `members` to `pc-app-header` / `pc-member-list`. Header events update status/language (saved). `member-action` logs for now.
+- **done when:** PLAN §6 flows 1 and 2 work in 3 tabs locally and on the deployed page.
+
+---
+
+## Wave 2: chat rooms (PLAN §2.4, §2.5, §6.3)
+
+### [ ] T2.1 Core: invites and rooms · `opus` · needs T1.1
+- **read:** NET (Media, Channel), PLAN §2.4, §2.5.
+- **files:** `core/src/room.ts`, `core/src/invites.ts`, exports.
+- **do:**
+  - `Room` class wrapping its own `Client` (`ROOM_PLAN` from §2.5, `accept` size < 8): `static create(kind, title)` / `static join(id, password, kind)`; call `media.channel("file")` and `("state")` right after create/join; `messages` signal (`ChatMessage[]`, system messages for joined/left from `members` diffs by uid); `send(text)` via `client.broadcast("chat", …)`; typing over the `state` channel (throttled 1/s, expires after 4 s) → `typing` signal (uids); `participants` signal (profiles); `unread` count (reset by `markRead()` when it is `activeRoom`); `invite(uid, kind)` over the lobby; `leave()` (close client, remove from `rooms`, session storage). Reconnect error → rejoin with the stored id/password.
+  - `invites.ts`: handle `invite`, `invite.accept`, `invite.decline`, `invite.cancel` from the lobby. `chat` invite → auto-join the room, toast "Anna started a chat", unread +1 (no ring). 1:1 reuse: `openChat(uid)` reuses the existing 1:1 room for that uid. Rejected join (`network.reject`) → toast "room is full".
+  - On boot, rejoin rooms from `papchat:session` that still exist.
+- **done when:** from the console, tab A `papchat.openChat(<B's uid>)` → B gets the room; messages and typing flow both ways; a third tab invited joins and sees the system "joined" message; refresh of B rejoins.
+
+### [ ] T2.2 pc-message · `sonnet` · needs T1.2, T1.5
+- **props:** `message` (`ChatMessage`), `author` (`Profile`), `mine` (boolean), `grouped` (boolean: same author within 2 min, hide avatar and name), `variant` (`"text" | "system"`).
+- Text: plain text with URLs auto-linked by splitting the string into text and `<a target="_blank" rel="noopener noreferrer">` parts, never HTML. Preserve newlines. `mine` aligns right with the primary colour.
+
+### [ ] T2.3 pc-composer · `sonnet` · needs T0.3
+- **read:** `@papit/input`, `@papit/file-input`, `@papit/button`.
+- **props:** `disabled`, `placeholder`. Multiline input; Enter sends, Shift+Enter newline; send button (disabled when empty/whitespace); attach button via `pap-file-input` (multiple).
+- **events:** `send` `{ text }` (trimmed, then clears), `typing` (at most once per second while typing), `files` `{ files: File[] }`.
+
+### [ ] T2.4 pc-toast and pc-toaster · `sonnet` · needs T0.3
+- `pc-toast` props: `kind` (`info|success|warning|error`), `text`, `action` (optional label), `duration` (ms, default 5000, 0 = sticky). Pauses timer on hover/focus. Events: `dismiss`, `action`.
+- `pc-toaster` props: `toasts` (`Toast[]` with `id`). Stack bottom-right (bottom-center on mobile), max 4 visible, `role="status"` region. Re-dispatches `dismiss` / `action` with `{ id }`.
+
+### [ ] T2.5 pc-room-list · `sonnet` · needs T1.2, T1.4
+- **props:** `rooms` (`RoomSummary[]`: id, kind, title, participants `Profile[]`, unread, incall, live), `active` (id). Each row: stacked avatars (max 3), title (fallback: participant names), unread `pc-badge`, phone icon if in a call, `Live` badge for stages. `pap-group` roving, `aria-current` on the active one.
+- **events:** `select` `{ id }`, `leave` `{ id }` (via a row menu).
+
+### [ ] T2.6 pc-conversation · `sonnet` · needs T2.2, T2.3
+- **props:** `messages` (`ChatMessage[]`), `profiles` (`Record<uid, Profile>`), `me` (uid), `typing` (uid[]), `title`.
+- Message list with grouping computed here; auto-scroll to bottom on new messages unless the user scrolled up (then show a "New messages ↓" button). Typing line ("Anna is typing…", "Anna and Bob are typing…", "Several people…"). `pc-composer` at the bottom. Leave a `// T4.4 drop zone` marker.
+- **events:** re-dispatches `send`, `typing`, `files`.
+
+### [ ] T2.7 Wire wave 2 · `opus` · needs T2.1, T2.4–T2.6
+- Sidebar: `pc-room-list` above `pc-member-list`. Main: `pc-conversation` for `activeRoom` (empty state "Pick someone to chat with" otherwise). `member-action: chat` → `openChat`. `toasts` → `pc-toaster`. Unread badge counts update, `markRead` on select. Document title shows total unread `(3) papchat`.
+- **done when:** PLAN §6 flow 3 works between 3 tabs and on the deployed page.
+
+---
+
+## Wave 3: calls (PLAN §2.5 media, §2.8, §6.4–5, §6.7)
+
+### [ ] T3.1 Core: media, ringing, devices · `opus` · needs T2.1
+- **files:** `core/src/{room.ts,invites.ts,ringtone.ts,devices.ts}`, exports.
+- **do:**
+  - `Room`: `start(name)` / `stop(name)` for mic/camera/screen using chosen devices; `captures` signal (`Record<name, MediaStream>`); `streams` signal (`{ uid, name, stream }[]` from `stream` / `stream-ended`, peer → uid via profiles); mute/camera flags broadcast on `state` channel; `capture-ended` updates flags (browser-bar screen stop). `call(uid, "call" | "video")` creates the room, starts mic (+ camera), invites, plays ringback until first remote peer or `invite.accept`; all decline/timeout → toast + close the empty room. `cancel` sends `invite.cancel` to everyone still ringing. `me.status = busy` while in a call, restored after.
+  - `invites.ts`: `call`/`video`/`stage` invite → `incoming` signal entry + ringtone loop; auto-decline `timeout` after 30 s; `dnd` → decline `dnd`; busy + `prefs.autoDeclineBusy` → decline `busy`; `accept(id, withVideo)` / `decline(id)`.
+  - `ringtone.ts` (PLAN §5): list from `fetch("/audio/ringtones/ringtones.json")`, load via fetch → blob URL, cached; `play(id, { loop })`, `stop()`, `preview(id)`, volume from prefs, `ringback()`, `ping()`. **If a file is missing, synthesize the tone with WebAudio** (ring: two-tone 440/480 Hz pattern; ringback: 440 Hz 2 s on / 4 s off; ping: short 880 Hz) so it works before the user adds mp3s. `play()` rejection → `audioBlocked` signal true.
+  - `devices.ts`: `list()` via `enumerateDevices` (refresh on `devicechange`), chosen ids in prefs, `constraints(name)` for `media.start`, `setSink(el)` with `setSinkId` when supported.
+- **done when:** console: A calls B, B rings, accepts, both get each other's mic+camera streams in the signals; screen share from A shows up on B; stopping it from the browser bar clears it; decline and timeout both toast on A.
+
+### [ ] T3.2 pc-video · `sonnet` · needs T0.3
+- **props:** `stream` (`MediaStream`, property only), `muted`, `mirror`, `fit` (`cover|contain`), `sinkid`. Sets `srcObject`; calls `play()` and on rejection shows a "click to play" overlay button. Clears `srcObject` on disconnect.
+
+### [ ] T3.3 pc-level-meter · `sonnet` · needs T0.3
+- **props:** `stream` (`MediaStream`), `bars` (default 5). One shared `AudioContext` per page, an `AnalyserNode` per instance, `requestAnimationFrame` loop paused while hidden; closes its nodes on disconnect or stream change. `aria-hidden`.
+- **events:** `speaking` `{ speaking: boolean }` with ~300 ms hysteresis.
+
+### [ ] T3.4 pc-video-tile · `sonnet` · needs T3.2, T3.3, T1.2
+- **props:** `profile`, `video` (`MediaStream?`), `audio` (`MediaStream?`), `muted` (remote mic flag), `self` (mirror + `muted` video element), `screen` (boolean, `fit=contain`), `pinned`.
+- No video → large `pc-avatar` on a tinted background. Name label, mic-off icon when muted, level meter, speaking ring (from `speaking`). Pin and fullscreen buttons on hover/focus. **events:** `pin` `{ pinned }`.
+
+### [ ] T3.5 pc-call-controls · `sonnet` · needs T0.3
+- **read:** `@papit/group`, `@papit/tooltip`.
+- **props:** `mic`, `camera`, `screen` (booleans: on/off), `viewer` (only "Leave" and chat toggle), `canScreen` (hide on browsers without `getDisplayMedia`). Toolbar (`role="toolbar"` via `pap-group`): mic, camera, screen, invite, devices, hang up (error colour). Toggle buttons use `aria-pressed`. Tooltips with shortcut hints ("Mute (M)").
+- **events:** `toggle` `{ control: "mic" | "camera" | "screen" }`, `invite`, `devices`, `hangup`. (Global M/V/S shortcuts come in T6.6.)
+
+### [ ] T3.6 pc-incoming-call · `sonnet` · needs T1.2
+- **props:** `call` (`IncomingCall`: id, from `Profile`, kind, title). Card with large pulsing avatar (reduced-motion aware), "Anna is calling…" / "…video calling" / "…invites you to watch Demo". Buttons: Accept (audio), Accept with video (only for video), Decline. `role="alertdialog"`, focus moves to Accept.
+- **events:** `accept` `{ id, video }`, `decline` `{ id }`.
+
+### [ ] T3.7 pc-call-stage · `sonnet` · needs T3.4
+- **props:** `tiles` (`{ id, profile, video?, audio?, muted, screen, self }[]`). Responsive grid (1 → full, 2 → side by side, 3–4 → 2×2, up to 8 → 3 cols). A screen tile or a pinned tile becomes the big one with the rest in a strip. Self tile as a small corner overlay in 1:1 calls.
+
+### [ ] T3.8 pc-invite-picker · `sonnet` · needs T1.2
+- **read:** `@papit/dialog`, `@papit/checkbox`.
+- **props:** `open`, `members` (`Profile[]`, already filtered to people not in the room). Checkbox list with avatars and search. **events:** `invite` `{ uids }`, `close`.
+
+### [ ] T3.9 pc-room · `sonnet` · needs T3.5, T3.7, T2.6
+- **read:** `@papit/splitter`, `@papit/tabs`.
+- **props:** everything `pc-conversation` and `pc-call-stage` need, plus `incall` (boolean), `viewer` (boolean), control flags, `participants` (`Profile[]`), `files` (T4: leave the tab empty for now).
+- Not in call → just the conversation, full width, with "Call" / "Video" buttons in the room header. In call → `pap-splitter` with `pc-call-stage` + `pc-call-controls` on one side, `pap-tabs` (Chat / Files / People) on the other. Mobile: stage on top, tabs below.
+- Re-dispatches all child events.
+
+### [ ] T3.10 Wire wave 3 · `opus` · needs T3.1, T3.6, T3.8, T3.9
+- `pc-room` replaces `pc-conversation` in main. `incoming` → stacked `pc-incoming-call` in the shell's `overlay` slot. `member-action: call/video/invite`. Invite button → `pc-invite-picker`. `audioBlocked` → sticky toast "Click to enable sound" whose action plays a silent sound and clears it.
+- **done when:** PLAN §6 flows 4, 5 and 7 work between 3 tabs, and 1:1 video works between a phone and a laptop on the deployed page.
+
+---
+
+## Wave 4: files (PLAN §2.6, §6.6)
+
+### [ ] T4.1 Core: transfer · `opus` · needs T2.1
+- **files:** `core/src/transfer.ts`, `Room` integration.
+- **do:** exactly PLAN §2.6: `file.offer` via `client.broadcast`, frames `[16-byte fid][u32 seq][data ≤ 16 KiB]` on the `file` channel, batches of 64 with a short await, reassembly into a `Blob` per sender, progress for both ends, `file.cancel`, 100 MB cap (toast), files signal on the room (`FileInfo & TransferState`). Object URLs revoked on room leave. Validate every frame (length, known fid, seq range).
+- **done when:** a 50 MB file sent from A arrives byte-identical in B and C (compare SHA-256 in the console), with progress on both ends; cancel mid-way stops both.
+
+### [ ] T4.2 pc-progress · `sonnet` · needs T0.3
+- **props:** `value` (0–1), `label`. `role="progressbar"` with `aria-valuenow` 0–100. Indeterminate when `value` is unset.
+
+### [ ] T4.3 pc-file-card · `sonnet` · needs T4.2
+- **props:** `file` (`FileInfo & TransferState`: name, size, type, progress, state `sending|receiving|done|cancelled|failed`, url?), `mine`. Icon by type, name (ellipsis, full name in `title`), human size (`Intl.NumberFormat` units), `pc-progress` while in flight, Cancel while in flight, Download (`<a download>`) when done. Preview when done: `<img>` for images, `<video controls>`, `<audio controls>`.
+- **events:** `cancel` `{ fid }`.
+
+### [ ] T4.4 Drop zones · `sonnet` · needs T4.3
+- **files:** `organisms/conversation`, `molecules/member-item`, `organisms/room` (Files tab).
+- `pc-conversation`: full-area overlay on `dragenter` with files ("Drop to share"), dispatch `files`. Show file cards inline in the message list (a `file` message variant ordered by time). `pc-member-item`: drop target highlight, event `member-files` `{ uid, files }`. `pc-room` Files tab: list of `pc-file-card`s.
+
+### [ ] T4.5 Wire wave 4 · `sonnet` · needs T4.1, T4.4
+- `files` from the composer or a drop → `room.sendFiles`. `member-files` → `openChat(uid)` then send. Cancel wired.
+- **done when:** PLAN §6 flow 6 works between 3 tabs.
+
+---
+
+## Wave 5: stage (PLAN §2.7, §6.8)
+
+### [ ] T5.1 Core: stage · `opus` · needs T3.1
+- **files:** `core/src/stage.ts`, `lobby.ts`/`invites.ts` additions.
+- **do:** `Stage` per §2.7 (multicast fanout 3, media plan mic/camera/screen). Presenter: `goLive(title)`, captures, `end()` → `stage.end` + close. Viewer: `watch(id)`, `streams` signal of the host's streams only, viewer count from members. Chat via `client.broadcast`. Lobby: `stage.announce` / `stage.end` / `stage.query` (sent once after lobby join; presenters answer by unicast) → `stages` signal; `list()` fallback for stages missed. Host leaving → treat as ended.
+- **done when:** console: A goes live with camera, B and C watch and see it, a 5-tab test shows the tree relaying (C's stream comes via B when fanout is lowered to 1 for the test), A ends and all viewers get `stage.end`.
+
+### [ ] T5.2 pc-stage-card · `sonnet` · needs T1.2, T1.4
+- **props:** `stage` (`StageSummary`: id, title, presenter `Profile`, viewers, mine). Live badge, title, presenter avatar + name, viewer count, "Watch" button (or "You're live" when `mine`). **events:** `watch` `{ id }`.
+
+### [ ] T5.3 Stage UI · `sonnet` · needs T5.2, T3.9
+- **files:** `organisms/member-list` (fill the `live` slot area: "Live now" `pap-accordion` section of `pc-stage-card`s, hidden when empty), `organisms/room` (`viewer` mode: big presenter tile, no capture controls, chat tab only), `organisms/app-header` ("Go live" opens a small `pap-dialog` asking for a title; event `go-live` `{ title }`; shows "End broadcast" when `live`).
+
+### [ ] T5.4 Wire wave 5 · `opus` · needs T5.1, T5.3
+- **done when:** PLAN §6 flow 8 works with 4 tabs and a phone; the stage also shows in the room list with a Live badge.
+
+---
+
+## Wave 6: polish (PLAN §6.9, §5, §10)
+
+### [ ] T6.1 pc-ringtone-picker · `sonnet` · needs T0.3
+- **read:** `@papit/radio`.
+- **props:** `tones` (`{ id, label }[]`), `value`, `volume` (0–1). Radio list, each with a ▶/■ preview button; volume slider (native `input[type=range]` styled with tokens). **events:** `change` `{ value }`, `volume` `{ volume }`, `preview` `{ id }`, `preview-stop`.
+
+### [ ] T6.2 pc-device-picker · `sonnet` · needs T0.3
+- **read:** `@papit/menu`.
+- **props:** `kind` (`audioinput|videoinput|audiooutput`), `devices` (`{ deviceId, label }[]`), `value`. Labelled `pap-menu` button acting as a select (`aria-haspopup="listbox"`), "Default" first. Hidden for `audiooutput` when `setSinkId` isn't supported (`supported` prop). **events:** `change` `{ value }`.
+
+### [ ] T6.3 pc-settings · `sonnet` · needs T6.1, T6.2, T1.8
+- **read:** `@papit/dialog`, `@papit/tabs`, `@papit/switch`.
+- **props:** `open`, `profile`, `prefs`, `tones`, `devices`, `language`. Dialog with tabs: Profile (name, colour, status), Sound (ringtone picker, volume, "auto-decline when busy" switch), Devices (3 device pickers + camera preview `pc-video` + mic `pc-level-meter`), Appearance (theme picker, language picker), Notifications (switch; asks permission via an event). Everything applies immediately (no Save button).
+- **events:** `profile-change` `{ partial }`, `prefs-change` `{ partial }`, `language-change`, `request-notifications`, `preview-device` `{ kind }`, `close`.
+
+### [ ] T6.4 Wire settings and notifications · `opus` · needs T6.3, T3.1
+- **files:** `core/src/notify.ts`, page.
+- **do:** settings dialog wired to identity/prefs/devices/ringtone. `notify.ts`: `Notification` for incoming calls and messages while hidden (if permitted), title flashing while ringing and hidden. Auto `away` after 5 min hidden, restored on return (never overrides `dnd`/`busy`).
+
+### [ ] T6.5 Mobile layout pass · `sonnet` · needs T5.4
+- Walk every view at 360 px and 768 px: drawer sidebar, room stage/tabs stacking, incoming call full-width, toasts. Fix within the affected components' `style.css` only.
+
+### [ ] T6.6 Keyboard shortcuts · `sonnet` · needs T3.10
+- **files:** page only. M / V / S toggle mic / camera / screen in the active call, `Escape` closes dialogs (check pap-dialog does it), ignored while typing in an input. Listed in the settings dialog (add a "Shortcuts" section via a prop).
+
+### [ ] T6.7 Swedish · `haiku` · needs T6.3
+- Add `asset/translations/sv.json` next to every `en.json` with the same keys. Natural Swedish, informal "du". Check the language switch changes every visible string live.
+
+### [ ] T6.8 README · `sonnet` · needs T5.4
+- Root `README.md` per PLAN §6/§10: what papchat is, live link, screenshots (light and dark, call, stage), "How the WebRTC works here" (lobby/room/stage diagram from PLAN §2, the invite protocol table, why SDP still goes via the signal server), local dev, known limits, papit gaps (PLAN §9).
+
+### [ ] T6.9 Final live pass · `opus` · needs everything
+- Every PLAN §6 flow on the deployed page with: 2 desktop browsers (Chrome + Firefox or Safari), 1 phone on mobile data. Fix what breaks, list what can't be fixed under known limits in the README.
+
+---
+
+## Notes
+<!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->

@@ -1,0 +1,75 @@
+{
+  "name": "@papchat/theme",
+  "description": "papchat brand tokens and icons on top of @papit/theme",
+  "keywords": [
+    "papit",
+    "typescript",
+    "theme"
+  ],
+  "version": "0.0.1",
+  "scripts": {
+    "watch": "tsc -w",
+    "start": "npx @papit/server --info --live",
+    "test": "npx playwright test -c tests/playwright.config.ts $@",
+    "preversion": "papit-version",
+    "postversion": "papit-version",
+    "component": "npm create @papit -- --component",
+    "test:update-snapshots": "npx playwright test --update-snapshots -c tests/playwright.config.ts",
+    "test:chrome": "npm test -- --project=chromium"
+  },
+  "type": "module",
+  "files": [
+    "asset/",
+    "lib/"
+  ],
+  "style": "./lib/theme.css",
+  "exports": {
+    ".": "./lib/theme.css",
+    "./theme.css": "./lib/theme.css"
+  },
+  "author": "henry",
+  "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/onkelhoy/papchat/tree/main/packages/foundations/theme",
+  "bugs": {
+    "url": "https://github.com/onkelhoy/papchat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onkelhoy/papchat.git",
+    "directory": "packages/foundations/theme"
+  },
+  "sideEffects": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "playwright": "1.64.1",
+    "typescript": "5.9.3",
+    "@papit/theme": "*",
+    "@papit/translator": "*",
+    "@papit/codeblock": "*"
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "not dead"
+  ],
+  "papit": {
+    "publish": true,
+    "type": "theme",
+    "main": "theme",
+    "components": {
+      "theme": {
+        "className": "Theme",
+        "htmlprefix": "pc"
+      }
+    }
+  }
+}

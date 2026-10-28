@@ -43,5 +43,11 @@
         "@papit/analyse": "*",
         "@papit/react": "*"
     },
-    "papit": {}
+    "papit": {
+        "htmlprefix": "pc"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/onkelhoy/papchat.git"
+    }
 }

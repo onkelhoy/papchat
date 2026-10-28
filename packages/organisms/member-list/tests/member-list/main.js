@@ -1,0 +1,1 @@
+import '@papchat/member-list';

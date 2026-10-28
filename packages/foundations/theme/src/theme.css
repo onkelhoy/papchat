@@ -1,0 +1,207 @@
+@layer theme {
+    :root {
+        /* Brand */
+        --primary: light-dark(oklch(14% 0 0), oklch(92% 0 0));
+        /* near black */
+        --secondary: light-dark(oklch(80% 0 0), oklch(28% 0 0));
+        /* near #ccc  */
+        --tertiary: light-dark(oklch(55% 0 0), oklch(55% 0 0));
+        /* mid grey   */
+
+        --text: light-dark(oklch(10% 0 0), oklch(95% 0 0));
+        --text-inverse: light-dark(oklch(95% 0 0), oklch(10% 0 0));
+        --text-secondary: light-dark(oklch(42% 0 0), oklch(62% 0 0));
+        /* muted, readable in both modes */
+
+        /* Semantic — vivid, same hues in both modes */
+        --success: light-dark(oklch(50% 0.18 145), oklch(72% 0.20 145));
+        /* spring green  */
+        --info: light-dark(oklch(46% 0.20 262), oklch(65% 0.20 262));
+        /* deep blue     */
+        --warning: light-dark(oklch(58% 0.18 68), oklch(80% 0.18 68));
+        /* orange-yellow */
+        --error: light-dark(oklch(50% 0.22 25), oklch(65% 0.22 25));
+        /* fire red      */
+
+        /* In light mode: backgrounds are near-white, constrained range so nothing feels "dark" */
+        --background-light: light-dark(oklch(99% 0 0), oklch(22% 0 0));
+        /* page canvas */
+        --background: light-dark(oklch(96% 0 0), oklch(17% 0 0));
+        /* cards, panels */
+        --background-dark: light-dark(oklch(90% 0 0), oklch(12% 0 0));
+        /* borders, pressed, wells */
+
+        /* In light mode: foregrounds are near-black, three intensities */
+        --foreground-light: light-dark(oklch(52% 0 0), oklch(62% 0 0));
+        /* placeholder, caption, muted */
+        --foreground: light-dark(oklch(24% 0 0), oklch(86% 0 0));
+        /* body text */
+        --foreground-dark: light-dark(oklch(10% 0 0), oklch(96% 0 0));
+        /* headings, emphasis */
+
+        /* INVERSE Backgrounds — near white → mid grey */
+
+        --background-light-inverse: light-dark(oklch(22% 0 0), oklch(99% 0 0));
+        /* page canvas */
+        --background-inverse: light-dark(oklch(17% 0 0), oklch(96% 0 0));
+        /* cards, panels */
+        --background-dark-inverse: light-dark(oklch(12% 0 0), oklch(90% 0 0));
+        /* borders, pressed, wells */
+
+        /* In light mode: foregrounds are near-black, three intensities */
+        --foreground-light-inverse: light-dark(oklch(62% 0 0), oklch(52% 0 0));
+        /* placeholder, caption, muted */
+        --foreground-inverse: light-dark(oklch(86% 0 0), oklch(24% 0 0));
+        /* body text */
+        --foreground-dark-inverse: light-dark(oklch(96% 0 0), oklch(10% 0 0));
+        /* headings, emphasis */
+
+        --focus-color: light-dark(blue, cornflowerblue);
+        --shade-0: light-dark(black, white);
+        --shade-1: light-dark(white, black);
+    }
+
+    /* make sure web-components are hidden intially to avoid flashes */
+    *:not(:defined) {
+        visibility: hidden;
+    }
+
+    :root {
+        color-scheme: light;
+
+        [data-theme="opposite"],
+        .theme-opposite {
+            color-scheme: dark;
+            background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+            color: var(--text);
+
+            [data-theme="opposite"],
+            .theme-opposite {
+                color-scheme: light;
+            }
+
+            /* nested 1 level */
+        }
+
+        @media (prefers-color-scheme: dark) {
+            color-scheme: dark;
+
+            [data-theme="opposite"],
+            .theme-opposite {
+                color-scheme: light;
+
+                [data-theme="opposite"],
+                .theme-opposite {
+                    color-scheme: dark;
+                }
+
+                /* nested 1 level */
+            }
+        }
+    }
+
+    [data-theme="light"],
+    .theme-light {
+        color-scheme: light;
+
+        [data-theme="opposite"],
+        .theme-opposite {
+            color-scheme: dark;
+
+            [data-theme="opposite"],
+            .theme-opposite {
+                color-scheme: light;
+            }
+
+            /* nested 1 level */
+        }
+    }
+
+    [data-theme="dark"],
+    .theme-dark {
+        color-scheme: dark;
+
+        [data-theme="opposite"],
+        .theme-opposite {
+            color-scheme: light;
+
+            [data-theme="opposite"],
+            .theme-opposite {
+                color-scheme: dark;
+            }
+
+            /* nested 1 level */
+        }
+    }
+
+    /* == UNITS == */
+    :root {
+        --base-unit: 0.25rem;
+        --space-1: calc(var(--base-unit) * 1);
+        /* 0.25rem - 4px  */
+        --space-2: calc(var(--base-unit) * 2);
+        /* 0.5rem  - 8px  */
+        --space-3: calc(var(--base-unit) * 3);
+        /* 0.75rem - 12px */
+        --space-4: calc(var(--base-unit) * 4);
+        /* 1rem    - 16px */
+        --space-5: calc(var(--base-unit) * 5);
+        /* 1.25rem - 20px */
+        --space-6: calc(var(--base-unit) * 6);
+        /* 1.5rem  - 24px */
+        --space-7: calc(var(--base-unit) * 7);
+        /* 1.75rem - 28px */
+        --space-8: calc(var(--base-unit) * 8);
+        /* 2rem    - 32px */
+        --space-9: calc(var(--base-unit) * 9);
+        /* 2.25rem - 36px */
+        --space-10: calc(var(--base-unit) * 10);
+        /* 2.5rem  - 40px */
+        --space-11: calc(var(--base-unit) * 11);
+        /* 2.75rem - 44px */
+        --space-12: calc(var(--base-unit) * 12);
+        /* 3rem    - 48px */
+        --space-13: calc(var(--base-unit) * 13);
+        /* 3.25rem - 52px */
+        --space-14: calc(var(--base-unit) * 14);
+        /* 3.5rem  - 56px */
+        --space-15: calc(var(--base-unit) * 15);
+        /* 3.75rem - 60px */
+        --space-16: calc(var(--base-unit) * 16);
+        /* 4rem    - 64px */
+        --space-17: calc(var(--base-unit) * 17);
+        /* 4.25rem - 68px */
+        --space-18: calc(var(--base-unit) * 18);
+        /* 4.5rem  - 72px */
+        --space-19: calc(var(--base-unit) * 19);
+        /* 4.75rem - 76px */
+        --space-20: calc(var(--base-unit) * 20);
+        /* 5rem    - 80px */
+
+        --radius-small: var(--space-2);
+        --radius-medium: var(--space-4);
+        --radius-large: var(--space-8);
+        --radius-full: 100vh;
+    }
+
+    /* THEME VIEW TRANSITION */
+    @media (prefers-reduced-motion: no-preference) {
+        ::view-transition-old(root) {
+            animation-delay: 500ms;
+        }
+
+        ::view-transition-new(root) {
+            animation: theme-transition-in 500ms;
+        }
+    }
+
+    @keyframes theme-transition-in {
+        from {
+            clip-path: circle(0% at var(--theme-transition-location, 80% 0%));
+        }
+
+        to {
+            clip-path: circle(200% at var(--theme-transition-location, 80% 0%));
+        }
+    }
+}
