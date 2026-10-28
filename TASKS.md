@@ -341,10 +341,11 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 5: stage (PLAN §2.7, §6.8)
 
-### [ ] T5.1 Core: stage · `opus` · needs T3.1
+### [x] T5.1 Core: stage · `opus` · needs T3.1
 - **files:** `core/src/stage.ts`, `lobby.ts`/`invites.ts` additions.
 - **do:** `Stage` per §2.7 (multicast fanout 3, media plan mic/camera/screen). Presenter: `goLive(title)`, captures, `end()` → `stage.end` + close. Viewer: `watch(id)`, `streams` signal of the host's streams only, viewer count from members. Chat via `client.broadcast`. Lobby: `stage.announce` / `stage.end` / `stage.query` (sent once after lobby join; presenters answer by unicast) → `stages` signal; `list()` fallback for stages missed. Host leaving → treat as ended.
 - **done when:** console: A goes live with camera, B and C watch and see it, a 5-tab test shows the tree relaying (C's stream comes via B when fanout is lowered to 1 for the test), A ends and all viewers get `stage.end`.
+- Done: `core/src/stage.ts`. `goLive(title)` / `watch(id)` (null + toast on failure), `leaveStage()`, `currentStage` signal (one stage at a time). `Stage`: `messages()`, `captures()`, `streams()` (the presenter's streams by name), `viewers()`, `start/stop(name)` + `invite(uid)` (presenter), `send(text)`, `end()` (presenter: `stage.end` + close; viewer: leave). Lobby: `stage.announce` (with `viewers`, re-sent at most every 5 s), `stage.end`, `stage.query` once per lobby connection, `list()` fallback 2 s later → `stages` signal; a presenter gone from the lobby drops their stage. Viewer ends on host gone from members or on reconnect. Stage invites: `acceptInvite` watches instead of joining a room. Fanout for the relay test: `papchat.setStageFanout(1)` before going live. Presenting/watching doesn't set `busy`. Typecheck + build pass; not run in a browser.
 
 ### [x] T5.2 pc-stage-card · `sonnet` · needs T1.2, T1.4
 - **props:** `stage` (`StageSummary`: id, title, presenter `Profile`, viewers, mine). Live badge, title, presenter avatar + name, viewer count, "Watch" button (or "You're live" when `mine`). **events:** `watch` `{ id }`.

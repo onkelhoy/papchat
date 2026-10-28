@@ -4,6 +4,7 @@ import { LIMITS } from "./config";
 import { on, peerOf, profileOf, send } from "./lobby";
 import { log } from "./log";
 import { play, ringback, stop as stopRinging } from "./ringtone";
+import { watch } from "./stage";
 import { allRooms, directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
 import { incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
 import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, RoomKind } from "./types";
@@ -88,6 +89,13 @@ export async function acceptInvite(roomId: string, withVideo = false): Promise<R
     if (!invite) return null;
     stopRing(roomId);
     send(invite.from, "invite.accept", { room: invite.room });
+
+    // a stage invite: watch it (stages aren't rooms)
+    if (invite.kind === "stage")
+    {
+        await watch(invite.room);
+        return null;
+    }
 
     const room = await joinFromInvite(invite, false);
     if (!room) return null;
