@@ -55,7 +55,7 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
 
 ## Wave 0: setup
 
-### [ ] T0.1 Root config · `opus` · needs T0.2
+### [x] T0.1 Root config · `opus` · needs T0.2
 - **files:** `package.json`, `.github/workflows/*`, `.gitignore`
 - **do:**
   - root `package.json` (`htmlprefix` and `repository` are already set): add `@papit/static` and `@papit/svg-spritesheet` to devDependencies; remove the `publish` script; add `"pages": "npm run build && cd packages/pages/app && npx @papit/static -- --base /papchat/"`.
@@ -65,7 +65,7 @@ Every `pc-*` component lives in its own package `@papchat/<name>`, tag `pc-<name
   - `.gitignore`: add `packages/**/dist/`.
 - **done when:** `npm run build` passes on the empty workspace; workflows are valid YAML.
 
-### [~] T0.2 Scaffold every package · `user`
+### [x] T0.2 Scaffold every package · `user`
 Done by hand with `npm create @papit -- --package=<type> --html-prefix=pc --no --name=<name> --description=…` (folder picked from the menu). 34 packages: foundations `theme` (theme), `core` (browser); atoms `avatar presence badge time level-meter progress video`; molecules `member-item connection-status message composer file-card call-controls video-tile incoming-call toast language-picker ringtone-picker device-picker stage-card`; organisms `member-list room-list conversation call-stage room invite-picker settings onboarding app-header toaster`; templates `app-shell`; pages `app` (browser). Then one root `npm install`. Scaffolded `tests/` stay and are ignored.
 - **done when:** all 34 exist, `npm install` and `npm run build` pass.
 
@@ -75,7 +75,7 @@ Done by hand with `npm create @papit -- --package=<type> --html-prefix=pc --no -
 - **do:** `src/theme.css` imports `@papit/theme` and overrides only brand tokens (`--primary` family with a papchat accent, chosen to pass WCAG AA in light and dark). Add presence colours as tokens: `--pc-available`, `--pc-busy`, `--pc-away`, `--pc-dnd`, `--pc-offline`. Add 24×24 stroke SVG icons (`currentColor`) to `asset/icons/`: mic, mic-off, camera, camera-off, screen, screen-off, phone, phone-off, user-plus, paperclip, send, settings, broadcast, download, x, users, chat, search, menu, play, stop, volume. Build them into a spritesheet that `pap-icon` can use.
 - **done when:** demo page shows every token swatch and every icon via `pap-icon`, light and dark.
 
-### [ ] T0.4 Core skeleton · `opus` · needs T0.2
+### [x] T0.4 Core skeleton · `opus` · needs T0.2
 - **read:** PLAN §2.1, §2.3, §3.1, §3.2; SIG; NET (Client options).
 - **files:** `packages/foundations/core/src/{index,types,config,storage,state,log}.ts`, its `package.json` (deps `@papit/webrtc`, `@papit/signals`).
 - **do:**
@@ -86,6 +86,7 @@ Done by hand with `npm create @papit -- --package=<type> --html-prefix=pc --no -
   - `log.ts`: `log(...)` only when `papchat:debug.log`.
   - `index.ts` exports all of it and assigns `window.papchat = { state, … }` for console checks.
 - **done when:** builds; from the demo page console, `papchat.state.prefs()` returns defaults and survives a corrupted localStorage value.
+- Done. State setters are exported next to readers (`setMe`, `setMembers`, …, `setPrefs(partial)` persists). `Prefs.language` defaults to `""` = not chosen yet. `ChatMessage.variant` includes `"file"`; `FileEntry = FileInfo & TransferState`.
 
 ### [ ] T0.5 Page shell · `sonnet` · needs T0.3, T0.4
 - **read:** STATIC, PLAN §4.2 Page, §5.
@@ -334,3 +335,5 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
+- Root has `npm run signal` (local signal server on :3000) and `npm run pages` (build + static site).
+- Scaffolded `tests/` folders stay and are ignored (T0.2).

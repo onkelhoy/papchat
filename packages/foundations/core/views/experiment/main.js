@@ -1,13 +1,9 @@
-import { translator } from '@papit/translator';
-import "@papit/codeblock";
-
-// component
+// core has no UI: open the console and use `papchat` (papchat.state.prefs(), papchat.setLogging(true), …)
 import '@papchat/core';
 
-window.onload = () => {
-    console.log('[demo]: window loaded');
-
-    translator.add({ id: "en", url: "/en.json" });
-    translator.change("en");
-}
-
+const out = document.querySelector("pre");
+out.textContent = JSON.stringify({
+    signal: window.papchat.signalUrl(),
+    prefs: window.papchat.state.prefs(),
+    me: window.papchat.state.me(),
+}, null, 4);

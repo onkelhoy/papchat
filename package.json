@@ -5,14 +5,15 @@
     "private": true,
     "scripts": {
         "analyse": "npm run analyse --workspaces --if-present",
-        "publish": "to come",
         "clean": "node bin/clean.mjs",
         "build": "npx @papit/build",
         "test": "node bin/test.mjs",
         "create": "npm create @papit -- --package",
         "start": "npx @papit/server --serve --info",
         "version:reset": "npx @papit/version --reset",
-        "version:sync": "npx @papit/version --sync"
+        "version:sync": "npx @papit/version --sync",
+        "pages": "npm run build && cd packages/pages/app && npx @papit/static -- --base /papchat/",
+        "signal": "npx @papit/signal-server --port 3000"
     },
     "keywords": [
         "typescript",
@@ -41,7 +42,10 @@
         "@papit/create": "*",
         "@papit/version": "*",
         "@papit/analyse": "*",
-        "@papit/react": "*"
+        "@papit/react": "*",
+        "@papit/static": "*",
+        "@papit/svg-spritesheet": "*",
+        "@papit/signal-server": "*"
     },
     "papit": {
         "htmlprefix": "pc"
