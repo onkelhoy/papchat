@@ -1,7 +1,27 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "call-controls": "call-controls"
+  "pc-call-controls": {
+    "label": "Call controls",
+    "mic": "Microphone",
+    "camera": "Camera",
+    "screen": "Screen sharing",
+    "chat": "Chat",
+    "invite": "Invite",
+    "devices": "Devices",
+    "hangup": "Leave call",
+    "micOn": "Mute (M)",
+    "micOff": "Unmute (M)",
+    "cameraOn": "Turn camera off (V)",
+    "cameraOff": "Turn camera on (V)",
+    "screenOn": "Stop sharing (S)",
+    "screenOff": "Share screen (S)",
+    "chatOn": "Hide chat",
+    "chatOff": "Show chat",
+    "inviteTip": "Invite someone",
+    "devicesTip": "Devices",
+    "hangupTip": "Leave call"
+  }
 }

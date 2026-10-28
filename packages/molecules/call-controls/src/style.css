@@ -1,4 +1,26 @@
 :host {
+    display: inline-block;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+pap-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-2, 0.5rem);
+}
+
+pap-button {
+    flex: none;
+}
+
+pap-icon {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
 }

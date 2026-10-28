@@ -3,25 +3,64 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CallControls | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-call-controls | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>CallControls | experiment</h1>
+    <h1>pc-call-controls</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Default (all off) and interactive</h2>
+        <div class="row">
+            <pc-call-controls id="main"></pc-call-controls>
+            <pre id="log">events show here</pre>
+        </div>
+    </section>
+
+    <section>
+        <h2>Mic and camera on</h2>
+        <div class="row">
+            <pc-call-controls mic camera></pc-call-controls>
+        </div>
+    </section>
+
+    <section>
+        <h2>Sharing screen</h2>
+        <div class="row">
+            <pc-call-controls mic camera screen></pc-call-controls>
+        </div>
+    </section>
+
+    <section>
+        <h2>No screen sharing support (canscreen="false")</h2>
+        <div class="row">
+            <pc-call-controls mic canscreen="false"></pc-call-controls>
+        </div>
+    </section>
+
+    <section>
+        <h2>Viewer</h2>
+        <div class="row">
+            <pc-call-controls viewer></pc-call-controls>
+            <pc-call-controls viewer chat></pc-call-controls>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
             <pc-call-controls></pc-call-controls>
-        </pap-codeblock>
+            <pc-call-controls mic camera screen></pc-call-controls>
+            <pc-call-controls viewer chat></pc-call-controls>
+        </div>
     </section>
 </body>
 
