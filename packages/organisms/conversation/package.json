@@ -59,7 +59,8 @@
     "@papit/translator": "*",
     "@papit/button": "*",
     "@papchat/message": "*",
-    "@papchat/composer": "*"
+    "@papchat/composer": "*",
+    "@papchat/file-card": "*"
   },
   "peerDependencies": {
     "react": "^19"

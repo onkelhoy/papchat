@@ -40,6 +40,7 @@ npm install @papchat/room
 | `me`           | `string`                  | `""`    | own uid                                                                        |
 | `messages`     | `ChatMessage[]`           | `[]`    | chat messages, oldest first (property only)                                    |
 | `profiles`     | `Record<string, Profile>` | `{}`    | uid to profile (property only)                                                 |
+| `files`        | `FileEntry[]`             | `[]`    | the room's files: Files tab and inline file messages (property only)           |
 | `typing`       | `string[]`                | `[]`    | uids currently typing (property only)                                          |
 | `participants` | `Profile[]`               | `[]`    | People tab (property only)                                                     |
 | `tiles`        | `CallTile[]`              | `[]`    | call stage tiles (property only)                                               |
@@ -49,7 +50,7 @@ npm install @papchat/room
 | `canscreen`    | `boolean`                 | `true`  | browser can share a screen                                                     |
 | `sinkid`       | `string`                  | `""`    | output device id for remote audio                                              |
 
-The Files tab shows `<slot name="files">` (empty text by default) until T4.4.
+The Files tab lists a `pc-file-card` for every entry in `files` ("No files shared yet" when empty); the conversation shows the same files inline and is the drop zone.
 
 ### Events
 

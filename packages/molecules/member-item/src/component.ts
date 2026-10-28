@@ -11,7 +11,7 @@ import type { Profile } from "@papchat/core";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { MemberAction, MemberActionEvent } from "./types";
+import type { MemberAction, MemberActionEvent, MemberFilesEvent } from "./types";
 
 /**
  * One row of the member list: avatar with presence dot, name, status text and
@@ -32,13 +32,17 @@ import type { MemberAction, MemberActionEvent } from "./types";
  * @property {boolean} incall   shows a small phone icon (reflected)
  * @property {boolean} canInvite shows "Invite to current room" in the menu (attribute `caninvite`)
  *
+ * Files dragged onto a row (not your own) highlight it (`:state(drop)`); dropping them fires `member-files`.
+ *
  * @fires member-action `CustomEvent<{ uid, action: "chat" | "call" | "video" | "invite" }>` (bubbles, composed)
+ * @fires member-files `CustomEvent<{ uid, files: File[] }>` files dropped on the row (bubbles, composed)
  *
  * @csspart avatar  the `pc-avatar`
  * @csspart name    the name text
  * @csspart status  the status text
  * @csspart trigger the ⋯ button
  * @cssstate menu-open while the ⋯ menu is open
+ * @cssstate drop files are being dragged over the row
  */
 export class MemberItem extends CustomElement {
     static sheet = sheet;
@@ -74,6 +78,10 @@ export class MemberItem extends CustomElement {
         this.addEventListener("contextmenu", this.handleContextmenu);
         this.addEventListener("focusin", this.handleFocusin);
         this.addEventListener("focusout", this.handleFocusout);
+        this.addEventListener("dragenter", this.handleDragenter);
+        this.addEventListener("dragover", this.handleDragover);
+        this.addEventListener("dragleave", this.handleDragleave);
+        this.addEventListener("drop", this.handleDrop);
     }
 
     disconnectedCallback(): void {
@@ -84,6 +92,11 @@ export class MemberItem extends CustomElement {
         this.removeEventListener("contextmenu", this.handleContextmenu);
         this.removeEventListener("focusin", this.handleFocusin);
         this.removeEventListener("focusout", this.handleFocusout);
+        this.removeEventListener("dragenter", this.handleDragenter);
+        this.removeEventListener("dragover", this.handleDragover);
+        this.removeEventListener("dragleave", this.handleDragleave);
+        this.removeEventListener("drop", this.handleDrop);
+        this.endDrop();
     }
 
     private get status() {
@@ -115,7 +128,60 @@ export class MemberItem extends CustomElement {
         return e.composedPath().some(node => node === this.trigger || node === this.menu);
     }
 
+    private depth = 0;
+
+    private acceptsDrop(e: DragEvent) {
+        return !this.self && !!this.profile?.uid && !!e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files");
+    }
+
+    private endDrop() {
+        this.depth = 0;
+        this.internals.states.delete("drop");
+    }
+
     // event handlers
+
+    @bind
+    private handleDragenter(e: DragEvent) {
+        if (!this.acceptsDrop(e)) return;
+
+        e.preventDefault();
+        this.depth++;
+        this.internals.states.add("drop");
+    }
+
+    @bind
+    private handleDragover(e: DragEvent) {
+        if (!this.acceptsDrop(e)) return;
+
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    }
+
+    // enter/leave fire for every child crossed: only the last leave ends the highlight
+    @bind
+    private handleDragleave(e: DragEvent) {
+        if (!this.acceptsDrop(e)) return;
+
+        this.depth = Math.max(0, this.depth - 1);
+        if (this.depth === 0) this.internals.states.delete("drop");
+    }
+
+    @bind
+    private handleDrop(e: DragEvent) {
+        if (!this.acceptsDrop(e)) return;
+
+        e.preventDefault();
+        // the room's own drop zone must not also get these
+        e.stopPropagation();
+        this.endDrop();
+
+        const files = Array.from(e.dataTransfer?.files ?? []);
+        const uid = this.profile?.uid;
+        if (files.length === 0 || !uid) return;
+
+        this.dispatchEvent(new CustomEvent<MemberFilesEvent>("member-files", { detail: { uid, files }, bubbles: true, composed: true }));
+    }
 
     @bind
     private handleKeydown(e: KeyboardEvent) {
@@ -173,7 +239,6 @@ export class MemberItem extends CustomElement {
     render() {
         const name = this.profile?.name ?? "";
 
-        // T4.4 drop target: files dropped on the row go to this member
         // the visible text is aria-hidden: the host's aria-label already says all of it
         return html`
             <pc-avatar part="avatar" aria-hidden="true" name="${name}" uid="${this.profile?.uid ?? ""}" color="${this.profile?.color ?? ""}">

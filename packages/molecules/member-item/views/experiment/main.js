@@ -5,6 +5,10 @@ translator.add({ id: "en", url: "/translations/en.json" });
 translator.change("en");
 
 const log = document.getElementById("log");
+document.addEventListener("member-files", (e) =>
+{
+    log.textContent = `member-files → ${e.detail.files.map(f => f.name).join(", ")} (${e.detail.uid})`;
+});
 document.addEventListener("member-action", (e) =>
 {
     log.textContent = `member-action → ${e.detail.action} (${e.detail.uid})`;

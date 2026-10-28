@@ -16,11 +16,19 @@ const messages = [
     { id: "2", uid: "me", text: "On my way", at: now - 30000 },
 ];
 
+const files = [
+    { fid: "f1", uid: "anna", name: "notes.pdf", size: 482000, type: "application/pdf", at: now - 45000, state: "done", progress: 1 },
+    { fid: "f2", uid: "me", name: "holiday.zip", size: 52000000, type: "application/zip", at: now - 20000, state: "sending", progress: 0.4 },
+];
+messages.push(...files.map(f => ({ id: `file:${f.fid}`, uid: f.uid, at: f.at, variant: "file", text: "", fid: f.fid })));
+messages.sort((a, b) => a.at - b.at);
+
 function fill(room)
 {
     room.heading = "Anna Berg";
     room.me = "me";
     room.messages = messages;
+    room.files = files;
     room.profiles = profiles;
     room.participants = [me, anna, bob];
     room.tiles = [

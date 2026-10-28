@@ -1,4 +1,5 @@
 :host {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -68,4 +69,28 @@ pc-message:first-child {
 
 pc-composer {
     padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+}
+
+/* files dragged over: cover everything, let the drag events fall through to the host */
+.drop {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    font-weight: 600;
+    color: var(--primary);
+    background-color: color-mix(in oklch, var(--primary) 12%, var(--background, transparent));
+    border: 2px dashed var(--primary);
+    border-radius: var(--radius-medium, 0.5rem);
+}
+
+pc-file-card {
+    margin-top: var(--space-2, 0.5rem);
+}
+
+pc-file-card:first-child {
+    margin-top: 0;
 }

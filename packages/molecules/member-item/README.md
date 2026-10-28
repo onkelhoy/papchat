@@ -57,7 +57,9 @@ The row is a focusable `listitem` (put it in a `role="list"`, e.g. a `pap-group`
 | --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | `member-action` | `{ uid: string, action: "chat" \| "call" \| "video" \| "invite" }` | a menu choice, or `chat` on Enter / double-click (bubbles, composed; never for `self`) |
 
-CSS: `::part(avatar|name|status|trigger)`, `:state(menu-open)`, `--member-item-ring` (ring around the presence dot, default `--background`). Translations: `pc-member-item.*` in `asset/translations/en.json`.
+| `member-files`  | `{ uid: string, files: File[] }`                                   | files dropped on the row (bubbles, composed; never for `self`)                         |
+
+Files dragged over a row highlight it. CSS: `::part(avatar|name|status|trigger)`, `:state(menu-open)`, `:state(drop)`, `--member-item-ring` (ring around the presence dot, default `--background`). Translations: `pc-member-item.*` in `asset/translations/en.json`.
 
 ## License
 

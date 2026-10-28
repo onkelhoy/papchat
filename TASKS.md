@@ -329,9 +329,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `cancel` `{ fid }`.
 - Done: `packages/molecules/file-card`. Props `file` (`FileEntry`, set as property) and `mine` (reflected); `cancel` `{ fid }` bubbles+composed. Only `blob:` urls are used for download/preview; Download/preview need `state: "done"` + `url`. `pc-conversation`/`pc-room` must import `@papchat/file-card` and pass `file` as a property (imperatively, or `{type:Object}` + JSON attr). Needs spritesheet icons camera, play, volume, paperclip, download.
 
-### [ ] T4.4 Drop zones · `sonnet` · needs T4.3, T3.9
+### [x] T4.4 Drop zones · `sonnet` · needs T4.3, T3.9
 - **files:** `organisms/conversation`, `molecules/member-item`, `organisms/room` (Files tab). Re-add `@papchat/file-card` to conversation's `dependencies` (T2.6 removed it).
 - `pc-conversation`: full-area overlay on `dragenter` with files ("Drop to share"), dispatch `files`. Show file cards inline in the message list (a `file` message variant ordered by time). `pc-member-item`: drop target highlight, event `member-files` `{ uid, files }`. `pc-room` Files tab: list of `pc-file-card`s.
+- Done: `pc-conversation` gets a `files: FileEntry[]` property (set as property), draws `file` messages as `pc-file-card` (a file message without an entry is hidden), shows a "Drop to share" overlay (part `drop`) and fires `files` on drop; the card's `cancel` bubbles out as is. `pc-member-item` highlights on file drag (`:state(drop)`), fires `member-files` `{ uid, files }`, never for `self`. `pc-room` gets a `files` property, passes it to the conversation and lists cards in the Files tab (`slot="files"` removed). T4.5 must set `files` on `pc-room`/`pc-conversation` and handle `files`, `member-files`, `cancel`. Typecheck + build pass; not run in a browser.
 
 ### [ ] T4.5 Wire wave 4 · `sonnet` · needs T4.1, T4.4
 - `files` from the composer or a drop → `room.sendFiles`. `member-files` → `openChat(uid)` then send. Cancel wired.

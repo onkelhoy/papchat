@@ -15,6 +15,13 @@ const profiles = { [anna.uid]: anna, [bob.uid]: bob, [me.uid]: me };
 let n = 0;
 const msg = (uid, text, ago, variant = "text") => ({ id: `m${n++}`, uid, at: now - ago, variant, text });
 
+const file = (fid, uid, name, size, type, state, progress, ago) => ({ fid, uid, name, size, type, at: now - ago, state, progress });
+const files = [
+    file("f1", anna.uid, "notes.pdf", 482_000, "application/pdf", "cancelled", 0.4, 12 * MIN),
+    file("f2", me.uid, "holiday.zip", 52_000_000, "application/zip", "sending", 0.35, 9.5 * MIN),
+];
+const fileMsg = (f) => ({ id: `file:${f.fid}`, uid: f.uid, at: f.at, variant: "file", text: "", fid: f.fid });
+
 function seed() {
     return [
         msg(anna.uid, "Anna joined", 30 * MIN, "system"),
@@ -24,6 +31,7 @@ function seed() {
         msg(me.uid, "Line one\nline two", 18.8 * MIN),
         msg(anna.uid, "Great. Two minutes later, so this one is not grouped", 15 * MIN),
         msg(bob.uid, "<b>not bold</b> hello from Bob", 10 * MIN),
+        ...files.map(fileMsg),
         ...Array.from({ length: 8 }, (_, i) => msg(i % 2 ? me.uid : anna.uid, `Filler message ${i + 1}`, (9 - i) * MIN)),
     ];
 }
@@ -31,7 +39,8 @@ function seed() {
 function setup(el, { typing = [], heading } = {}) {
     el.profiles = profiles;
     el.me = me.uid;
-    el.messages = seed();
+    el.files = files;
+    el.messages = seed().sort((a, b) => a.at - b.at);
     el.typing = typing;
     if (heading) el.heading = heading;
 }
@@ -43,7 +52,7 @@ const dark = document.getElementById("dark");
 setup(dark, { typing: [anna.uid, bob.uid, "u-x"] });
 
 const log = document.getElementById("log");
-for (const type of ["send", "typing", "files"])
+for (const type of ["send", "typing", "files", "cancel"])
 {
     live.addEventListener(type, (e) => {
         log.textContent = `${type} ${JSON.stringify(e.detail ?? null, (k, v) => v instanceof File ? v.name : v)}`;

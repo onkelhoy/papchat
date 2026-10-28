@@ -9,10 +9,11 @@ import "@papchat/conversation";
 import "@papchat/call-stage";
 import "@papchat/call-controls";
 import "@papchat/member-item";
+import "@papchat/file-card";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { CallRequestEvent, CallTile, ChatMessage, Profile } from "./types";
+import type { CallRequestEvent, CallTile, ChatMessage, FileEntry, Profile } from "./types";
 
 const NARROW = "(max-width: 40rem)";
 
@@ -21,8 +22,9 @@ const NARROW = "(max-width: 40rem)";
  * Chat / Files / People tabs (stacked on narrow screens).
  *
  * Child events (`send`, `typing`, `files`, `pin`, `toggle`, `invite`, `devices`, `hangup`,
- * `member-action`) bubble and are composed, so they reach this element's listeners unchanged.
- * Only `call` is its own. The Files tab renders `<slot name="files">` until T4.4 fills it.
+ * `member-action`, `member-files`, `cancel`) bubble and are composed, so they reach this element's
+ * listeners unchanged. Only `call` is its own. The Files tab lists a `pc-file-card` per entry in `files`
+ * (oldest first); the chat shows the same files inline.
  *
  * @element pc-room
  *
@@ -59,6 +61,7 @@ export class Room extends CustomElement {
     @property({ type: Array, attribute: false }) messages: ChatMessage[] = [];
     @property({ type: Object, attribute: false }) profiles: Record<string, Profile> = {};
     @property({ type: Array, attribute: false }) typing: string[] = [];
+    @property({ type: Array, attribute: false }) files: FileEntry[] = [];
     @property({ type: Array, attribute: false }) participants: Profile[] = [];
     @property({ type: Array, attribute: false }) tiles: CallTile[] = [];
     @property({ type: Boolean }) mic: boolean = false;
@@ -71,7 +74,7 @@ export class Room extends CustomElement {
     // viewers only: chat panel toggled from the controls
     @property({ type: Boolean, attribute: false }) private showChat: boolean = false;
 
-    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[] };
+    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[] };
     @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
 
     @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean };
@@ -106,6 +109,7 @@ export class Room extends CustomElement {
             conversation.profiles = this.profiles;
             conversation.me = this.me;
             conversation.typing = this.typing;
+            conversation.files = this.files;
         }
 
         const stage = this.stage;
@@ -125,6 +129,15 @@ export class Room extends CustomElement {
             controls.viewer = this.viewer;
             controls.canscreen = this.canscreen;
         }
+
+        const cards = this.shadowRoot?.querySelectorAll<HTMLElement & { file?: FileEntry; mine: boolean }>("pc-file-card");
+        cards?.forEach((card, i) => {
+            const file = this.files[i];
+            if (!file) return;
+
+            card.file = file;
+            card.mine = file.uid === this.me;
+        });
 
         const rows = this.shadowRoot?.querySelectorAll<HTMLElement & { profile?: Profile; self: boolean; incall: boolean }>("pc-member-item");
         rows?.forEach((row, i) => {
@@ -178,7 +191,9 @@ export class Room extends CustomElement {
                     <pap-tab value="people">${this.t("people")}</pap-tab>
                     <pap-tabpanel value="chat">${this.renderConversation()}</pap-tabpanel>
                     <pap-tabpanel value="files">
-                        <slot name="files"><div class="empty">${this.t("no-files")}</div></slot>
+                        ${this.files.length === 0
+                            ? html`<div class="empty">${this.t("no-files")}</div>`
+                            : html`<div class="files">${this.files.map(file => html`<pc-file-card key="${file.fid}"></pc-file-card>`)}</div>`}
                     </pap-tabpanel>
                     <pap-tabpanel value="people">
                         <div class="people">
