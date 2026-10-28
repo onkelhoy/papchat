@@ -10,5 +10,6 @@
   "inviteFailed": "Couldn't reach {name}",
   "cameraFailed": "Couldn't start the camera",
   "micFailed": "Couldn't start the microphone",
-  "notificationsDenied": "Notifications are blocked in the browser settings"
+  "notificationsDenied": "Notifications are blocked in the browser settings",
+  "filesOnStage": "Files can't be shared on a stage"
 }

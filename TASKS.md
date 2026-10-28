@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-28)
 
-- **Done:** 47/54 tasks (all `[x]` below, each committed). Waves 0-4, T5.1-T5.3 and T6.1-T6.4 are in; nothing is half-finished.
-- **Next, in order:** T5.4 wire wave 5 → T6.5, T6.6, T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
+- **Done:** 48/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
+- **Next, in order:** T6.5, T6.6, T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
@@ -357,8 +357,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **files:** `organisms/member-list` (fill the `live` slot area: "Live now" `pap-accordion` section of `pc-stage-card`s, hidden when empty), `organisms/room` (`viewer` mode: big presenter tile, no capture controls, chat tab only), `organisms/app-header` ("Go live" opens a small `pap-dialog` asking for a title; event `go-live` `{ title }`; shows "End broadcast" when `live`).
 - Done: `pc-member-list` gets `stages: StageSummary[]` (property): a "Live now · n" `pap-accordion` of `pc-stage-card`s, hidden when empty; `watch { id }` bubbles out of the cards. `pc-app-header`: "Go live" opens a `pap-dialog` asking for a title and fires `go-live { title }`; while `live` the button reads "End broadcast" and fires new event `end-live` (the old "You are live" disabled state is gone). `pc-room` needed no change: `viewer` mode (stage only, controls limited to Leave + chat toggle, chat-only side panel) already existed from T3.9; T5.4 must pass the presenter as a single tile in `tiles` and set `viewer`. Added `@papit/accordion` to member-list (installed). Typecheck + build pass; not run in a browser.
 
-### [ ] T5.4 Wire wave 5 · `opus` · needs T5.1, T5.3
+### [x] T5.4 Wire wave 5 · `opus` · needs T5.1, T5.3
 - **done when:** PLAN §6 flow 8 works with 4 tabs and a phone; the stage also shows in the room list with a Live badge.
+- Done: in `views/github/main.ts`, `pc-room` shows either the open room or the current stage (page signal `stageView`). A new stage opens itself, picking a room hides it (it keeps running), and its Live row at the top of the room list brings it back (that row's Leave ends/leaves it). Header `go-live` → `goLive(title)` + mic + camera; `end-live` → `leaveStage()`; `live` = presenting. `pc-member-list` `stages` + `watch`. Presenter: own tiles, mic/camera/screen/devices/invite (→ `stage.invite`). Viewer: `viewer` mode, presenter camera+mic tile plus a pinned screen tile. Hang up ends (presenter) or leaves (viewer). Files dropped on a stage get a toast (`app.filesOnStage`). People/Files tabs are empty on a stage (core doesn't list viewers). Typecheck (`main.ts` via a scratch tsconfig, the package one only covers `src/`) + root build pass; not run in a browser (4-tab + phone flow 8 unchecked).
 
 ---
 

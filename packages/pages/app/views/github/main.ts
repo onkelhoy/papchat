@@ -1,4 +1,4 @@
-import { effect } from "@papit/signals";
+import { effect, signal } from "@papit/signals";
 import { translator, useTranslator } from "@papit/translator";
 
 import "@papchat/app-shell";
@@ -26,6 +26,11 @@ import {
     PALETTE,
     acceptInvite,
     activeRoom,
+    currentStage,
+    goLive,
+    leaveStage,
+    stages,
+    watch,
     audioBlocked,
     constraints,
     declineInvite,
@@ -55,7 +60,7 @@ import {
     setStatus,
     startLobby,
 } from "@papchat/core";
-import type { CaptureName, Prefs, Profile, Room, Status } from "@papchat/core";
+import type { CaptureName, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
 
 // languages with a file in asset/translations (sv.json arrives in T6.7)
 const LANGUAGES = ["en"];
@@ -76,6 +81,10 @@ const t = (key: string, vars?: Record<string, string>) => useTranslator("app")(k
 const canScreen = !!navigator.mediaDevices?.getDisplayMedia;
 
 const current = (): Room | null => activeRoom() ? getRoom(activeRoom()!) : null;
+
+// the stage (presented or watched) takes the main area instead of a room until a room is picked
+const [stageView, setStageView] = signal(false);
+const shownStage = (): Stage | null => stageView() ? currentStage() : null;
 
 // language: stored choice → browser language → en
 function pickLanguage(): string {
@@ -124,14 +133,25 @@ effect(() => { header.me = me(); });
 effect(() => { header.status = lobbyStatus(); });
 effect(() => { list.me = me() ?? undefined; });
 effect(() => { list.members = members(); });
+effect(() => { list.stages = stages(); });
+effect(() => { header.live = !!currentStage()?.mine; });
 
-effect(() => { roomList.rooms = rooms(); });
-effect(() => { roomList.active = activeRoom() ?? ""; });
+// the stage you're on sits first in the room list, with a Live badge
+effect(() =>
+{
+    const stage = currentStage();
+    const row: RoomSummary[] = stage
+        ? [{ id: stage.id, kind: "stage", title: stage.title, participants: [stage.presenter], unread: 0, incall: false, live: true }]
+        : [];
+    roomList.rooms = [...row, ...rooms()];
+});
+effect(() => { roomList.active = shownStage()?.id ?? activeRoom() ?? ""; });
 effect(() => { toaster.toasts = toasts(); });
 
 // the open room: messages, typing and who is who
 effect(() =>
 {
+    if (shownStage()) return;
     const room = current();
     view.hidden = !room;
     empty.hidden = !!room;
@@ -155,10 +175,12 @@ effect(() =>
 // the open room: call stage and controls
 effect(() =>
 {
+    if (shownStage()) return;
     const room = current();
     if (!room) return;
 
     const captures = room.captures();
+    view.viewer = false;
     view.incall = room.incall;
     view.mic = !!captures.mic;
     view.camera = !!captures.camera;
@@ -204,6 +226,75 @@ function tilesOf(room: Room): CallTile[] {
         const screen = of("screen");
         if (screen) tiles.push({ id: `${p.uid}:screen`, profile: p, video: screen, screen: true, pinned: true });
     }
+    return tiles;
+}
+
+// a new stage (going live, watching) opens; picking a room leaves the stage running in the background
+let lastStage: Stage | null = null;
+effect(() =>
+{
+    const stage = currentStage();
+    if (stage === lastStage) return;
+    lastStage = stage;
+    if (stage) showStage();
+    else setStageView(false);
+});
+effect(() => { if (activeRoom()) setStageView(false); });
+
+function showStage() {
+    selectRoom(null);
+    setStageView(true);
+}
+
+// the stage in the room view: presenter gets capture controls, viewers the presenter's tile and chat
+effect(() =>
+{
+    const stage = shownStage();
+    if (!stage) return;
+
+    view.hidden = false;
+    empty.hidden = true;
+    list.canInvite = stage.mine;
+
+    const mine = me();
+    const profiles: Record<string, Profile> = {};
+    for (const p of members()) profiles[p.uid] = p;
+    profiles[stage.presenter.uid] = stage.presenter;
+    if (mine) profiles[mine.uid] = mine;
+
+    view.profiles = profiles;
+    view.me = mine?.uid ?? "";
+    view.participants = [];
+    view.messages = stage.messages();
+    view.typing = [];
+    view.files = [];
+    view.heading = stage.title;
+    view.incall = true;
+    view.viewer = !stage.mine;
+
+    const captures = stage.captures();
+    view.mic = !!captures.mic;
+    view.camera = !!captures.camera;
+    view.screen = !!captures.screen;
+    view.canscreen = canScreen;
+    view.sinkid = prefs().devices.speaker ?? "";
+    view.tiles = stageTiles(stage);
+});
+
+// the presenter's camera + mic tile, plus their screen pinned
+function stageTiles(stage: Stage): CallTile[] {
+    const presenter = stage.presenter;
+    if (stage.mine)
+    {
+        const captures = stage.captures();
+        const tiles: CallTile[] = [{ id: presenter.uid, profile: presenter, video: captures.camera, muted: !captures.mic, self: true }];
+        if (captures.screen) tiles.push({ id: `${presenter.uid}:screen`, profile: presenter, video: captures.screen, screen: true, self: true, pinned: true });
+        return tiles;
+    }
+
+    const streams = stage.streams();
+    const tiles: CallTile[] = [{ id: presenter.uid, profile: presenter, video: streams.camera, audio: streams.mic, muted: !streams.mic }];
+    if (streams.screen) tiles.push({ id: `${presenter.uid}:screen`, profile: presenter, video: streams.screen, screen: true, pinned: true });
     return tiles;
 }
 
@@ -300,13 +391,12 @@ async function startTest(kind: "camera" | "mic") {
 
 // a changed mic/camera applies to a running call: restart that capture with the new device
 function restartCaptures(before: Prefs["devices"], after: Prefs["devices"]) {
-    const room = current();
-    if (!room) return;
+    const target: Room | Stage | null = shownStage() ?? current();
     for (const name of ["mic", "camera"] as const)
     {
-        if (before[name] === after[name] || !room.captures()[name]) continue;
-        room.stop(name);
-        void room.start(name);
+        if (!target || before[name] === after[name] || !target.captures()[name]) continue;
+        target.stop(name);
+        void target.start(name);
     }
     if (tests.camera && before.camera !== after.camera) void startTest("camera");
     if (tests.mic && before.mic !== after.mic) void startTest("mic");
@@ -349,12 +439,36 @@ effect(() =>
 });
 
 // components → state
-roomList.addEventListener("select", (e) => selectRoom((e as CustomEvent<{ id: string }>).detail.id));
-roomList.addEventListener("leave", (e) => getRoom((e as CustomEvent<{ id: string }>).detail.id)?.leave());
+roomList.addEventListener("select", (e) =>
+{
+    const { id } = (e as CustomEvent<{ id: string }>).detail;
+    if (id === currentStage()?.id) showStage();
+    else selectRoom(id);
+});
+roomList.addEventListener("leave", (e) =>
+{
+    const { id } = (e as CustomEvent<{ id: string }>).detail;
+    if (id === currentStage()?.id) leaveStage();
+    else getRoom(id)?.leave();
+});
 
-view.addEventListener("send", (e) => current()?.send((e as CustomEvent<{ text: string }>).detail.text));
-view.addEventListener("typing", () => current()?.notifyTyping());
-view.addEventListener("files", (e) => current()?.sendFiles((e as CustomEvent<{ files: File[] }>).detail.files));
+view.addEventListener("send", (e) =>
+{
+    const { text } = (e as CustomEvent<{ text: string }>).detail;
+    const stage = shownStage();
+    if (stage) stage.send(text);
+    else current()?.send(text);
+});
+view.addEventListener("typing", () => { if (!shownStage()) current()?.notifyTyping(); });
+view.addEventListener("files", (e) =>
+{
+    if (shownStage())
+    {
+        toast("info", t("filesOnStage"));
+        return;
+    }
+    current()?.sendFiles((e as CustomEvent<{ files: File[] }>).detail.files);
+});
 view.addEventListener("cancel", (e) => current()?.cancelFile((e as CustomEvent<{ fid: string }>).detail.fid));
 
 // header Call / Video: a 1:1 chat rings the other person in a new call room; a group starts here
@@ -374,16 +488,22 @@ view.addEventListener("call", async (e) =>
 view.addEventListener("toggle", (e) =>
 {
     const control = (e as unknown as CustomEvent<{ control?: string }>).detail?.control;
-    const room = current();
-    if (!room || (control !== "mic" && control !== "camera" && control !== "screen")) return;
+    const target: Room | Stage | null = shownStage() ?? current();
+    if (!target || (control !== "mic" && control !== "camera" && control !== "screen")) return;
     const name = control as CaptureName;
-    if (room.captures()[name]) room.stop(name);
-    else void room.start(name);
+    if (target.captures()[name]) target.stop(name);
+    else void target.start(name);
 });
 
-// hang up: a call room is left (cancels ringing); in a chat room only the call ends
+// hang up: a stage ends (presenter) or is left (viewer); a call room is left (cancels ringing); in a chat room only the call ends
 view.addEventListener("hangup", () =>
 {
+    const stage = shownStage();
+    if (stage)
+    {
+        stage.end();
+        return;
+    }
     const room = current();
     if (!room) return;
     if (room.kind === "call" || room.kind === "video") room.leave();
@@ -392,9 +512,10 @@ view.addEventListener("hangup", () =>
 
 view.addEventListener("invite", () =>
 {
+    const stage = shownStage();
     const room = current();
-    if (!room) return;
-    const here = new Set(room.participants().map(p => p.uid));
+    if (!stage?.mine && !room) return;
+    const here = new Set(stage ? [] : room!.participants().map(p => p.uid));
     picker.members = members().filter(p => !here.has(p.uid) && p.uid !== me()?.uid);
     picker.open = true;
 });
@@ -404,14 +525,19 @@ picker.addEventListener("invite", (e) =>
 {
     const { uids } = (e as CustomEvent<{ uids: string[] }>).detail;
     picker.open = false;
-    const room = current();
-    if (room) for (const uid of uids) invite(room, uid);
+    for (const uid of uids) invite(uid);
 });
 
-// mid-call invites ring (call/video); outside a call the room's own kind is used
-function invite(room: Room, uid: string) {
-    const kind = room.incall ? (room.captures().camera ? "video" : "call") : room.kind;
-    if (!room.invite(uid, kind)) toast("warning", t("inviteFailed", { name: members().find(p => p.uid === uid)?.name ?? "?" }));
+// to the shown stage (presenter only), else the open room: mid-call invites ring (call/video),
+// outside a call the room's own kind is used
+function invite(uid: string) {
+    const stage = shownStage();
+    const room = current();
+    let sent = false;
+    if (stage) sent = stage.mine && stage.invite(uid);
+    else if (room) sent = room.invite(uid, room.incall ? (room.captures().camera ? "video" : "call") : room.kind);
+    else return;
+    if (!sent) toast("warning", t("inviteFailed", { name: members().find(p => p.uid === uid)?.name ?? "?" }));
 }
 
 toaster.addEventListener("action", (e) =>
@@ -430,7 +556,19 @@ header.addEventListener("language-change", (e) =>
     changeLanguage(value);
 });
 header.addEventListener("open-settings", openSettings);
-header.addEventListener("go-live", () => log("go-live (T5.4)"));
+// going live: the stage opens in presenter mode with mic and camera (each toasts on failure)
+header.addEventListener("go-live", async (e) =>
+{
+    const stage = await goLive((e as CustomEvent<{ title: string }>).detail.title);
+    if (stage && await stage.start("mic")) await stage.start("camera");
+});
+header.addEventListener("end-live", () => { if (currentStage()?.mine) leaveStage(); });
+
+list.addEventListener("watch", async (e) =>
+{
+    const stage = await watch((e as CustomEvent<{ id: string }>).detail.id);
+    if (stage) showStage();
+});
 
 shell.addEventListener("sidebar-toggle", (e) => setPrefs({ sidebarOpen: (e as CustomEvent<{ open: boolean }>).detail.open }));
 
@@ -440,11 +578,7 @@ document.addEventListener("member-action", (e) =>
     const { uid, action } = (e as CustomEvent<{ uid: string; action: string }>).detail;
     if (action === "chat") void openChat(uid);
     else if (action === "call" || action === "video") void placeCall(uid, action);
-    else if (action === "invite")
-    {
-        const room = current();
-        if (room) invite(room, uid);
-    }
+    else if (action === "invite") invite(uid);
 });
 
 // files dropped on a member (sidebar or People tab): open their chat, then send
