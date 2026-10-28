@@ -1,4 +1,28 @@
 :host {
-    color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    box-sizing: border-box;
+    padding: var(--space-1, 0.25rem) var(--space-3, 0.75rem);
+    border-radius: var(--radius-full, 999px);
+    background-color: var(--connection-status-background, var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0))));
+    color: var(--connection-status-color, var(--text));
+    font-size: var(--font-size-small, 0.875rem);
+    line-height: 1.4;
+}
+
+[part="dot"] {
+    --presence-size: 0.625rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :host([status="connecting"]) [part="dot"],
+    :host([status="waking"]) [part="dot"],
+    :host([status="reconnecting"]) [part="dot"] {
+        animation: pulse 1.4s ease-in-out infinite;
+    }
+}
+
+@keyframes pulse {
+    50% { opacity: 0.35; }
 }

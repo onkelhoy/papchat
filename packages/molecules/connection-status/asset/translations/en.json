@@ -3,5 +3,11 @@
     "region": "GB",
     "language": "en"
   },
-  "connection-status": "connection-status"
+  "pc-connection-status": {
+    "connecting": "Connecting…",
+    "waking": "Waking up the server… (can take up to a minute)",
+    "connected": "Connected",
+    "reconnecting": "Reconnecting…",
+    "closed": "Disconnected"
+  }
 }

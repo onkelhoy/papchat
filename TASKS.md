@@ -143,10 +143,11 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **props:** `at` (number, epoch ms). Renders `<time datetime>` with `Intl.RelativeTimeFormat` in the translator's current language ("just now" under 45 s). Re-renders every 30 s while connected (one shared interval for all instances). `title` = full local date-time.
 - Done: `packages/atoms/time`. Exports `relative(diff, locale, now)`. Locale comes from `translator.locale()` (`meta.language`); string key `pc-time.now`. Renders nothing for missing/invalid `at`. Inherits colour via `--time-color` (default `--text-muted`).
 
-### [ ] T1.6 pc-connection-status · `sonnet` · needs T1.3
+### [x] T1.6 pc-connection-status · `sonnet` · needs T1.3
 - **props:** `status` (`connecting|waking|connected|reconnecting|closed`). Pill with dot + translated text; `waking` says "Waking up the server… (can take up to a minute)". `role="status"`, `aria-live="polite"`.
+- Done: `packages/molecules/connection-status`. `status` reflected (default `connecting`, unknown renders as connecting), exports type `ConnectionStatusValue`; no events. Dot is a `pc-presence` (away=pulsing for connecting/waking/reconnecting, available, offline); `--connection-status-background|color`; keys `pc-connection-status.<status>` in `en.json` (add sv in T6.7). Core's `lobbyStatus` values must match these five strings, else map them in the page.
 
-### [ ] T1.7 pc-member-item · `opus` (reference molecule) · needs T1.2, T1.3, T1.4
+### [~] T1.7 pc-member-item · `opus` (reference molecule) · needs T1.2, T1.3, T1.4
 - **read:** `@papit/menu`, `@papit/button` READMEs.
 - **props:** `profile` (`Profile`), `self` (boolean, shows "You" badge, no actions), `incall` (boolean, small phone icon).
 - **render:** `pc-avatar` with `pc-presence` in its badge slot, name, translated status text; a `pap-menu` trigger (⋯) with Chat / Call / Video call / Invite to current room (hidden unless `canInvite`).
@@ -177,21 +178,21 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **render:** logo/name "papchat", `pc-connection-status`, a "Go live" button, `pc-language-picker`, `pap-theme-picker storage="local"`, settings button, own `pc-avatar` with a status menu (`pap-menu`: available/busy/away/dnd).
 - **events:** `status-change` `{ status }`, `language-change` `{ value }`, `open-settings`, `go-live`. (No mobile menu button: `pc-app-shell` owns it.)
 
-### [ ] T1.12 pc-onboarding · `sonnet` · needs T1.2, T1.8
+### [~] T1.12 pc-onboarding · `sonnet` · needs T1.2, T1.8
 - **read:** `@papit/dialog`, `@papit/input`.
 - **props:** `open` (boolean), `name`, `color`, `language`. Modal `pap-dialog` "Who are you?": name (required, 1–32 chars, trimmed), colour swatches (radio group, 8 colours, live `pc-avatar` preview), language picker. Can't be dismissed without a name.
 - **events:** `submit` `{ name, color, language }`. (The submit click is the user gesture that unlocks audio; the page uses it.)
 
 ### [ ] T1.13 Wire wave 1 · `opus` · needs T1.1, T1.9–T1.12
 - **files:** `packages/pages/app/**`
-- **do:** `main.ts`: load prefs, set translator language (stored → `navigator.language` → en) and register `/translations/<lang>.json`; no profile → `pc-onboarding`, then create profile; profile → `startLobby()`. Effects bind `me`, `lobbyStatus`, `members` to `pc-app-header` / `pc-member-list`. Header events update status/language (saved). `member-action` logs for now.
+- **do:** `main.ts`: load prefs, set translator language (stored → `navigator.language` → en) and register `/translations/<lang>.json`; no profile → `pc-onboarding`, then create profile; profile → `startLobby()`. Effects bind `me`, `lobbyStatus` (map core's `"idle"` → `"connecting"` for `pc-connection-status`), `members` to `pc-app-header` / `pc-member-list`. Header events update status/language (saved). `member-action` logs for now.
 - **done when:** PLAN §6 flows 1 and 2 work in 3 tabs locally and on the deployed page.
 
 ---
 
 ## Wave 2: chat rooms (PLAN §2.4, §2.5, §6.3)
 
-### [ ] T2.1 Core: invites and rooms · `opus` · needs T1.1
+### [~] T2.1 Core: invites and rooms · `opus` · needs T1.1
 - **read:** NET (Media, Channel), PLAN §2.4, §2.5.
 - **files:** `core/src/room.ts`, `core/src/invites.ts`, exports.
 - **do:**
@@ -200,16 +201,16 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
   - On boot, rejoin rooms from `papchat:session` that still exist.
 - **done when:** from the console, tab A `papchat.openChat(<B's uid>)` → B gets the room; messages and typing flow both ways; a third tab invited joins and sees the system "joined" message; refresh of B rejoins.
 
-### [ ] T2.2 pc-message · `sonnet` · needs T1.2, T1.5
+### [~] T2.2 pc-message · `sonnet` · needs T1.2, T1.5
 - **props:** `message` (`ChatMessage`), `author` (`Profile`), `mine` (boolean), `grouped` (boolean: same author within 2 min, hide avatar and name), `variant` (`"text" | "system"`).
 - Text: plain text with URLs auto-linked by splitting the string into text and `<a target="_blank" rel="noopener noreferrer">` parts, never HTML. Preserve newlines. `mine` aligns right with the primary colour.
 
-### [ ] T2.3 pc-composer · `sonnet` · needs T0.3
+### [~] T2.3 pc-composer · `sonnet` · needs T0.3
 - **read:** `@papit/input`, `@papit/file-input`, `@papit/button`.
 - **props:** `disabled`, `placeholder`. Multiline input; Enter sends, Shift+Enter newline; send button (disabled when empty/whitespace); attach button via `pap-file-input` (multiple).
 - **events:** `send` `{ text }` (trimmed, then clears), `typing` (at most once per second while typing), `files` `{ files: File[] }`.
 
-### [ ] T2.4 pc-toast and pc-toaster · `sonnet` · needs T0.3
+### [~] T2.4 pc-toast and pc-toaster · `sonnet` · needs T0.3
 - `pc-toast` props: `kind` (`info|success|warning|error`), `text`, `action` (optional label), `duration` (ms, default 5000, 0 = sticky). Pauses timer on hover/focus. Events: `dismiss`, `action`.
 - `pc-toaster` props: `toasts` (`Toast[]` with `id`). Stack bottom-right (bottom-center on mobile), max 4 visible, `role="status"` region. Re-dispatches `dismiss` / `action` with `{ id }`.
 

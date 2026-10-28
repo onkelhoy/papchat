@@ -25,8 +25,18 @@ npm install @papchat/connection-status
   import "@papchat/connection-status";
 </script>
 
-<pc-connection-status></pc-connection-status>
+<pc-connection-status status="connected"></pc-connection-status>
 ```
+
+### properties
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `status` | `"connecting" \| "waking" \| "connected" \| "reconnecting" \| "closed"` | `"connecting"` | Reflected. Dot (`pc-presence`) plus translated text; `waking` reads "Waking up the server… (can take up to a minute)". Host has `role="status"` and `aria-live="polite"`. Unknown values render as `connecting`. |
+
+### events
+
+None. Style with `--connection-status-background` / `--connection-status-color`; parts `dot`, `text`. The `ConnectionStatusValue` type is exported.
 
 ## License
 

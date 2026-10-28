@@ -3,25 +3,41 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConnectionStatus | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-connection-status | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>ConnectionStatus | experiment</h1>
+    <h1>pc-connection-status</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Statuses</h2>
+        <div class="row">
+            <pc-connection-status status="connecting"></pc-connection-status>
+            <pc-connection-status status="waking"></pc-connection-status>
+            <pc-connection-status status="connected"></pc-connection-status>
+            <pc-connection-status status="reconnecting"></pc-connection-status>
+            <pc-connection-status status="closed"></pc-connection-status>
             <pc-connection-status></pc-connection-status>
-        </pap-codeblock>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement (cycles every 2 s)</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-connection-status status="connecting"></pc-connection-status>
+            <pc-connection-status status="waking"></pc-connection-status>
+            <pc-connection-status status="connected"></pc-connection-status>
+            <pc-connection-status status="reconnecting"></pc-connection-status>
+            <pc-connection-status status="closed"></pc-connection-status>
+        </div>
     </section>
 </body>
 
