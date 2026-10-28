@@ -209,13 +209,14 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 2: chat rooms (PLAN §2.4, §2.5, §6.3)
 
-### [ ] T2.1 Core: invites and rooms · `opus` · needs T1.1
+### [x] T2.1 Core: invites and rooms · `opus` · needs T1.1
 - **read:** NET (Media, Channel), PLAN §2.4, §2.5.
 - **files:** `core/src/room.ts`, `core/src/invites.ts`, exports.
 - **do:**
   - `Room` class wrapping its own `Client` (`ROOM_PLAN` from §2.5, `accept` size < 8): `static create(kind, title)` / `static join(id, password, kind)`; call `media.channel("file")` and `("state")` right after create/join; `messages` signal (`ChatMessage[]`, system messages for joined/left from `members` diffs by uid); `send(text)` via `client.broadcast("chat", …)`; typing over the `state` channel (throttled 1/s, expires after 4 s) → `typing` signal (uids); `participants` signal (profiles); `unread` count (reset by `markRead()` when it is `activeRoom`); `invite(uid, kind)` over the lobby; `leave()` (close client, remove from `rooms`, session storage). Reconnect error → rejoin with the stored id/password.
   - `invites.ts`: handle `invite`, `invite.accept`, `invite.decline`, `invite.cancel` from the lobby. `chat` invite → auto-join the room, toast "Anna started a chat", unread +1 (no ring). 1:1 reuse: `openChat(uid)` reuses the existing 1:1 room for that uid. Rejected join (`network.reject`) → toast "room is full".
   - On boot, rejoin rooms from `papchat:session` that still exist.
+- Done: `room.ts`, `invites.ts` finished from the wip commit; typecheck passes. Multi-tab console check NOT done.
 - **done when:** from the console, tab A `papchat.openChat(<B's uid>)` → B gets the room; messages and typing flow both ways; a third tab invited joins and sees the system "joined" message; refresh of B rejoins.
 
 ### [x] T2.2 pc-message · `sonnet` · needs T1.2, T1.5
