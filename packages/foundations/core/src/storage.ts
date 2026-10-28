@@ -9,7 +9,7 @@ const KEYS = {
 
 export const DEFAULT_PREFS: Prefs = {
     v: 1,
-    ringtone: "classic",
+    ringtone: "beep-boom",
     volume: 0.8,
     language: "",
     autoDeclineBusy: false,

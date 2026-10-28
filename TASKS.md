@@ -403,4 +403,4 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - T0.5: `@papit/static` (via `meta()` in `@papit/server`) skips assets of `papit.type: "theme"` packages, so `packages/foundations/theme/asset/icons/spritesheet.svg` never reaches `dist/public/icons/`. Fix needed outside T0.5 (e.g. change `@papchat/theme` papit type to `browser`/`web-component`-style, or copy the spritesheet into `pages/app/asset/icons/`). Needed before any icon works on the deployed page. **Resolved:** spritesheet moved to `packages/pages/app/asset/icons/`, theme's `npm run icons` writes there.
 - Root has `npm run signal` (local signal server on :3000) and `npm run pages` (build + static site).
 - Scaffolded `tests/` folders stay and are ignored (T0.2).
-- T3.1: `packages/pages/app/asset/audio/ringtones/ringtones.json` is `[]` though two mp3s sit beside it; list them as `{ id, file, label }` (prefs default id is `classic`). Optional `ringback.mp3` / `message.mp3` also missing (synth fallback used).
+- T3.1: `ringtones.json` lists `beep-boom` (default pref) and `quack`. Optional `ringback.mp3` / `message.mp3` also missing (synth fallback used).

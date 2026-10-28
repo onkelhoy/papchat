@@ -1,1 +1,4 @@
-[]
+[
+    { "id": "beep-boom", "file": "Beep-Boom Alert.mp3", "label": "Beep-Boom" },
+    { "id": "quack", "file": "Quack Quack Ringtone.mp3", "label": "Quack Quack" }
+]
