@@ -343,8 +343,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **do:** `Stage` per §2.7 (multicast fanout 3, media plan mic/camera/screen). Presenter: `goLive(title)`, captures, `end()` → `stage.end` + close. Viewer: `watch(id)`, `streams` signal of the host's streams only, viewer count from members. Chat via `client.broadcast`. Lobby: `stage.announce` / `stage.end` / `stage.query` (sent once after lobby join; presenters answer by unicast) → `stages` signal; `list()` fallback for stages missed. Host leaving → treat as ended.
 - **done when:** console: A goes live with camera, B and C watch and see it, a 5-tab test shows the tree relaying (C's stream comes via B when fanout is lowered to 1 for the test), A ends and all viewers get `stage.end`.
 
-### [ ] T5.2 pc-stage-card · `sonnet` · needs T1.2, T1.4
+### [x] T5.2 pc-stage-card · `sonnet` · needs T1.2, T1.4
 - **props:** `stage` (`StageSummary`: id, title, presenter `Profile`, viewers, mine). Live badge, title, presenter avatar + name, viewer count, "Watch" button (or "You're live" when `mine`). **events:** `watch` `{ id }`.
+- Done: `packages/molecules/stage-card`. `stage` is a property or JSON attribute; `watch` bubbles/composed and never fires for `stage.mine` (shows "You're live"). Build + typecheck pass; demo not viewed.
 
 ### [ ] T5.3 Stage UI · `sonnet` · needs T5.2, T3.9
 - **files:** `organisms/member-list` (fill the `live` slot area: "Live now" `pap-accordion` section of `pc-stage-card`s, hidden when empty), `organisms/room` (`viewer` mode: big presenter tile, no capture controls, chat tab only), `organisms/app-header` ("Go live" opens a small `pap-dialog` asking for a title; event `go-live` `{ title }`; shows "End broadcast" when `live`).

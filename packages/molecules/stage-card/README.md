@@ -28,6 +28,20 @@ npm install @papchat/stage-card
 <pc-stage-card></pc-stage-card>
 ```
 
+## API
+
+### Properties
+
+| Property | Type           | Default     | Description                                                              |
+| -------- | -------------- | ----------- | ------------------------------------------------------------------------ |
+| `stage`  | `StageSummary` | `undefined` | `id`, `title`, `presenter` (Profile), `viewers`, `mine`; property or JSON attribute |
+
+### Events
+
+| Event   | Detail         | Description                                                        |
+| ------- | -------------- | ------------------------------------------------------------------ |
+| `watch` | `{ id: string }` | Watch pressed (bubbles, composed); never fired when `stage.mine` |
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)
