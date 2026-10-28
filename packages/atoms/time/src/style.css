@@ -1,4 +1,9 @@
 :host {
-    color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    display: inline;
+    color: var(--time-color, var(--text-secondary, inherit));
+    font-size: var(--time-size, inherit);
+}
+
+time {
+    white-space: nowrap;
 }

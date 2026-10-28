@@ -1,4 +1,48 @@
 :host {
-    color: var(--text);
+    --_size: var(--presence-size, 0.75rem);
+    --_color: var(--pc-offline);
+
+    position: relative;
+    display: inline-block;
+    flex: none;
+    inline-size: var(--_size);
+    block-size: var(--_size);
+    vertical-align: middle;
+}
+
+:host([status="available"]) { --_color: var(--pc-available); }
+:host([status="busy"]) { --_color: var(--pc-busy); }
+:host([status="away"]) { --_color: var(--pc-away); }
+:host([status="dnd"]) { --_color: var(--pc-dnd); }
+:host([status="offline"]) { --_color: var(--pc-offline); }
+
+[part="dot"] {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border-radius: var(--radius-full, 50%);
+    background-color: var(--_color);
+}
+
+/* away: hollow ring */
+:host([status="away"]) [part="dot"] {
+    background-color: transparent;
+    border: calc(var(--_size) * 0.25) solid var(--_color);
+}
+
+/* offline: thin hollow ring */
+:host([status="offline"]) [part="dot"],
+:host(:not([status])) [part="dot"] {
+    background-color: transparent;
+    border: calc(var(--_size) * 0.15) solid var(--_color);
+}
+
+/* dnd: bar across the dot, cut out with the surface colour */
+:host([status="dnd"]) [part="dot"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 22%;
+    inset-block: 40%;
+    border-radius: var(--radius-full, 999px);
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
 }

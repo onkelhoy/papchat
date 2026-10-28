@@ -28,6 +28,16 @@ npm install @papchat/presence
 <pc-presence></pc-presence>
 ```
 
+### properties
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `status` | `"available" \| "busy" \| "away" \| "dnd" \| "offline"` | `"offline"` | Reflected. Dot colour from `--pc-<status>`; `dnd` has a bar, `away` and `offline` are hollow rings. `aria-label` is the translated status. |
+
+### events
+
+None. Use it in the `badge` slot of `pc-avatar`: `<pc-presence slot="badge" status="available"></pc-presence>`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

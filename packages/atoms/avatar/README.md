@@ -28,6 +28,21 @@ npm install @papchat/avatar
 <pc-avatar></pc-avatar>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `name` | `name` | `string` | - | display name; initials and accessible label |
+| `color` | `color` | `string` | hue from `uid` | any CSS colour, dark enough for white text |
+| `uid` | `uid` | `string` | - | stable id, seeds the fallback colour |
+| `size` | `size` | `"s" \| "m" \| "l"` | `m` | reflected |
+
+| Slot | Description |
+| --- | --- |
+| `badge` | bottom-right overlay, e.g. `pc-presence` |
+
+No events. CSS: `--avatar-size`, `--avatar-size-s`, `--avatar-size-l`, `--avatar-text`, `::part(circle)`. Also exports `initials(name)` and `colorFor(seed)`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

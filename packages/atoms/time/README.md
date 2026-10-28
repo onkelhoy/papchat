@@ -25,8 +25,24 @@ npm install @papchat/time
   import "@papchat/time";
 </script>
 
-<pc-time></pc-time>
+<pc-time at="1700000000000"></pc-time>
 ```
+
+Renders `<time datetime>` as relative text ("just now" under 45 s, then minutes, hours, days, months, years) in the `@papit/translator` language, and updates itself every 30 s (one shared interval). The full local date-time is the `title`.
+
+### properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `at` | `number` | Epoch milliseconds. Renders nothing when missing or invalid |
+
+### events
+
+None.
+
+### translations
+
+`pc-time.now`: text for under 45 seconds.
 
 ## License
 

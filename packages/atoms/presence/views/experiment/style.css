@@ -26,3 +26,19 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4, 16px);
+}
+
+.item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+}
+
+.big pc-presence {
+    --presence-size: 2rem;
+}

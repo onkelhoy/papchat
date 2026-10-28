@@ -1,14 +1,9 @@
-// core
-import { translator } from '@papit/translator';
-import "@papit/codeblock";
-
-// component
 import '@papchat/presence';
 
-window.onload = () => {
-    console.log('[demo]: window loaded');
-
-    translator.add({ id: "en", url: "/en.json" });
-    translator.change("en");
+const created = document.getElementById("created");
+for (const status of ["available", "busy", "away", "dnd", "offline"])
+{
+    const presence = document.createElement("pc-presence");
+    presence.status = status;
+    created.append(presence);
 }
-

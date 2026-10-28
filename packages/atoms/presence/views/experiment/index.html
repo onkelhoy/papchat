@@ -3,25 +3,52 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presence | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-presence | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Presence | experiment</h1>
+    <h1>pc-presence</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-presence></pc-presence>
-        </pap-codeblock>
+        <h2>Statuses</h2>
+        <div class="row">
+            <span class="item"><pc-presence status="available"></pc-presence> available</span>
+            <span class="item"><pc-presence status="busy"></pc-presence> busy</span>
+            <span class="item"><pc-presence status="away"></pc-presence> away</span>
+            <span class="item"><pc-presence status="dnd"></pc-presence> dnd</span>
+            <span class="item"><pc-presence status="offline"></pc-presence> offline</span>
+            <span class="item"><pc-presence></pc-presence> default</span>
+        </div>
+    </section>
+
+    <section>
+        <h2>Size (--presence-size)</h2>
+        <div class="row big">
+            <pc-presence status="available"></pc-presence>
+            <pc-presence status="busy"></pc-presence>
+            <pc-presence status="away"></pc-presence>
+            <pc-presence status="dnd"></pc-presence>
+            <pc-presence status="offline"></pc-presence>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <span class="item"><pc-presence status="available"></pc-presence> available</span>
+            <span class="item"><pc-presence status="busy"></pc-presence> busy</span>
+            <span class="item"><pc-presence status="away"></pc-presence> away</span>
+            <span class="item"><pc-presence status="dnd"></pc-presence> dnd</span>
+            <span class="item"><pc-presence status="offline"></pc-presence> offline</span>
+        </div>
     </section>
 </body>
 

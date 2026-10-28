@@ -3,25 +3,44 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-time | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Time | experiment</h1>
+    <h1>pc-time</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
+        <h2>Ranges (past)</h2>
+        <div class="row" id="past"></div>
+    </section>
+
+    <section>
+        <h2>Future and invalid</h2>
+        <div class="row">
+            <pc-time id="future"></pc-time>
             <pc-time></pc-time>
-        </pap-codeblock>
+            <pc-time at="not-a-number"></pc-time>
+        </div>
+    </section>
+
+    <section>
+        <h2>Live (updates every 30 s, now is "just now")</h2>
+        <div class="row">
+            <pc-time id="live"></pc-time>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row" id="dark"></div>
     </section>
 </body>
 

@@ -1,1 +1,1 @@
-export type ClickEvent = { timestamp: number };
+export type PresenceStatus = "available" | "busy" | "away" | "dnd" | "offline";

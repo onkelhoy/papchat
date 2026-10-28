@@ -3,5 +3,7 @@
     "region": "GB",
     "language": "en-UK"
   },
-  "time": "time"
+  "pc-time": {
+    "now": "just now"
+  }
 }
