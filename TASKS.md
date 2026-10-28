@@ -314,10 +314,11 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 4: files (PLAN §2.6, §6.6)
 
-### [ ] T4.1 Core: transfer · `opus` · needs T2.1
+### [x] T4.1 Core: transfer · `opus` · needs T2.1
 - **files:** `core/src/transfer.ts`, `Room` integration.
 - **do:** exactly PLAN §2.6: `file.offer` via `client.broadcast`, frames `[16-byte fid][u32 seq][data ≤ 16 KiB]` on the `file` channel, batches of 64 with a short await, reassembly into a `Blob` per sender, progress for both ends, `file.cancel`, 100 MB cap (toast), files signal on the room (`FileInfo & TransferState`). Object URLs revoked on room leave. Validate every frame (length, known fid, seq range).
 - **done when:** a 50 MB file sent from A arrives byte-identical in B and C (compare SHA-256 in the console), with progress on both ends; cancel mid-way stops both.
+- Done: `core/src/transfer.ts` (`Transfers`, one per Room). Room API: `room.files()` (signal of `FileEntry[]`), `room.sendFiles(files)`, `room.cancelFile(fid)`. fid is 32 hex chars (the 16 frame bytes). Each offer also pushes a chat message `{ variant: "file", fid, id: "file:<fid>" }` so T4.4 can place the card by time (until T4.4 the conversation shows it as an empty message). Sender waits 500 ms after the offer, then sends batches of 64 chunks with a 100 ms pause (~10 MB/s ceiling). A sender's cancel stops everyone; a receiver's stops only them, and the sender stops once every participant cancelled. Receive fails after 30 s with no frames. Object URLs revoked on leave. Typecheck + build pass; not run in a browser (SHA-256 check not done).
 
 ### [x] T4.2 pc-progress · `sonnet` · needs T0.3
 - **props:** `value` (0–1), `label`. `role="progressbar"` with `aria-valuenow` 0–100. Indeterminate when `value` is unset.

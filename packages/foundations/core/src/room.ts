@@ -9,7 +9,8 @@ import { peerOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { activeRoom, me, setActiveRoom, setRooms, toast } from "./state";
 import { storage } from "./storage";
-import type { ChatMessage, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
+import { Transfers } from "./transfer";
+import type { ChatMessage, FileEntry, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
 
 // A room (PLAN §2.5): one private mesh network with its own Client. Chat over `client.broadcast`,
 // ephemeral state (typing; mute flags in T3.1) over the `state` channel, files (T4.1) over `file`.
@@ -102,6 +103,8 @@ export class Room extends EventTarget {
     /** uid → what that person says they send; use it to show mute and camera-off before a stream arrives. */
     readonly flags: () => Record<string, MediaFlags>;
 
+    private transfers: Transfers;
+
     private setCaptures: (next: Record<string, MediaStream>) => void;
     private setStreams: (next: RemoteStream[] | ((prev: RemoteStream[]) => RemoteStream[])) => void;
     private setFlags: (next: Record<string, MediaFlags> | ((prev: Record<string, MediaFlags>) => Record<string, MediaFlags>)) => void;
@@ -152,6 +155,7 @@ export class Room extends EventTarget {
         this.onState("typing", this.handleTyping);
         this.onState("flags", this.handleFlags);
         this.addEventListener("client", this.handleClientMedia);
+        this.transfers = new Transfers(this);
     }
 
     // ------------------------------------------------------------ create / join
@@ -203,6 +207,26 @@ export class Room extends EventTarget {
     /** The current client (null while rebuilding or once closed), for media (T3.1) and console checks. */
     get client(): Client | null {
         return this._client;
+    }
+
+    /** Files sent and received in this room (with transfer state), oldest first. */
+    files(): FileEntry[] {
+        return this.transfers.files();
+    }
+
+    /** Sends files to everyone in the room (over 100 MB toasts and is skipped). */
+    sendFiles(files: File[]) {
+        this.transfers.send(files);
+    }
+
+    /** Cancels a file in flight: yours for everyone, someone else's only for you. */
+    cancelFile(fid: string) {
+        this.transfers.cancel(fid);
+    }
+
+    /** Adds the chat entry that shows a file card in the conversation (used by transfers). */
+    addFileMessage(uid: string, fid: string, at: number) {
+        this.push({ id: `file:${fid}`, uid, at, variant: "file", text: "", fid });
     }
 
     /** Sends a chat message to everyone in the room. False when empty or not connected. */

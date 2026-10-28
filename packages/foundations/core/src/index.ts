@@ -21,6 +21,7 @@ export * from "./room";
 export * from "./invites";
 export * from "./devices";
 export * from "./notify";
+export * from "./transfer";
 export * as ringtone from "./ringtone";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …
