@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-28)
 
-- **Done:** 50/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
-- **Next, in order:** T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
+- **Done:** 51/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
+- **Next, in order:** T6.7 Swedish → T6.9 final live pass. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
@@ -397,8 +397,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 ### [ ] T6.7 Swedish · `haiku` · needs T6.3
 - Add `asset/translations/sv.json` next to every `en.json` with the same keys. Natural Swedish, informal "du". Check the language switch changes every visible string live.
 
-### [ ] T6.8 README · `sonnet` · needs T5.4
+### [x] T6.8 README · `sonnet` · needs T5.4
 - Root `README.md` per PLAN §6/§10: what papchat is, live link, screenshots (light and dark, call, stage), "How the WebRTC works here" (lobby/room/stage diagram from PLAN §2, the invite protocol table, why SDP still goes via the signal server), local dev, known limits, papit gaps (PLAN §9).
+- Done: root `README.md` rewritten (features, how the WebRTC works with the lobby/room/stage diagram and invite table, why SDP still goes via the signal server, local dev + commands, layout, limits, papit gaps). Two things for the user: **no screenshots** (can't capture without a browser; there is an HTML comment placeholder under the feature list), and the live link `https://onkelhoy.github.io/papchat/` is assumed from the repo name and `--base /papchat/`, so check it after T0.6. Language list says no languages yet; add Swedish there once T6.7 lands.
 
 ### [ ] T6.9 Final live pass · `opus` · needs everything
 - Every PLAN §6 flow on the deployed page with: 2 desktop browsers (Chrome + Firefox or Safari), 1 phone on mobile data. Fix what breaks, list what can't be fixed under known limits in the README.
