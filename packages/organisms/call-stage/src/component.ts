@@ -96,8 +96,8 @@ export class CallStage extends CustomElement {
             const tile = list[i];
             if (!tile) return;
 
-            const video = tile.video ?? null;
-            const audio = tile.audio ?? null;
+            const video = tile.video ?? undefined;
+            const audio = tile.audio ?? undefined;
             if (row.profile !== tile.profile) row.profile = tile.profile;
             if (row.video !== video) row.video = video;
             if (row.audio !== audio) row.audio = audio;

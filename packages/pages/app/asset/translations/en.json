@@ -4,5 +4,8 @@
     "language": "en"
   },
   "app": "app",
-  "empty": "Pick someone to chat with"
+  "empty": "Pick someone to chat with",
+  "enableSound": "Sound is blocked by the browser",
+  "enableSoundAction": "Click to enable sound",
+  "inviteFailed": "Couldn't reach {name}"
 }

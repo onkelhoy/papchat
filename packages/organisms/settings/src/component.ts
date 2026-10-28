@@ -64,8 +64,8 @@ export class Settings extends CustomElement {
     @property({ type: Object, attribute: false }) devices: DeviceLists = { audioinput: [], videoinput: [], audiooutput: [] };
     @property({ type: String }) language: string = "en";
     @property({ type: String }) playing: string = "";
-    @property({ type: Object, attribute: false }) camerastream: MediaStream | null = null;
-    @property({ type: Object, attribute: false }) micstream: MediaStream | null = null;
+    @property({ type: Object, attribute: false }) camerastream?: MediaStream;
+    @property({ type: Object, attribute: false }) micstream?: MediaStream;
     @property({ type: Boolean, attribute: false }) sinkSupported: boolean = true;
 
     @query("pc-ringtone-picker") private ringtones?: Synced;

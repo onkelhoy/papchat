@@ -104,12 +104,12 @@ export class VideoTile extends CustomElement {
     // streams can't go through html``: set them on the children once they exist
     private syncVideo() {
         const el = this.videoEl ?? this.root.querySelector<Video>("pc-video");
-        if (el) el.stream = this.video ?? null;
+        if (el) el.stream = this.video ?? undefined;
     }
 
     private syncAudio() {
         const el = this.meterEl ?? this.root.querySelector<LevelMeter>("pc-level-meter");
-        if (el) el.stream = this.audio ?? null;
+        if (el) el.stream = this.audio ?? undefined;
     }
 
     private setSpeaking(speaking: boolean) {

@@ -305,9 +305,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - Re-dispatches all child events.
 - Done: `packages/organisms/room`. Child events already bubble/compose so only `call` `{kind}` is new (header buttons). Object props are set imperatively; tiles/mic/camera/screen/canscreen/sinkid/participants/me/messages/profiles/typing/heading/incall/viewer. Files tab is `<slot name="files">` for T4.4. Viewer: stage alone until the chat toggle. Build + typecheck pass; demo not viewed.
 
-### [ ] T3.10 Wire wave 3 · `opus` · needs T3.1, T3.6, T3.8, T3.9
+### [x] T3.10 Wire wave 3 · `opus` · needs T3.1, T3.6, T3.8, T3.9
 - `pc-room` replaces `pc-conversation` in main. `incoming` → stacked `pc-incoming-call` in the shell's `overlay` slot. `member-action: call/video/invite`. Invite button → `pc-invite-picker`. `audioBlocked` → sticky toast "Click to enable sound" whose action plays a silent sound and clears it.
 - **done when:** PLAN §6 flows 4, 5 and 7 work between 3 tabs, and 1:1 video works between a phone and a laptop on the deployed page.
+- Done: `views/github/main.ts` wires `pc-room` (tiles: one per person + one pinned per screen share), incoming cards in `.incoming` (overlay slot), `pc-invite-picker`, `member-action` on `document` (sidebar + People tab), sticky `audioBlocked` toast. Header Call/Video in a 1:1 chat → `placeCall` (new call room); in a group → starts media in place. Hang up leaves call rooms, only stops captures in chat rooms. Flows 4, 5, 7 + decline, mute and hang-up pass headless with 3 Playwright tabs and fake media (scratch script, not committed). Not tested: phone ↔ laptop on the deployed page, the audioBlocked toast, real ringtone audio. Fixed `null` stream hand-offs in video-tile, call-stage, settings (see Notes).
 
 ---
 
@@ -404,3 +405,4 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - Root has `npm run signal` (local signal server on :3000) and `npm run pages` (build + static site).
 - Scaffolded `tests/` folders stay and are ignored (T0.2).
 - T3.1: `ringtones.json` lists `beep-boom` (default pref) and `quack`. Optional `ringback.mp3` / `message.mp3` also missing (synth fallback used).
+- T3.10 papit gaps: (1) `@papit/web-component`'s property deep-compare throws on `null` inside objects (`Object.keys(null)`), so never pass `null` for streams or in tile objects, use `undefined`. (2) It also calls any two `MediaStream`s equal (no own keys), so swapping one stream for another of the same shape is not seen; `hasChanged` can't force it (it only vetoes, the deep compare still runs). (3) The dev server (`npx @papit/server`) import map leaves out transitive deps (`@papit/treeview`, `@papit/popover`, …), so `localhost:3001/views/github/` fails to load; fine in the static build.

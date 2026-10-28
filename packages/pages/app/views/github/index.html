@@ -18,12 +18,14 @@
             <pc-member-list></pc-member-list>
         </div>
         <main slot="main" class="main">
-            <pc-conversation hidden></pc-conversation>
+            <pc-room hidden></pc-room>
             <p class="empty"></p>
         </main>
+        <div slot="overlay" class="incoming"></div>
         <pc-toaster slot="toasts"></pc-toaster>
     </pc-app-shell>
     <pc-onboarding></pc-onboarding>
+    <pc-invite-picker></pc-invite-picker>
 </body>
 
 </html>
