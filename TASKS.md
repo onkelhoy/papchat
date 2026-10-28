@@ -4,6 +4,16 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ---
 
+## ▶ Resume here (paused 2026-10-28)
+
+- **Done:** 32/54 tasks (all `[x]` below, each committed).
+- **Interrupted, not finished:** T2.1 core invites/rooms (partial edits in `packages/foundations/core/src/`), T5.2 pc-stage-card (partial edits in `packages/molecules/stage-card/`). Saved in the `wip:` commit; review and finish, or revert those files. T1.10, T3.7, T6.3 were stopped before writing anything.
+- **Next, in order:** T1.10 pc-member-list → T1.13 wire wave 1 (first runnable app) → T2.1 → T2.7. Unblocked components meanwhile: T3.7, T5.2, T6.3.
+- **Agents:** Sonnet only, one or two at a time.
+- **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
+
+---
+
 ## How to work a task
 
 1. **Pick** the first task marked `[ ]` whose `needs` are all `[x]`, and that matches your model (see Model below). Tasks in the same wave with no shared `needs` can run in parallel sessions.
@@ -13,7 +23,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 5. **Check** the *done when* list. `npm run build` from the root must pass for every task.
 6. **Tick** `[~]` → `[x]`, add one line under the task if anything is worth knowing (e.g. "event renamed to X"), and commit only your files plus `TASKS.md`: `add: [pc-avatar] avatar atom` (`feat:`/`fix:` as fitting).
 
-**Model** (suggested, not enforced):
+**Model** (suggested; the user's instruction wins: subagents run on Sonnet unless the user says otherwise):
 - `opus` networking, core logic, the first component of a layer (the pattern others copy), page wiring.
 - `sonnet` components that follow an existing pattern, docs, polish.
 - `haiku` mechanical work (translations, renames).
@@ -169,7 +179,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **slots:** `header`, `sidebar`, `main`, `overlay` (incoming calls), `toasts`. CSS grid: header on top, sidebar left (`pap-sidebar`), main fills. Under 800 px the sidebar slot moves into a `pap-drawer` opened by a menu button in the header area. **props:** `sidebaropen` (boolean, reflect). **events:** `sidebar-toggle` `{ open }`.
 - Done: `sidebaropen` default false (set it on wide screens or the sidebar is a 4rem rail), `sidebar-toggle` does not bubble, host is `100dvh`. Own menu button on mobile (T1.11's `menu-toggle` can just set `sidebaropen`). `overlay`/`toasts` are fixed full-viewport layers, only slotted content takes pointer events.
 
-### [~] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
+### [ ] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
 - **read:** `@papit/group`, `@papit/input` READMEs.
 - **props:** `members` (`Profile[]`), `me` (`Profile`), `incall` (uid[]), `canInvite` (boolean). Renders a search `pap-input` (filters by name, client side), count heading ("Online · 3"), `me` first with `self`, then others sorted available → busy → away → dnd, then name. List in a `pap-group` for arrow-key roving. Empty state: "No one else here yet — share the link".
 - Leave a `slot="live"` above the list for stage cards (T5.3).
@@ -197,7 +207,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 2: chat rooms (PLAN §2.4, §2.5, §6.3)
 
-### [~] T2.1 Core: invites and rooms · `opus` · needs T1.1
+### [ ] T2.1 Core: invites and rooms · `opus` · needs T1.1
 - **read:** NET (Media, Channel), PLAN §2.4, §2.5.
 - **files:** `core/src/room.ts`, `core/src/invites.ts`, exports.
 - **do:**
@@ -278,9 +288,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 ### [ ] T3.7 pc-call-stage · `sonnet` · needs T3.4
 - **props:** `tiles` (`{ id, profile, video?, audio?, muted, screen, self }[]`). Responsive grid (1 → full, 2 → side by side, 3–4 → 2×2, up to 8 → 3 cols). A screen tile or a pinned tile becomes the big one with the rest in a strip. Self tile as a small corner overlay in 1:1 calls. **Plays remote audio:** `pc-video-tile` only meters audio, so the stage keeps one hidden `<audio autoplay>` per non-self tile with an `audio` stream (srcObject set imperatively, `sinkid` prop applied via `setSinkId` where supported), removed when the tile goes away.
 
-### [ ] T3.8 pc-invite-picker · `sonnet` · needs T1.2
+### [x] T3.8 pc-invite-picker · `sonnet` · needs T1.2
 - **read:** `@papit/dialog`, `@papit/checkbox`.
 - **props:** `open`, `members` (`Profile[]`, already filtered to people not in the room). Checkbox list with avatars and search. **events:** `invite` `{ uids }`, `close`.
+- Done: `packages/organisms/invite-picker`. Props `open`, `members` (`Profile[]`, property only). Events `invite` `{uids}` (page must set `open = false` after handling) and `close` (user dismissal; component already set `open = false`); both bubble/composed. Selection and search reset on each `open` change. Strings under `pc-invite-picker`.
 
 ### [ ] T3.9 pc-room · `sonnet` · needs T3.5, T3.7, T2.6
 - **read:** `@papit/splitter`, `@papit/tabs`.
@@ -305,12 +316,13 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **props:** `value` (0–1), `label`. `role="progressbar"` with `aria-valuenow` 0–100. Indeterminate when `value` is unset.
 - Done: `packages/atoms/progress`. `value` (0-1, clamped; unset/NaN = indeterminate, host gets `indeterminate` attr), `label` (aria-label, falls back to translated `pc-progress.label`). Host is the progressbar; width 100%, height via `--progress-height`, colour via `--progress-color`. No events.
 
-### [ ] T4.3 pc-file-card · `sonnet` · needs T4.2
+### [x] T4.3 pc-file-card · `sonnet` · needs T4.2
 - **props:** `file` (`FileInfo & TransferState`: name, size, type, progress, state `sending|receiving|done|cancelled|failed`, url?), `mine`. Icon by type, name (ellipsis, full name in `title`), human size (`Intl.NumberFormat` units), `pc-progress` while in flight, Cancel while in flight, Download (`<a download>`) when done. Preview when done: `<img>` for images, `<video controls>`, `<audio controls>`.
 - **events:** `cancel` `{ fid }`.
+- Done: `packages/molecules/file-card`. Props `file` (`FileEntry`, set as property) and `mine` (reflected); `cancel` `{ fid }` bubbles+composed. Only `blob:` urls are used for download/preview; Download/preview need `state: "done"` + `url`. `pc-conversation`/`pc-room` must import `@papchat/file-card` and pass `file` as a property (imperatively, or `{type:Object}` + JSON attr). Needs spritesheet icons camera, play, volume, paperclip, download.
 
-### [ ] T4.4 Drop zones · `sonnet` · needs T4.3
-- **files:** `organisms/conversation`, `molecules/member-item`, `organisms/room` (Files tab).
+### [ ] T4.4 Drop zones · `sonnet` · needs T4.3, T3.9
+- **files:** `organisms/conversation`, `molecules/member-item`, `organisms/room` (Files tab). Re-add `@papchat/file-card` to conversation's `dependencies` (T2.6 removed it).
 - `pc-conversation`: full-area overlay on `dragenter` with files ("Drop to share"), dispatch `files`. Show file cards inline in the message list (a `file` message variant ordered by time). `pc-member-item`: drop target highlight, event `member-files` `{ uid, files }`. `pc-room` Files tab: list of `pc-file-card`s.
 
 ### [ ] T4.5 Wire wave 4 · `sonnet` · needs T4.1, T4.4
@@ -344,9 +356,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **props:** `tones` (`{ id, label }[]`), `value`, `volume` (0–1). Radio list, each with a ▶/■ preview button; volume slider (native `input[type=range]` styled with tokens). **events:** `change` `{ value }`, `volume` `{ volume }`, `preview` `{ id }`, `preview-stop`.
 - Done. Component never plays audio: page handles `preview {id}`, plays it and sets `playing = id` (button becomes stop); `preview-stop` (no detail) means stop and clear `playing`. Extra prop `playing`. `tones` must be set as a property (array). Page also sets `value`/`volume` from events.
 
-### [~] T6.2 pc-device-picker · `sonnet` · needs T0.3
+### [x] T6.2 pc-device-picker · `sonnet` · needs T0.3
 - **read:** `@papit/menu`.
 - **props:** `kind` (`audioinput|videoinput|audiooutput`), `devices` (`{ deviceId, label }[]`), `value`. Labelled `pap-menu` button acting as a select (`aria-haspopup="listbox"`), "Default" first. Hidden for `audiooutput` when `setSinkId` isn't supported (`supported` prop). **events:** `change` `{ value }`.
+- Done: `value` is the deviceId, `""` = Default (change emits `""` for it); `supported` is property-only (default true, hides audiooutput when false); `devices` must be set as a property; a `deviceId: "default"` entry is dropped (our Default replaces it). Page passes lists already filtered by kind and handles `change`.
 
 ### [ ] T6.3 pc-settings · `sonnet` · needs T6.1, T6.2, T1.8
 - **read:** `@papit/dialog`, `@papit/tabs`, `@papit/switch`.
