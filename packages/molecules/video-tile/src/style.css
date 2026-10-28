@@ -1,4 +1,119 @@
 :host {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    box-sizing: border-box;
+    min-inline-size: 0;
+    min-block-size: 0;
+    border-radius: var(--radius-medium, 0.5rem);
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    background-color: color-mix(in oklch, var(--primary) 14%, var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0))));
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+/* speaking ring: inset so overflow:hidden does not clip it */
+:host::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 var(--video-tile-ring-width, 3px) transparent;
+    pointer-events: none;
+    transition: box-shadow 120ms ease;
+}
+
+:host(:state(speaking))::after {
+    box-shadow: inset 0 0 0 var(--video-tile-ring-width, 3px) var(--success);
+}
+
+pc-video {
+    position: absolute;
+    inset: 0;
+}
+
+.placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+}
+
+.placeholder pc-avatar {
+    --avatar-size-l: var(--video-tile-avatar-size, 5rem);
+}
+
+.footer {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    color: white;
+    background: linear-gradient(to top, oklch(0% 0 0 / 0.6), transparent);
+    pointer-events: none;
+}
+
+.label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 0.25rem);
+    min-inline-size: 0;
+}
+
+.name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.you {
+    opacity: 0.8;
+}
+
+.mic-off {
+    flex: none;
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: var(--error);
+}
+
+pc-level-meter {
+    flex: none;
+    --level-meter-height: 1rem;
+    --level-meter-off: white;
+}
+
+.actions {
+    position: absolute;
+    inset-block-start: var(--space-2, 0.5rem);
+    inset-inline-end: var(--space-2, 0.5rem);
+    display: flex;
+    gap: var(--space-1, 0.25rem);
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+:host(:hover) .actions,
+.actions:focus-within {
+    opacity: 1;
+}
+
+/* touch devices have no hover: keep the buttons reachable */
+@media (hover: none) {
+    .actions {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :host::after,
+    .actions {
+        transition: none;
+    }
 }

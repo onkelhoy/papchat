@@ -149,13 +149,14 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **props:** `status` (`connecting|waking|connected|reconnecting|closed`). Pill with dot + translated text; `waking` says "Waking up the server… (can take up to a minute)". `role="status"`, `aria-live="polite"`.
 - Done: `packages/molecules/connection-status`. `status` reflected (default `connecting`, unknown renders as connecting), exports type `ConnectionStatusValue`; no events. Dot is a `pc-presence` (away=pulsing for connecting/waking/reconnecting, available, offline); `--connection-status-background|color`; keys `pc-connection-status.<status>` in `en.json` (add sv in T6.7). Core's `lobbyStatus` values must match these five strings, else map them in the page.
 
-### [~] T1.7 pc-member-item · `opus` (reference molecule) · needs T1.2, T1.3, T1.4
+### [x] T1.7 pc-member-item · `opus` (reference molecule) · needs T1.2, T1.3, T1.4
 - **read:** `@papit/menu`, `@papit/button` READMEs.
 - **props:** `profile` (`Profile`), `self` (boolean, shows "You" badge, no actions), `incall` (boolean, small phone icon).
 - **render:** `pc-avatar` with `pc-presence` in its badge slot, name, translated status text; a `pap-menu` trigger (⋯) with Chat / Call / Video call / Invite to current room (hidden unless `canInvite`).
 - **props (cont.):** `canInvite` (boolean).
 - **events:** `member-action` `{ uid, action: "chat" | "call" | "video" | "invite" }`. Double-click / Enter on the row = `chat`.
 - Drop target comes in T4.4, leave a `// T4.4 drop target` marker.
+- Done: `profile` is property-only; `canInvite` attribute is `caninvite`; `self`/`incall` reflected. `member-action` already bubbles+composed (T1.10 needn't re-dispatch). Host is a focusable `role="listitem"` with `tabindex="0"` only if none set (so `pap-group` roves rows; parent needs `role="list"`), aria-label "name, status[, You][, In a call]"; ⋯ is a native `<button popovertarget>` in the tab order only while the row has focus; contextmenu (right-click/Shift+F10) opens it. `:state(menu-open)`, parts `avatar|name|status|trigger`, `--member-item-ring`. Its `.d.ts` imports `@papchat/core` types: consumers add it as devDependency.
 
 ### [x] T1.8 pc-language-picker · `sonnet` · needs T0.3
 - **read:** `@papit/menu`, `@papit/icon`, TR.
@@ -168,7 +169,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **slots:** `header`, `sidebar`, `main`, `overlay` (incoming calls), `toasts`. CSS grid: header on top, sidebar left (`pap-sidebar`), main fills. Under 800 px the sidebar slot moves into a `pap-drawer` opened by a menu button in the header area. **props:** `sidebaropen` (boolean, reflect). **events:** `sidebar-toggle` `{ open }`.
 - Done: `sidebaropen` default false (set it on wide screens or the sidebar is a 4rem rail), `sidebar-toggle` does not bubble, host is `100dvh`. Own menu button on mobile (T1.11's `menu-toggle` can just set `sidebaropen`). `overlay`/`toasts` are fixed full-viewport layers, only slotted content takes pointer events.
 
-### [ ] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
+### [~] T1.10 pc-member-list · `opus` (reference organism) · needs T1.7
 - **read:** `@papit/group`, `@papit/input` READMEs.
 - **props:** `members` (`Profile[]`), `me` (`Profile`), `incall` (uid[]), `canInvite` (boolean). Renders a search `pap-input` (filters by name, client side), count heading ("Online · 3"), `me` first with `self`, then others sorted available → busy → away → dnd, then name. List in a `pap-group` for arrow-key roving. Empty state: "No one else here yet — share the link".
 - Leave a `slot="live"` above the list for stage cards (T5.3).
@@ -258,21 +259,24 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `speaking` `{ speaking: boolean }` with ~300 ms hysteresis.
 - Done: `stream` (property only, `null` clears), `bars` (1 to 16), `speaking` event bubbles+composed (on at once, off 300 ms after quiet). Sizing via `--level-meter-height`, `--level-meter-color`; it renders no strings. Listen for `speaking` on the host (tile can re-dispatch or toggle its ring).
 
-### [~] T3.4 pc-video-tile · `sonnet` · needs T3.2, T3.3, T1.2
+### [x] T3.4 pc-video-tile · `sonnet` · needs T3.2, T3.3, T1.2
 - **props:** `profile`, `video` (`MediaStream?`), `audio` (`MediaStream?`), `muted` (remote mic flag), `self` (mirror + `muted` video element), `screen` (boolean, `fit=contain`), `pinned`.
 - No video → large `pc-avatar` on a tinted background. Name label, mic-off icon when muted, level meter, speaking ring (from `speaking`). Pin and fullscreen buttons on hover/focus. **events:** `pin` `{ pinned }`.
+- Done: `packages/molecules/video-tile`. Properties only for `profile`/`video`/`audio`; `muted`, `self`, `screen`, `pinned` reflect; event `pin` `{ pinned }` (tile toggles its own `pinned`; `speaking` bubbles from the meter, `:state(speaking)` too). The tile does NOT play `audio` (meter only): a remote mic stream needs a player elsewhere (T3.7/page). No pin/fullscreen icons exist, buttons are text. Host needs a size from the parent.
 
-### [ ] T3.5 pc-call-controls · `sonnet` · needs T0.3
+### [x] T3.5 pc-call-controls · `sonnet` · needs T0.3
 - **read:** `@papit/group`, `@papit/tooltip`.
 - **props:** `mic`, `camera`, `screen` (booleans: on/off), `viewer` (only "Leave" and chat toggle), `canScreen` (hide on browsers without `getDisplayMedia`). Toolbar (`role="toolbar"` via `pap-group`): mic, camera, screen, invite, devices, hang up (error colour). Toggle buttons use `aria-pressed`. Tooltips with shortcut hints ("Mute (M)").
 - **events:** `toggle` `{ control: "mic" | "camera" | "screen" }`, `invite`, `devices`, `hangup`. (Global M/V/S shortcuts come in T6.6.)
+- Done: `packages/molecules/call-controls`. Props `mic`, `camera`, `screen`, `chat` (all reflected, pressed = on), `viewer`, `canscreen` (default true; set `canscreen="false"` or `.canscreen = false` to hide screen). Events (bubble, composed): `toggle` `{control: "mic"|"camera"|"screen"|"chat"}` (does not flip its own state; page sets the prop back), `invite`, `devices`, `hangup`. Viewer mode shows chat toggle (`chat` prop, `toggle` control `"chat"`) + hangup. Needs `/icons/spritesheet.svg` (mic, mic-off, camera, camera-off, screen, screen-off, user-plus, settings, phone-off, chat).
 
-### [ ] T3.6 pc-incoming-call · `sonnet` · needs T1.2
+### [x] T3.6 pc-incoming-call · `sonnet` · needs T1.2
 - **props:** `call` (`IncomingCall`: id, from `Profile`, kind, title). Card with large pulsing avatar (reduced-motion aware), "Anna is calling…" / "…video calling" / "…invites you to watch Demo". Buttons: Accept (audio), Accept with video (only for video), Decline. `role="alertdialog"`, focus moves to Accept.
 - **events:** `accept` `{ id, video }`, `decline` `{ id }`.
+- Done: `call` is `{ type: Object }` (set the property, or a JSON attribute); `accept`/`decline` don't bubble (listen on the element). Card is `max-inline-size: 22rem` (`--incoming-call-max-width`), so stack several in the overlay slot with a flex column. Focus moves to Accept on connect.
 
 ### [ ] T3.7 pc-call-stage · `sonnet` · needs T3.4
-- **props:** `tiles` (`{ id, profile, video?, audio?, muted, screen, self }[]`). Responsive grid (1 → full, 2 → side by side, 3–4 → 2×2, up to 8 → 3 cols). A screen tile or a pinned tile becomes the big one with the rest in a strip. Self tile as a small corner overlay in 1:1 calls.
+- **props:** `tiles` (`{ id, profile, video?, audio?, muted, screen, self }[]`). Responsive grid (1 → full, 2 → side by side, 3–4 → 2×2, up to 8 → 3 cols). A screen tile or a pinned tile becomes the big one with the rest in a strip. Self tile as a small corner overlay in 1:1 calls. **Plays remote audio:** `pc-video-tile` only meters audio, so the stage keeps one hidden `<audio autoplay>` per non-self tile with an `audio` stream (srcObject set imperatively, `sinkid` prop applied via `setSinkId` where supported), removed when the tile goes away.
 
 ### [ ] T3.8 pc-invite-picker · `sonnet` · needs T1.2
 - **read:** `@papit/dialog`, `@papit/checkbox`.
@@ -335,11 +339,12 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 6: polish (PLAN §6.9, §5, §10)
 
-### [~] T6.1 pc-ringtone-picker · `sonnet` · needs T0.3
+### [x] T6.1 pc-ringtone-picker · `sonnet` · needs T0.3
 - **read:** `@papit/radio`.
 - **props:** `tones` (`{ id, label }[]`), `value`, `volume` (0–1). Radio list, each with a ▶/■ preview button; volume slider (native `input[type=range]` styled with tokens). **events:** `change` `{ value }`, `volume` `{ volume }`, `preview` `{ id }`, `preview-stop`.
+- Done. Component never plays audio: page handles `preview {id}`, plays it and sets `playing = id` (button becomes stop); `preview-stop` (no detail) means stop and clear `playing`. Extra prop `playing`. `tones` must be set as a property (array). Page also sets `value`/`volume` from events.
 
-### [ ] T6.2 pc-device-picker · `sonnet` · needs T0.3
+### [~] T6.2 pc-device-picker · `sonnet` · needs T0.3
 - **read:** `@papit/menu`.
 - **props:** `kind` (`audioinput|videoinput|audiooutput`), `devices` (`{ deviceId, label }[]`), `value`. Labelled `pap-menu` button acting as a select (`aria-haspopup="listbox"`), "Default" first. Hidden for `audiooutput` when `setSinkId` isn't supported (`supported` prop). **events:** `change` `{ value }`.
 

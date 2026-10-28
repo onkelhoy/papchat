@@ -3,5 +3,12 @@
     "region": "GB",
     "language": "en"
   },
-  "video-tile": "video-tile"
+  "pc-video-tile": {
+    "muted": "Microphone off",
+    "you": "You",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "fullscreen": "Fullscreen",
+    "exit-fullscreen": "Exit fullscreen"
+  }
 }

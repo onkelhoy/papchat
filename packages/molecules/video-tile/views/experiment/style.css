@@ -26,3 +26,20 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-4, 16px);
+}
+
+pc-video.demo {
+    inline-size: 20rem;
+    block-size: 12rem;
+    border-radius: var(--radius-medium, 8px);
+}
+
+pc-video-tile.demo {
+    inline-size: 20rem;
+    block-size: 12rem;
+}

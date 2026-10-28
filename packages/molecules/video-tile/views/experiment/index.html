@@ -3,25 +3,59 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VideoTile | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-video-tile | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>VideoTile | experiment</h1>
+    <h1>pc-video-tile</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-video-tile></pc-video-tile>
-        </pap-codeblock>
+        <h2>Audio</h2>
+        <p>Start the oscillator to drive the level meters and the speaking ring of every tile with audio.</p>
+        <button id="tone" type="button">Start tone</button>
+    </section>
+
+    <section>
+        <h2>States</h2>
+        <div class="row">
+            <pc-video-tile class="demo" data-name="Anna Berg" data-video data-audio></pc-video-tile>
+            <pc-video-tile class="demo" data-name="Bob Lind" data-audio></pc-video-tile>
+            <pc-video-tile class="demo" data-name="Cleo Dahl" data-video muted></pc-video-tile>
+            <pc-video-tile class="demo" data-name="Dan Ek" muted></pc-video-tile>
+        </div>
+    </section>
+
+    <section>
+        <h2>Self (mirrored) / screen (contain) / pinned</h2>
+        <div class="row">
+            <pc-video-tile class="demo" data-name="Me Myself" data-video data-audio self></pc-video-tile>
+            <pc-video-tile class="demo" data-name="Anna Berg" data-video data-screen screen></pc-video-tile>
+            <pc-video-tile class="demo" data-name="Eva Fors" data-video data-audio pinned></pc-video-tile>
+        </div>
+    </section>
+
+    <section>
+        <h2>Long name</h2>
+        <div class="row">
+            <pc-video-tile class="demo" data-name="Maximilian Alexander von Hohenzollern-Sigmaringen" data-audio></pc-video-tile>
+        </div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+        <p id="log">events: none</p>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-video-tile class="demo" data-name="Anna Berg" data-video data-audio></pc-video-tile>
+            <pc-video-tile class="demo" data-name="Bob Lind" data-audio muted></pc-video-tile>
+        </div>
     </section>
 </body>
 
