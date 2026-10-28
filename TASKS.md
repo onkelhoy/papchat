@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-28)
 
-- **Done:** 48/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
-- **Next, in order:** T6.5, T6.6, T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
+- **Done:** 49/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
+- **Next, in order:** T6.6, T6.8 (T6.7 Swedish any time) → T6.9 final live pass. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
@@ -386,8 +386,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **do:** settings dialog wired to identity/prefs/devices/ringtone. `notify.ts`: `Notification` for incoming calls and messages while hidden (if permitted), title flashing while ringing and hidden. Auto `away` after 5 min hidden, restored on return (never overrides `dnd`/`busy`).
 - Done: `core/src/notify.ts`: `startNotify()` (called at boot), `requestNotifications()`, `canNotify()`. Notifications for new calls and text messages only while hidden and permitted; title flashes `📞 Name` while ringing and hidden; auto `away` only from `available`, restored on return if still `away`. Page: settings opens from the header and the call controls' Devices button; device change restarts a running mic/camera capture; camera/mic tests stop on close. Typecheck + build pass; not run in a browser.
 
-### [ ] T6.5 Mobile layout pass · `sonnet` · needs T5.4
+### [x] T6.5 Mobile layout pass · `sonnet` · needs T5.4
 - Walk every view at 360 px and 768 px: drawer sidebar, room stage/tabs stacking, incoming call full-width, toasts. Fix within the affected components' `style.css` only.
+- Done (by reading the CSS; no browser): `pc-app-header` at ≤32rem uses tighter gaps and "Go live" collapses to its icon (label wrapped in `span.label`, visually hidden); `pc-settings` camera preview shrinks to the dialog (`max-inline-size: 100%`) and the preview row wraps. Checked and left alone: drawer shell, `pc-room` splitter flips to stacked at 40rem, call-stage container queries, toaster centred under 800 px, invite-picker/onboarding/settings use `min(…, 80vw)`. One fix is outside my files, see Notes (incoming call width). Build + typecheck pass.
 
 ### [ ] T6.6 Keyboard shortcuts · `sonnet` · needs T3.10
 - **files:** page only. M / V / S toggle mic / camera / screen in the active call, `Escape` closes dialogs (check pap-dialog does it), ignored while typing in an input. Listed in the settings dialog (add a "Shortcuts" section via a prop).
@@ -413,3 +414,4 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - Scaffolded `tests/` folders stay and are ignored (T0.2).
 - T3.1: `ringtones.json` lists `beep-boom` (default pref) and `quack`. Optional `ringback.mp3` / `message.mp3` also missing (synth fallback used).
 - T3.10 papit gaps: (1) `@papit/web-component`'s property deep-compare throws on `null` inside objects (`Object.keys(null)`), so never pass `null` for streams or in tile objects, use `undefined`. (2) It also calls any two `MediaStream`s equal (no own keys), so swapping one stream for another of the same shape is not seen; `hasChanged` can't force it (it only vetoes, the deep compare still runs). (3) The dev server (`npx @papit/server`) import map leaves out transitive deps (`@papit/treeview`, `@papit/popover`, …), so `localhost:3001/views/github/` fails to load; fine in the static build.
+- **T6.5, incoming calls on phones:** `views/github/style.css` `.incoming` says "full width on phones" but has no rule for it, so the card is only as wide as its content. Add `@media (max-width: 799.98px) { .incoming { left: var(--space-4); } }` (it already has `right`) so `pc-incoming-call` fills the width up to its 22rem max.

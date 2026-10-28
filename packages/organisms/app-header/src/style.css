@@ -82,3 +82,20 @@ pap-menuitem[aria-checked="true"] {
         display: none;
     }
 }
+
+/* phones: Go live shrinks to its icon (the label stays for screen readers) */
+@media (max-width: 32rem) {
+    .bar {
+        gap: var(--space-1, 0.25rem);
+        padding-inline: var(--space-1, 0.25rem);
+    }
+
+    .live .label {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}

@@ -122,7 +122,7 @@ export class AppHeader extends CustomElement {
 
                 <pap-button class="live" size="small" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">
                     <pap-icon name="/icons/spritesheet.svg#broadcast" aria-hidden="true"></pap-icon>
-                    ${this.live ? this.t("end") : this.t("golive")}
+                    <span class="label">${this.live ? this.t("end") : this.t("golive")}</span>
                 </pap-button>
 
                 <pc-language-picker value="${this.language}" @change="${this.handleLanguage}"></pc-language-picker>
