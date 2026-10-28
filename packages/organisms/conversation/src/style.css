@@ -1,4 +1,71 @@
 :host {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
     color: var(--text);
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+.header {
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    font-weight: 600;
+    border-bottom: 1px solid light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12));
+}
+
+.list-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1, 0.25rem);
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+}
+
+.list:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+}
+
+/* a new author starts after a bit more air than a grouped follow-up */
+pc-message:not([grouped]) {
+    margin-top: var(--space-2, 0.5rem);
+}
+
+pc-message:first-child {
+    margin-top: 0;
+}
+
+.empty {
+    margin: auto;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.new {
+    position: absolute;
+    bottom: var(--space-3, 0.75rem);
+    left: 50%;
+    translate: -50% 0;
+    box-shadow: 0 2px 8px oklch(0% 0 0 / 0.3);
+}
+
+.typing {
+    min-height: 1.5em;
+    padding-inline: var(--space-4, 1rem);
+    font-size: 0.875em;
+    color: var(--text-secondary);
+}
+
+pc-composer {
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
 }

@@ -26,3 +26,11 @@ body {
         background-color: var(--background-light, light-dark(oklch(99% 0 0), oklch(22% 0 0)));
     }
 }
+.frame {
+    height: 28rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
+    border-radius: var(--radius-medium, 0.5rem);
+    overflow: hidden;
+}

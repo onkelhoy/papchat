@@ -3,25 +3,38 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversation | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-conversation | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>Conversation | experiment</h1>
+    <h1>pc-conversation</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-conversation></pc-conversation>
-        </pap-codeblock>
+        <h2>Conversation (grouping, system line, typing, scroll up to see "New messages")</h2>
+        <div class="frame"><pc-conversation id="live" data-demo heading="Anna Berg"></pc-conversation></div>
+        <p id="log">send / typing / files events show here. Use the buttons to simulate incoming messages.</p>
+        <p>
+            <button id="incoming">Incoming message</button>
+            <button id="typing">Toggle typing (2 people)</button>
+        </p>
+    </section>
+
+    <section>
+        <h2>Empty</h2>
+        <div class="frame"><pc-conversation me="u-me"></pc-conversation></div>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="frame" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark (several people typing)</h2>
+        <div class="frame"><pc-conversation id="dark" data-demo></pc-conversation></div>
     </section>
 </body>
 

@@ -59,8 +59,7 @@
     "@papit/translator": "*",
     "@papit/button": "*",
     "@papchat/message": "*",
-    "@papchat/composer": "*",
-    "@papchat/file-card": "*"
+    "@papchat/composer": "*"
   },
   "peerDependencies": {
     "react": "^19"
@@ -76,7 +75,8 @@
     "typescript": "5.9.3",
     "@papit/theme": "*",
     "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/codeblock": "*",
+    "@papchat/core": "*"
   },
   "browserslist": [
     "defaults",

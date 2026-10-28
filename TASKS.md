@@ -226,10 +226,11 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `select` `{ id }`, `leave` `{ id }` (via a row menu).
 - Done: `packages/organisms/room-list`. `rooms` (`RoomSummary[]`, property only) and `active` (id); events `select`/`leave` `{ id }` (bubble, composed). The list never changes `active` itself: the page sets it on `select`. Needs `/icons/spritesheet.svg` served (phone icon). Empty `title` falls back to participant names; empty list shows a translated empty text. Added `@papchat/core` (types only) and `@papchat/theme` as devDependencies.
 
-### [~] T2.6 pc-conversation · `sonnet` · needs T2.2, T2.3
-- **props:** `messages` (`ChatMessage[]`), `profiles` (`Record<uid, Profile>`), `me` (uid), `typing` (uid[]), `title`.
+### [x] T2.6 pc-conversation · `sonnet` · needs T2.2, T2.3
+- **props:** `messages` (`ChatMessage[]`), `profiles` (`Record<uid, Profile>`), `me` (uid), `typing` (uid[]), `heading`.
 - Message list with grouping computed here; auto-scroll to bottom on new messages unless the user scrolled up (then show a "New messages ↓" button). Typing line ("Anna is typing…", "Anna and Bob are typing…", "Several people…"). `pc-composer` at the bottom. Leave a `// T4.4 drop zone` marker.
 - **events:** re-dispatches `send`, `typing`, `files`.
+- Done: `packages/organisms/conversation`. `messages`, `profiles`, `typing` are property-only; `me`, `title` also attributes. Events `send`/`typing`/`files` are stopped and re-dispatched (bubble, composed). Marker `<!-- T4.4 drop zone -->` sits just above `pc-composer` in `render()`; `file` messages render as plain text until T4.4 (which must add `@papchat/file-card` to dependencies, I removed it as unused). Child `pc-message` props are set imperatively in `update()` (attribute bindings only carry strings). Host is `display:flex; height:100%`, so the page must give it a height. Needs `/icons/spritesheet.svg`.
 
 ### [ ] T2.7 Wire wave 2 · `opus` · needs T2.1, T2.4–T2.6
 - Sidebar: `pc-room-list` above `pc-member-list`. Main: `pc-conversation` for `activeRoom` (empty state "Pick someone to chat with" otherwise). `member-action: chat` → `openChat`. `toasts` → `pc-toaster`; on its `action` `{ id }` run that toast's `onAction` then dismiss it, on `dismiss` call `dismissToast(id)`. Unread badge counts update, `markRead` on select. Document title shows total unread `(3) papchat`.
@@ -248,15 +249,16 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
   - `devices.ts`: `list()` via `enumerateDevices` (refresh on `devicechange`), chosen ids in prefs, `constraints(name)` for `media.start`, `setSink(el)` with `setSinkId` when supported.
 - **done when:** console: A calls B, B rings, accepts, both get each other's mic+camera streams in the signals; screen share from A shows up on B; stopping it from the browser bar clears it; decline and timeout both toast on A.
 
-### [~] T3.2 pc-video · `sonnet` · needs T0.3
+### [x] T3.2 pc-video · `sonnet` · needs T0.3
 - **props:** `stream` (`MediaStream`, property only), `muted`, `mirror`, `fit` (`cover|contain`), `sinkid`. Sets `srcObject`; calls `play()` and on rejection shows a "click to play" overlay button. Clears `srcObject` on disconnect.
+- Done: `packages/atoms/video`. Props `stream` (property only), `muted`, `mirror`, `fit`, `sinkid`; no events. Host is `display: block` and needs a size from the parent (video fills it, `object-fit` from `fit`). Autoplay-blocked overlay uses `pap-button` + `pap-icon` (`pc-video.play` translation); for the tile, pass `muted` + `mirror` for `self`, `fit="contain"` for screens.
 
 ### [x] T3.3 pc-level-meter · `sonnet` · needs T0.3
-- Done: `stream` (property only, `null` clears), `bars` (1 to 16), `speaking` event bubbles+composed (on at once, off 300 ms after quiet). Sizing via `--level-meter-height`, `--level-meter-color`; it renders no strings. Listen for `speaking` on the host (tile can re-dispatch or toggle its ring).
 - **props:** `stream` (`MediaStream`), `bars` (default 5). One shared `AudioContext` per page, an `AnalyserNode` per instance, `requestAnimationFrame` loop paused while hidden; closes its nodes on disconnect or stream change. `aria-hidden`.
 - **events:** `speaking` `{ speaking: boolean }` with ~300 ms hysteresis.
+- Done: `stream` (property only, `null` clears), `bars` (1 to 16), `speaking` event bubbles+composed (on at once, off 300 ms after quiet). Sizing via `--level-meter-height`, `--level-meter-color`; it renders no strings. Listen for `speaking` on the host (tile can re-dispatch or toggle its ring).
 
-### [ ] T3.4 pc-video-tile · `sonnet` · needs T3.2, T3.3, T1.2
+### [~] T3.4 pc-video-tile · `sonnet` · needs T3.2, T3.3, T1.2
 - **props:** `profile`, `video` (`MediaStream?`), `audio` (`MediaStream?`), `muted` (remote mic flag), `self` (mirror + `muted` video element), `screen` (boolean, `fit=contain`), `pinned`.
 - No video → large `pc-avatar` on a tinted background. Name label, mic-off icon when muted, level meter, speaking ring (from `speaking`). Pin and fullscreen buttons on hover/focus. **events:** `pin` `{ pinned }`.
 
@@ -295,8 +297,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **do:** exactly PLAN §2.6: `file.offer` via `client.broadcast`, frames `[16-byte fid][u32 seq][data ≤ 16 KiB]` on the `file` channel, batches of 64 with a short await, reassembly into a `Blob` per sender, progress for both ends, `file.cancel`, 100 MB cap (toast), files signal on the room (`FileInfo & TransferState`). Object URLs revoked on room leave. Validate every frame (length, known fid, seq range).
 - **done when:** a 50 MB file sent from A arrives byte-identical in B and C (compare SHA-256 in the console), with progress on both ends; cancel mid-way stops both.
 
-### [ ] T4.2 pc-progress · `sonnet` · needs T0.3
+### [x] T4.2 pc-progress · `sonnet` · needs T0.3
 - **props:** `value` (0–1), `label`. `role="progressbar"` with `aria-valuenow` 0–100. Indeterminate when `value` is unset.
+- Done: `packages/atoms/progress`. `value` (0-1, clamped; unset/NaN = indeterminate, host gets `indeterminate` attr), `label` (aria-label, falls back to translated `pc-progress.label`). Host is the progressbar; width 100%, height via `--progress-height`, colour via `--progress-color`. No events.
 
 ### [ ] T4.3 pc-file-card · `sonnet` · needs T4.2
 - **props:** `file` (`FileInfo & TransferState`: name, size, type, progress, state `sending|receiving|done|cancelled|failed`, url?), `mine`. Icon by type, name (ellipsis, full name in `title`), human size (`Intl.NumberFormat` units), `pc-progress` while in flight, Cancel while in flight, Download (`<a download>`) when done. Preview when done: `<img>` for images, `<video controls>`, `<audio controls>`.
@@ -332,7 +335,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 6: polish (PLAN §6.9, §5, §10)
 
-### [ ] T6.1 pc-ringtone-picker · `sonnet` · needs T0.3
+### [~] T6.1 pc-ringtone-picker · `sonnet` · needs T0.3
 - **read:** `@papit/radio`.
 - **props:** `tones` (`{ id, label }[]`), `value`, `volume` (0–1). Radio list, each with a ▶/■ preview button; volume slider (native `input[type=range]` styled with tokens). **events:** `change` `{ value }`, `volume` `{ volume }`, `preview` `{ id }`, `preview-stop`.
 

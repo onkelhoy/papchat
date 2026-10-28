@@ -1,7 +1,14 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "conversation": "conversation"
+  "pc-conversation": {
+    "label": "Messages",
+    "empty": "No messages yet. Say hello!",
+    "new-messages": "New messages",
+    "typing-one": "{name} is typing…",
+    "typing-two": "{first} and {second} are typing…",
+    "typing-many": "Several people are typing…"
+  }
 }
