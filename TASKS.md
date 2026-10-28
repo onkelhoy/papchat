@@ -199,10 +199,11 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `submit` `{ name, color, language }`. (The submit click is the user gesture that unlocks audio; the page uses it.)
 - Done: `packages/organisms/onboarding`. Props `open, name, color, language, colors` (`colors` = copy of core `PALETTE`, default same 8; core is not imported). Events `submit` `{name,color,language}` and extra `language-change` `{value}` (page should `translator.change` live and call `open = false` on submit: the dialog reopens itself if closed by Escape/X while `open`). Page must serve `/icons/flags/` for the picker.
 
-### [ ] T1.13 Wire wave 1 · `opus` · needs T1.1, T1.9–T1.12
+### [x] T1.13 Wire wave 1 · `opus` · needs T1.1, T1.9–T1.12
 - **files:** `packages/pages/app/**`
 - **do:** `main.ts`: load prefs, set translator language (stored → `navigator.language` → en) and register `/translations/<lang>.json`; no profile → `pc-onboarding`, then create profile; profile → `startLobby()`. Effects bind `me`, `lobbyStatus` (map core's `"idle"` → `"connecting"` for `pc-connection-status`), `members` to `pc-app-header` / `pc-member-list`. Header events update status/language (saved). `member-action` logs for now.
 - **done when:** PLAN §6 flows 1 and 2 work in 3 tabs locally and on the deployed page.
+- Done: `views/github/{index.html,main.ts}`. Build and typecheck pass; the 3-tab live check is NOT done (needs T0.6 deploy / a local serve).
 
 ---
 
@@ -390,6 +391,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
+- Don't run `npm run pages` / `npx @papit/static` locally until understood: a run ended with ~31 `node_modules/@papit/*` packages as symlinks into `packages/pages/app/dist/lib/@papit/` (deleting `dist` then broke them; fix was `npm install`). Cause not pinned down (static's source only copies with `cpSync`; the build step or an earlier run may be what linked them). CI is fine.
 - All `en.json` use `"language": "en"` (static names the merged file after it; `en-UK` produced `en-UK.json`).
 - T1.1 papit gap: after a socket reconnect, `Client` keeps its old `id`/router `me`, so every later message to the server carries the stale sender and the signal server rejects it as `spoof`. `leave()` + rejoin on the same Client can't work, so the lobby closes the client and builds a new one. Fix upstream: adopt the new id on reconnect (or expose a `rejoin()`).
 - T0.5: `@papit/static` (via `meta()` in `@papit/server`) skips assets of `papit.type: "theme"` packages, so `packages/foundations/theme/asset/icons/spritesheet.svg` never reaches `dist/public/icons/`. Fix needed outside T0.5 (e.g. change `@papchat/theme` papit type to `browser`/`web-component`-style, or copy the spritesheet into `pages/app/asset/icons/`). Needed before any icon works on the deployed page. **Resolved:** spritesheet moved to `packages/pages/app/asset/icons/`, theme's `npm run icons` writes there.
