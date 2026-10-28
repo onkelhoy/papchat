@@ -28,6 +28,44 @@ npm install @papchat/room
 <pc-room></pc-room>
 ```
 
+## API
+
+### Properties
+
+| Property       | Type                      | Default | Description                                                                    |
+| -------------- | ------------------------- | ------- | ------------------------------------------------------------------------------ |
+| `incall`       | `boolean`                 | `false` | in a call: stage, controls and Chat / Files / People tabs (reflected)          |
+| `viewer`       | `boolean`                 | `false` | watching a stage: Leave and chat toggle only, chat hidden until toggled        |
+| `heading`      | `string`                  | `""`    | room name in the header                                                        |
+| `me`           | `string`                  | `""`    | own uid                                                                        |
+| `messages`     | `ChatMessage[]`           | `[]`    | chat messages, oldest first (property only)                                    |
+| `profiles`     | `Record<string, Profile>` | `{}`    | uid to profile (property only)                                                 |
+| `typing`       | `string[]`                | `[]`    | uids currently typing (property only)                                          |
+| `participants` | `Profile[]`               | `[]`    | People tab (property only)                                                     |
+| `tiles`        | `CallTile[]`              | `[]`    | call stage tiles (property only)                                               |
+| `mic`          | `boolean`                 | `false` | microphone is on                                                               |
+| `camera`       | `boolean`                 | `false` | camera is on                                                                   |
+| `screen`       | `boolean`                 | `false` | you are sharing your screen                                                    |
+| `canscreen`    | `boolean`                 | `true`  | browser can share a screen                                                     |
+| `sinkid`       | `string`                  | `""`    | output device id for remote audio                                              |
+
+The Files tab shows `<slot name="files">` (empty text by default) until T4.4.
+
+### Events
+
+| Event           | Detail                          | Description                                                     |
+| --------------- | ------------------------------- | --------------------------------------------------------------- |
+| `call`          | `{ kind: "call" \| "video" }`   | header buttons, only when not in a call                         |
+| `send`          | `{ text }`                      | from the conversation (bubbles, composed)                       |
+| `typing`        | none                            | from the conversation                                           |
+| `files`         | `{ files: File[] }`             | from the conversation                                           |
+| `pin`           | `{ id, pinned }`                | from the call stage                                             |
+| `toggle`        | `{ control }`                   | from the controls (`mic`, `camera`, `screen`, `chat`); the page sets `mic`/`camera`/`screen` back, the room flips `chat` itself for viewers |
+| `invite`, `devices`, `hangup` | none              | from the controls                                               |
+| `member-action` | `{ uid, action }`               | from the People tab                                             |
+
+Child events are not re-dispatched: they already bubble and are composed.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

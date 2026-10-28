@@ -246,7 +246,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** re-dispatches `send`, `typing`, `files`.
 - Done: `packages/organisms/conversation`. `messages`, `profiles`, `typing` are property-only; `me`, `title` also attributes. Events `send`/`typing`/`files` are stopped and re-dispatched (bubble, composed). Marker `<!-- T4.4 drop zone -->` sits just above `pc-composer` in `render()`; `file` messages render as plain text until T4.4 (which must add `@papchat/file-card` to dependencies, I removed it as unused). Child `pc-message` props are set imperatively in `update()` (attribute bindings only carry strings). Host is `display:flex; height:100%`, so the page must give it a height. Needs `/icons/spritesheet.svg`.
 
-### [ ] T2.7 Wire wave 2 · `opus` · needs T2.1, T2.4–T2.6
+### [x] T2.7 Wire wave 2 · `opus` · needs T2.1, T2.4–T2.6
 - Sidebar: `pc-room-list` above `pc-member-list`. Main: `pc-conversation` for `activeRoom` (empty state "Pick someone to chat with" otherwise). `member-action: chat` → `openChat`. `toasts` → `pc-toaster`; on its `action` `{ id }` run that toast's `onAction` then dismiss it, on `dismiss` call `dismissToast(id)`. Unread badge counts update, `markRead` on select. Document title shows total unread `(3) papchat`.
 - **done when:** PLAN §6 flow 3 works between 3 tabs and on the deployed page.
 
@@ -297,11 +297,12 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **props:** `open`, `members` (`Profile[]`, already filtered to people not in the room). Checkbox list with avatars and search. **events:** `invite` `{ uids }`, `close`.
 - Done: `packages/organisms/invite-picker`. Props `open`, `members` (`Profile[]`, property only). Events `invite` `{uids}` (page must set `open = false` after handling) and `close` (user dismissal; component already set `open = false`); both bubble/composed. Selection and search reset on each `open` change. Strings under `pc-invite-picker`.
 
-### [ ] T3.9 pc-room · `sonnet` · needs T3.5, T3.7, T2.6
+### [x] T3.9 pc-room · `sonnet` · needs T3.5, T3.7, T2.6
 - **read:** `@papit/splitter`, `@papit/tabs`.
 - **props:** everything `pc-conversation` and `pc-call-stage` need, plus `incall` (boolean), `viewer` (boolean), control flags, `participants` (`Profile[]`), `files` (T4: leave the tab empty for now).
 - Not in call → just the conversation, full width, with "Call" / "Video" buttons in the room header. In call → `pap-splitter` with `pc-call-stage` + `pc-call-controls` on one side, `pap-tabs` (Chat / Files / People) on the other. Mobile: stage on top, tabs below.
 - Re-dispatches all child events.
+- Done: `packages/organisms/room`. Child events already bubble/compose so only `call` `{kind}` is new (header buttons). Object props are set imperatively; tiles/mic/camera/screen/canscreen/sinkid/participants/me/messages/profiles/typing/heading/incall/viewer. Files tab is `<slot name="files">` for T4.4. Viewer: stage alone until the chat toggle. Build + typecheck pass; demo not viewed.
 
 ### [ ] T3.10 Wire wave 3 · `opus` · needs T3.1, T3.6, T3.8, T3.9
 - `pc-room` replaces `pc-conversation` in main. `incoming` → stacked `pc-incoming-call` in the shell's `overlay` slot. `member-action: call/video/invite`. Invite button → `pc-invite-picker`. `audioBlocked` → sticky toast "Click to enable sound" whose action plays a silent sound and clears it.

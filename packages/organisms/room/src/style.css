@@ -1,4 +1,86 @@
 :host {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
     color: var(--text);
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-bottom: 1px solid light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12));
+}
+
+.heading {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+pc-conversation {
+    flex: 1;
+    min-height: 0;
+}
+
+pap-splitter {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+}
+
+.stage,
+.side {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+}
+
+.stage pc-call-stage {
+    flex: 1;
+    min-height: 0;
+}
+
+.stage pc-call-controls {
+    padding: var(--space-2, 0.5rem);
+    align-self: center;
+}
+
+pap-tabs {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+pap-tabpanel {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+pap-tabpanel:state(selected) {
+    display: flex;
+    flex-direction: column;
+}
+
+.empty {
+    padding: var(--space-4, 1rem);
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.people {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-2, 0.5rem);
 }

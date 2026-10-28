@@ -3,5 +3,15 @@
     "region": "GB",
     "language": "en"
   },
-  "room": "room"
+  "pc-room": {
+    "label": "Room",
+    "call": "Call",
+    "video": "Video",
+    "tabs": "Room panels",
+    "chat": "Chat",
+    "files": "Files",
+    "people": "People",
+    "no-files": "No files shared yet",
+    "stage": "Call"
+  }
 }
