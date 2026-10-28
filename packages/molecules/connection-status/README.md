@@ -2,7 +2,7 @@
 
 Lobby connection status pill
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,8 +30,8 @@ npm install @papchat/connection-status
 
 ### properties
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
+| Property | Type                                                                    | Default        | Description                                                                                                                                                                                                      |
+| -------- | ----------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `status` | `"connecting" \| "waking" \| "connected" \| "reconnecting" \| "closed"` | `"connecting"` | Reflected. Dot (`pc-presence`) plus translated text; `waking` reads "Waking up the server… (can take up to a minute)". Host has `role="status"` and `aria-live="polite"`. Unknown values render as `connecting`. |
 
 ### events

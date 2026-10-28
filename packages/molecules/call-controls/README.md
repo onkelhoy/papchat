@@ -2,7 +2,7 @@
 
 Call toolbar: mic, camera, screen, invite, hang up
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,21 +30,21 @@ npm install @papchat/call-controls
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `mic` | `mic` | `boolean` | `false` | microphone is on (`aria-pressed`), reflected |
-| `camera` | `camera` | `boolean` | `false` | camera is on, reflected |
-| `screen` | `screen` | `boolean` | `false` | you are sharing your screen, reflected |
-| `chat` | `chat` | `boolean` | `false` | chat panel is shown (viewer mode only), reflected |
-| `viewer` | `viewer` | `boolean` | `false` | only the chat toggle and "Leave" |
-| `canscreen` | `canscreen` | `boolean` | `true` | `false` (or `canscreen="false"`) hides the screen button, for browsers without `getDisplayMedia` |
+| Property    | Attribute   | Type      | Default | Description                                                                                      |
+| ----------- | ----------- | --------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `mic`       | `mic`       | `boolean` | `false` | microphone is on (`aria-pressed`), reflected                                                     |
+| `camera`    | `camera`    | `boolean` | `false` | camera is on, reflected                                                                          |
+| `screen`    | `screen`    | `boolean` | `false` | you are sharing your screen, reflected                                                           |
+| `chat`      | `chat`      | `boolean` | `false` | chat panel is shown (viewer mode only), reflected                                                |
+| `viewer`    | `viewer`    | `boolean` | `false` | only the chat toggle and "Leave"                                                                 |
+| `canscreen` | `canscreen` | `boolean` | `true`  | `false` (or `canscreen="false"`) hides the screen button, for browsers without `getDisplayMedia` |
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `toggle` | `{ control: "mic" \| "camera" \| "screen" \| "chat" }` | a toggle button was pressed; the component does not flip its own state, set the property back |
-| `invite` | - | invite button |
-| `devices` | - | devices button |
-| `hangup` | - | hang up / leave button (also in viewer mode) |
+| Event     | Detail                                                 | Description                                                                                   |
+| --------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `toggle`  | `{ control: "mic" \| "camera" \| "screen" \| "chat" }` | a toggle button was pressed; the component does not flip its own state, set the property back |
+| `invite`  | -                                                      | invite button                                                                                 |
+| `devices` | -                                                      | devices button                                                                                |
+| `hangup`  | -                                                      | hang up / leave button (also in viewer mode)                                                  |
 
 All events bubble and are composed. CSS: `::part(toolbar|mic|camera|screen|chat|invite|devices|hangup)`. Needs `/icons/spritesheet.svg` served. Tooltips carry the shortcut hints (M, V, S); the global shortcuts are wired by the page.
 

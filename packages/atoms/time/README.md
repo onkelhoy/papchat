@@ -2,7 +2,7 @@
 
 Self-updating relative time
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -32,9 +32,9 @@ Renders `<time datetime>` as relative text ("just now" under 45 s, then minutes,
 
 ### properties
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `at` | `number` | Epoch milliseconds. Renders nothing when missing or invalid |
+| Property | Type     | Description                                                 |
+| -------- | -------- | ----------------------------------------------------------- |
+| `at`     | `number` | Epoch milliseconds. Renders nothing when missing or invalid |
 
 ### events
 

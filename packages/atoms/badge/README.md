@@ -2,7 +2,7 @@
 
 Unread count or short label badge
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -31,10 +31,10 @@ npm install @papchat/badge
 
 ## properties
 
-| Property  | Type                                         | Default     | Description                                                          |
-| --------- | -------------------------------------------- | ----------- | -------------------------------------------------------------------- |
-| `count`   | `number`                                     |             | Unread count. `0` hides the badge, above `99` shows `99+`. When set, the slot is ignored. |
-| `variant` | `"neutral" \| "primary" \| "live" \| "error"` | `"neutral"` | Colour variant (reflected). `live` adds a pulsing dot.               |
+| Property  | Type                                          | Default     | Description                                                                               |
+| --------- | --------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `count`   | `number`                                      |             | Unread count. `0` hides the badge, above `99` shows `99+`. When set, the slot is ignored. |
+| `variant` | `"neutral" \| "primary" \| "live" \| "error"` | `"neutral"` | Colour variant (reflected). `live` adds a pulsing dot.                                    |
 
 Slot: default, a short text label ("Live", "Host", "You") shown when `count` is not set.
 CSS part: `dot` (the `live` dot). CSS variables: `--badge-background`, `--badge-color`.

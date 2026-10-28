@@ -2,7 +2,7 @@
 
 Video element for a MediaStream with autoplay fallback
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,13 +30,13 @@ npm install @papchat/video
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `stream` | - | `MediaStream \| null` | - | what to play; property only. Sets `srcObject` and calls `play()` |
-| `muted` | `muted` | `boolean` | `false` | mute the audio (reflected); set it for your own camera |
-| `mirror` | `mirror` | `boolean` | `false` | flip horizontally (reflected) |
-| `fit` | `fit` | `"cover" \| "contain"` | `cover` | how the picture fills the element (reflected) |
-| `sinkid` | `sinkid` | `string` | - | audio output device id, applied with `setSinkId` where supported |
+| Property | Attribute | Type                   | Default | Description                                                      |
+| -------- | --------- | ---------------------- | ------- | ---------------------------------------------------------------- |
+| `stream` | -         | `MediaStream \| null`  | -       | what to play; property only. Sets `srcObject` and calls `play()` |
+| `muted`  | `muted`   | `boolean`              | `false` | mute the audio (reflected); set it for your own camera           |
+| `mirror` | `mirror`  | `boolean`              | `false` | flip horizontally (reflected)                                    |
+| `fit`    | `fit`     | `"cover" \| "contain"` | `cover` | how the picture fills the element (reflected)                    |
+| `sinkid` | `sinkid`  | `string`               | -       | audio output device id, applied with `setSinkId` where supported |
 
 If the browser refuses to autoplay, a "click to play" button overlays the video until it is pressed. `srcObject` is cleared when the element is disconnected and set again if it is re-attached.
 

@@ -2,7 +2,7 @@
 
 Presence status dot
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,8 +30,8 @@ npm install @papchat/presence
 
 ### properties
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
+| Property | Type                                                    | Default     | Description                                                                                                                                |
+| -------- | ------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `status` | `"available" \| "busy" \| "away" \| "dnd" \| "offline"` | `"offline"` | Reflected. Dot colour from `--pc-<status>`; `dnd` has a bar, `away` and `offline` are hollow rings. `aria-label` is the translated status. |
 
 ### events

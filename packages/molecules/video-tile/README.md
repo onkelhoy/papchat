@@ -2,7 +2,7 @@
 
 Participant video tile with name, mute and speaking state
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,20 +30,20 @@ npm install @papchat/video-tile
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `profile` | - | `Profile` | - | who this is (`name`, `uid`, `color`); property only |
-| `video` | - | `MediaStream` | - | camera or screen stream; without a live video track the avatar shows; property only |
-| `audio` | - | `MediaStream` | - | mic stream for the level meter and speaking ring (not played); property only |
-| `muted` | `muted` | `boolean` | `false` | remote mic flag: mic-off icon, no meter, reflected |
-| `self` | `self` | `boolean` | `false` | mirrors the video and mutes the video element, reflected |
-| `screen` | `screen` | `boolean` | `false` | screen share: `fit="contain"`, not mirrored, reflected |
-| `pinned` | `pinned` | `boolean` | `false` | pinned state, reflected, toggled by the Pin button |
+| Property  | Attribute | Type          | Default | Description                                                                         |
+| --------- | --------- | ------------- | ------- | ----------------------------------------------------------------------------------- |
+| `profile` | -         | `Profile`     | -       | who this is (`name`, `uid`, `color`); property only                                 |
+| `video`   | -         | `MediaStream` | -       | camera or screen stream; without a live video track the avatar shows; property only |
+| `audio`   | -         | `MediaStream` | -       | mic stream for the level meter and speaking ring (not played); property only        |
+| `muted`   | `muted`   | `boolean`     | `false` | remote mic flag: mic-off icon, no meter, reflected                                  |
+| `self`    | `self`    | `boolean`     | `false` | mirrors the video and mutes the video element, reflected                            |
+| `screen`  | `screen`  | `boolean`     | `false` | screen share: `fit="contain"`, not mirrored, reflected                              |
+| `pinned`  | `pinned`  | `boolean`     | `false` | pinned state, reflected, toggled by the Pin button                                  |
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `pin` | `{ pinned: boolean }` | the Pin button was used; `pinned` is already toggled (bubbles, composed) |
-| `speaking` | `{ speaking: boolean }` | from the inner `pc-level-meter`, bubbles out unchanged |
+| Event      | Detail                  | Description                                                              |
+| ---------- | ----------------------- | ------------------------------------------------------------------------ |
+| `pin`      | `{ pinned: boolean }`   | the Pin button was used; `pinned` is already toggled (bubbles, composed) |
+| `speaking` | `{ speaking: boolean }` | from the inner `pc-level-meter`, bubbles out unchanged                   |
 
 The host needs a size from its parent. CSS: `--video-tile-avatar-size`, `--video-tile-ring-width`, `::part(video|avatar|label|actions)`, `:state(speaking)`.
 

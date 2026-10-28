@@ -1,6 +1,6 @@
 # @papchat/root
 
-![Logo](/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ## Introduction
 

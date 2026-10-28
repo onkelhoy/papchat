@@ -2,7 +2,7 @@
 
 Shared file with progress, download and preview
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -27,20 +27,29 @@ npm install @papchat/file-card
 
 <pc-file-card id="card"></pc-file-card>
 <script type="module">
-  card.file = { fid: "f1", name: "report.pdf", size: 4200000, type: "application/pdf", uid: "u1", at: Date.now(), state: "receiving", progress: 0.4 };
+  card.file = {
+    fid: "f1",
+    name: "report.pdf",
+    size: 4200000,
+    type: "application/pdf",
+    uid: "u1",
+    at: Date.now(),
+    state: "receiving",
+    progress: 0.4,
+  };
   card.addEventListener("cancel", (e) => console.log(e.detail.fid));
 </script>
 ```
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `file` | `file` | `FileEntry` (`FileInfo & TransferState`) | - | name, size, type, `state` (`sending\|receiving\|done\|cancelled\|failed`), `progress` (0-1), `url?`. Set as a property |
-| `mine` | `mine` | `boolean` | `false` | reflected; right aligned on the primary colour |
+| Property | Attribute | Type                                     | Default | Description                                                                                                            |
+| -------- | --------- | ---------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `file`   | `file`    | `FileEntry` (`FileInfo & TransferState`) | -       | name, size, type, `state` (`sending\|receiving\|done\|cancelled\|failed`), `progress` (0-1), `url?`. Set as a property |
+| `mine`   | `mine`    | `boolean`                                | `false` | reflected; right aligned on the primary colour                                                                         |
 
-| Event | Detail | Description |
-| --- | --- | --- |
+| Event    | Detail            | Description                                                       |
+| -------- | ----------------- | ----------------------------------------------------------------- |
 | `cancel` | `{ fid: string }` | Cancel clicked while `sending` or `receiving` (bubbles, composed) |
 
 In flight: `pc-progress` (indeterminate when `progress` is not a number) and a Cancel button. When `done` with a `blob:` `url`: a Download link (`<a download>`) and a preview (`<img>`, `<video controls>` or `<audio controls>` by `type`). Other urls are ignored. The name is rendered as text with the full name in `title`. Sizes use `Intl.NumberFormat` units (decimal: 1 kB = 1000 B).

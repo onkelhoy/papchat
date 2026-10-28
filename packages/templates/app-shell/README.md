@@ -2,7 +2,7 @@
 
 App layout: header, sidebar, main, overlay and toasts
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,25 +30,25 @@ npm install @papchat/app-shell
 
 ## Properties
 
-| Property      | Type      | Default | Description                                                              |
-| ------------- | --------- | ------- | ------------------------------------------------------------------------ |
+| Property      | Type      | Default | Description                                                                                                                       |
+| ------------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `sidebaropen` | `boolean` | `false` | Sidebar (wide) or drawer (under 800 px) is open. Reflected, kept in sync with the sidebar's own toggle, Escape and backdrop click |
 
 ## Events
 
-| Event            | Detail             | Description                                 |
-| ---------------- | ------------------ | ------------------------------------------- |
-| `sidebar-toggle` | `{ open: boolean }` | `sidebaropen` changed. Does not bubble      |
+| Event            | Detail              | Description                            |
+| ---------------- | ------------------- | -------------------------------------- |
+| `sidebar-toggle` | `{ open: boolean }` | `sidebaropen` changed. Does not bubble |
 
 ## Slots
 
-| Slot      | Description                                                              |
-| --------- | ------------------------------------------------------------------------ |
-| `header`  | Top bar; on mobile a menu button sits in front of it                     |
-| `sidebar` | Inside `pap-sidebar` on wide screens, inside a modal `pap-drawer` under 800 px |
-| `main`    | Fills the remaining area                                                 |
+| Slot      | Description                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| `header`  | Top bar; on mobile a menu button sits in front of it                                             |
+| `sidebar` | Inside `pap-sidebar` on wide screens, inside a modal `pap-drawer` under 800 px                   |
+| `main`    | Fills the remaining area                                                                         |
 | `overlay` | Full-viewport layer above the page for incoming calls; only slotted content takes pointer events |
-| `toasts`  | Layer above `overlay` for the toaster                                    |
+| `toasts`  | Layer above `overlay` for the toaster                                                            |
 
 The host is `100dvh` tall; `pap-sidebar` is collapsed (4rem) unless `sidebaropen` is set, so set it on wide screens when the sidebar holds the member list.
 

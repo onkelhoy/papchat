@@ -2,7 +2,7 @@
 
 Open rooms and stages with unread badges
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,15 +30,15 @@ npm install @papchat/room-list
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `rooms` | - | `RoomSummary[]` | `[]` | `{ id, kind, title, participants, unread, incall, live }` (type from `@papchat/core`); rendered in the given order |
-| `active` | `active` | `string` | - | id of the open room; its row gets `aria-current="true"` |
+| Property | Attribute | Type            | Default | Description                                                                                                        |
+| -------- | --------- | --------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
+| `rooms`  | -         | `RoomSummary[]` | `[]`    | `{ id, kind, title, participants, unread, incall, live }` (type from `@papchat/core`); rendered in the given order |
+| `active` | `active`  | `string`        | -       | id of the open room; its row gets `aria-current="true"`                                                            |
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `select` | `{ id: string }` | a row was chosen (bubbles, composed) |
-| `leave` | `{ id: string }` | "Leave" chosen in a row menu (bubbles, composed) |
+| Event    | Detail           | Description                                      |
+| -------- | ---------------- | ------------------------------------------------ |
+| `select` | `{ id: string }` | a row was chosen (bubbles, composed)             |
+| `leave`  | `{ id: string }` | "Leave" chosen in a row menu (bubbles, composed) |
 
 Rows show up to 3 stacked avatars, the title (fallback: participant names), a phone icon when `incall`, a `Live` badge when `live` and an unread badge when `unread > 0`. The component does not change `active` or `rooms` itself. Needs `/icons/spritesheet.svg` (phone icon) to be served. Strings: `pc-room-list.*` in `asset/translations/en.json`. CSS parts: `list`, `row`, `empty`.
 

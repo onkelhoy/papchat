@@ -2,7 +2,7 @@
 
 Initials avatar with a presence slot
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,15 +30,15 @@ npm install @papchat/avatar
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `name` | `name` | `string` | - | display name; initials and accessible label |
-| `color` | `color` | `string` | hue from `uid` | any CSS colour, dark enough for white text |
-| `uid` | `uid` | `string` | - | stable id, seeds the fallback colour |
-| `size` | `size` | `"s" \| "m" \| "l"` | `m` | reflected |
+| Property | Attribute | Type                | Default        | Description                                 |
+| -------- | --------- | ------------------- | -------------- | ------------------------------------------- |
+| `name`   | `name`    | `string`            | -              | display name; initials and accessible label |
+| `color`  | `color`   | `string`            | hue from `uid` | any CSS colour, dark enough for white text  |
+| `uid`    | `uid`     | `string`            | -              | stable id, seeds the fallback colour        |
+| `size`   | `size`    | `"s" \| "m" \| "l"` | `m`            | reflected                                   |
 
-| Slot | Description |
-| --- | --- |
+| Slot    | Description                              |
+| ------- | ---------------------------------------- |
 | `badge` | bottom-right overlay, e.g. `pc-presence` |
 
 No events. CSS: `--avatar-size`, `--avatar-size-s`, `--avatar-size-l`, `--avatar-text`, `::part(circle)`. Also exports `initials(name)` and `colorFor(seed)`.

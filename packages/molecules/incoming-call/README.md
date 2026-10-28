@@ -2,7 +2,7 @@
 
 Incoming call card with accept and decline
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,16 +30,16 @@ npm install @papchat/incoming-call
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `call` | `call` | `IncomingCall` (`{ id, from: Profile, kind, title, at }`) | - | the call to show; set as a property, or as a JSON attribute |
+| Property | Attribute | Type                                                      | Default | Description                                                 |
+| -------- | --------- | --------------------------------------------------------- | ------- | ----------------------------------------------------------- |
+| `call`   | `call`    | `IncomingCall` (`{ id, from: Profile, kind, title, at }`) | -       | the call to show; set as a property, or as a JSON attribute |
 
 `kind` picks the text: `call` "Anna is calling…", `video` "Anna is video calling…", `stage` "Anna invites you to watch Demo", `chat` "Anna invites you to Demo". "Accept with video" is only shown for `video`.
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `accept` | `{ id: string, video: boolean }` | Accept (`video: false`) or Accept with video (`video: true`). Does not bubble |
-| `decline` | `{ id: string }` | Decline pressed. Does not bubble |
+| Event     | Detail                           | Description                                                                   |
+| --------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| `accept`  | `{ id: string, video: boolean }` | Accept (`video: false`) or Accept with video (`video: true`). Does not bubble |
+| `decline` | `{ id: string }`                 | Decline pressed. Does not bubble                                              |
 
 The card never removes itself. It is an `alertdialog` and moves focus to Accept when it appears; the avatar ring pulses unless `prefers-reduced-motion`.
 

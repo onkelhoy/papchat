@@ -2,7 +2,7 @@
 
 Message list, typing indicator and composer
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -32,21 +32,21 @@ npm install @papchat/conversation
 
 ### Properties
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| `messages` | `ChatMessage[]` | `[]` | messages, oldest first (property only) |
-| `profiles` | `Record<string, Profile>` | `{}` | uid to profile (property only) |
-| `me` | `string` | `""` | own uid; own messages align right |
-| `typing` | `string[]` | `[]` | uids currently typing (own uid is ignored) |
-| `heading` | `string` | `""` | optional header text |
+| Property   | Type                      | Default | Description                                |
+| ---------- | ------------------------- | ------- | ------------------------------------------ |
+| `messages` | `ChatMessage[]`           | `[]`    | messages, oldest first (property only)     |
+| `profiles` | `Record<string, Profile>` | `{}`    | uid to profile (property only)             |
+| `me`       | `string`                  | `""`    | own uid; own messages align right          |
+| `typing`   | `string[]`                | `[]`    | uids currently typing (own uid is ignored) |
+| `heading`  | `string`                  | `""`    | optional header text                       |
 
 ### Events
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `send` | `{ text: string }` | re-dispatched from `pc-composer` (bubbles, composed) |
-| `typing` | none | re-dispatched from `pc-composer` (bubbles, composed) |
-| `files` | `{ files: File[] }` | re-dispatched from `pc-composer` (bubbles, composed) |
+| Event    | Detail              | Description                                          |
+| -------- | ------------------- | ---------------------------------------------------- |
+| `send`   | `{ text: string }`  | re-dispatched from `pc-composer` (bubbles, composed) |
+| `typing` | none                | re-dispatched from `pc-composer` (bubbles, composed) |
+| `files`  | `{ files: File[] }` | re-dispatched from `pc-composer` (bubbles, composed) |
 
 Messages are grouped here: same `uid` as the previous message, at most 2 minutes apart, neither a system message. The list sticks to the bottom; if the user scrolled up a "New messages" button appears instead (own messages always scroll). Typing line: "Anna is typing…", "Anna and Bob are typing…", "Several people are typing…". `file` messages render as text for now (`pc-file-card` and the drop zone come in T4.4). Needs `/icons/spritesheet.svg` (composer icons). Strings: `pc-conversation.*`. CSS parts: `header`, `list`, `composer`.
 

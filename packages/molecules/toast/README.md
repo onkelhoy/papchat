@@ -2,7 +2,7 @@
 
 Single toast notification
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -30,17 +30,17 @@ npm install @papchat/toast
 
 ## API
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `kind` | `kind` | `"info" \| "success" \| "warning" \| "error"` | `info` | reflected; sets accent colour and glyph |
-| `text` | `text` | `string` | - | the message |
-| `action` | `action` | `string` | - | label of an optional action button |
-| `duration` | `duration` | `number` | `5000` | ms until `dismiss` fires; `0` = sticky. Pauses while hovered or focused |
+| Property   | Attribute  | Type                                          | Default | Description                                                             |
+| ---------- | ---------- | --------------------------------------------- | ------- | ----------------------------------------------------------------------- |
+| `kind`     | `kind`     | `"info" \| "success" \| "warning" \| "error"` | `info`  | reflected; sets accent colour and glyph                                 |
+| `text`     | `text`     | `string`                                      | -       | the message                                                             |
+| `action`   | `action`   | `string`                                      | -       | label of an optional action button                                      |
+| `duration` | `duration` | `number`                                      | `5000`  | ms until `dismiss` fires; `0` = sticky. Pauses while hovered or focused |
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `dismiss` | - | close button pressed or the timer ran out. Does not bubble; the toast does not remove itself |
-| `action` | - | action button pressed. Does not bubble |
+| Event     | Detail | Description                                                                                  |
+| --------- | ------ | -------------------------------------------------------------------------------------------- |
+| `dismiss` | -      | close button pressed or the timer ran out. Does not bubble; the toast does not remove itself |
+| `action`  | -      | action button pressed. Does not bubble                                                       |
 
 CSS: `--toast-background`, `--toast-max-width`, `--toast-glyph`, `::part(message|action|close)`.
 

@@ -2,7 +2,7 @@
 
 papchat networking and state: lobby, rooms, stages, invites, file transfer, ringtones, devices
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 

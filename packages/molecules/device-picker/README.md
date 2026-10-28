@@ -2,7 +2,7 @@
 
 Mic, camera or speaker picker
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -43,17 +43,17 @@ The component never calls `enumerateDevices` itself: the page passes the (filter
 
 ### Properties
 
-| Property    | Attribute | Type                                          | Default        | Description |
-| ----------- | --------- | --------------------------------------------- | -------------- | ----------- |
-| `kind`      | `kind`    | `"audioinput" \| "videoinput" \| "audiooutput"` | `"audioinput"` | Which kind of device this picks (sets the label) |
-| `devices`   | -         | `{ deviceId: string; label: string }[]`       | `[]`           | Available devices, set as a property |
-| `value`     | `value`   | `string`                                      | `""`           | Chosen `deviceId`, `""` = system default |
-| `supported` | -         | `boolean`                                     | `true`         | Set to `false` when `setSinkId` is unsupported: an `audiooutput` picker is then hidden |
+| Property    | Attribute | Type                                            | Default        | Description                                                                            |
+| ----------- | --------- | ----------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| `kind`      | `kind`    | `"audioinput" \| "videoinput" \| "audiooutput"` | `"audioinput"` | Which kind of device this picks (sets the label)                                       |
+| `devices`   | -         | `{ deviceId: string; label: string }[]`         | `[]`           | Available devices, set as a property                                                   |
+| `value`     | `value`   | `string`                                        | `""`           | Chosen `deviceId`, `""` = system default                                               |
+| `supported` | -         | `boolean`                                       | `true`         | Set to `false` when `setSinkId` is unsupported: an `audiooutput` picker is then hidden |
 
 ### Events
 
-| Event    | Detail              | Description |
-| -------- | ------------------- | ----------- |
+| Event    | Detail              | Description                                                     |
+| -------- | ------------------- | --------------------------------------------------------------- |
 | `change` | `{ value: string }` | Another device was chosen, `""` for Default (bubbles, composed) |
 
 ### CSS parts

@@ -2,7 +2,7 @@
 
 Language menu with flags
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -28,9 +28,11 @@ npm install @papchat/language-picker
 <pc-language-picker value="en"></pc-language-picker>
 
 <script>
-  document.querySelector("pc-language-picker").addEventListener("change", (e) => {
-    console.log(e.detail.value); // e.g. "sv"
-  });
+  document
+    .querySelector("pc-language-picker")
+    .addEventListener("change", (e) => {
+      console.log(e.detail.value); // e.g. "sv"
+    });
 </script>
 ```
 
@@ -39,15 +41,15 @@ Flag icons live in `asset/icons/flags/<code>.svg` and must be served at `/icons/
 
 ## Properties
 
-| Property    | Attribute | Type         | Default      | Description |
-| ----------- | --------- | ------------ | ------------ | ----------- |
-| `value`     | `value`   | `string`     | `"en"`       | Code of the current language |
-| `languages` | -         | `Language[]` | en, sv       | `{ code, label, flag }[]`; `flag` is a `pap-icon` name, e.g. `/icons/flags/sv.svg` |
+| Property    | Attribute | Type         | Default | Description                                                                        |
+| ----------- | --------- | ------------ | ------- | ---------------------------------------------------------------------------------- |
+| `value`     | `value`   | `string`     | `"en"`  | Code of the current language                                                       |
+| `languages` | -         | `Language[]` | en, sv  | `{ code, label, flag }[]`; `flag` is a `pap-icon` name, e.g. `/icons/flags/sv.svg` |
 
 ## Events
 
-| Event    | Detail              | Description |
-| -------- | ------------------- | ----------- |
+| Event    | Detail              | Description                                     |
+| -------- | ------------------- | ----------------------------------------------- |
 | `change` | `{ value: string }` | Another language was chosen (bubbles, composed) |
 
 ## License

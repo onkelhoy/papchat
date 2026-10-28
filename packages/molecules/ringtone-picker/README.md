@@ -2,7 +2,7 @@
 
 Ringtone list with preview and volume
 
-![Logo](https://github.com/onkelhoy/papchat/blob/main/asset/logo.svg)
+![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
 ---
 
@@ -32,19 +32,19 @@ npm install @papchat/ringtone-picker
 
 Never plays audio itself: the page plays the sound on `preview` and sets `playing` so the button turns into a stop button. `tones` is an array, so set it as a property (`picker.tones = [...]`); a JSON attribute also works.
 
-| Property | Attribute | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `tones` | `tones` | `{ id: string, label: string }[]` | `[]` | the choices |
-| `value` | `value` | `string` | `""` | id of the selected tone |
-| `volume` | `volume` | `number` | `1` | 0 to 1 |
-| `playing` | `playing` | `string` | `""` | id of the tone being previewed (set by the page) |
+| Property  | Attribute | Type                              | Default | Description                                      |
+| --------- | --------- | --------------------------------- | ------- | ------------------------------------------------ |
+| `tones`   | `tones`   | `{ id: string, label: string }[]` | `[]`    | the choices                                      |
+| `value`   | `value`   | `string`                          | `""`    | id of the selected tone                          |
+| `volume`  | `volume`  | `number`                          | `1`     | 0 to 1                                           |
+| `playing` | `playing` | `string`                          | `""`    | id of the tone being previewed (set by the page) |
 
-| Event | Detail | Description |
-| --- | --- | --- |
-| `change` | `{ value: string }` | another tone was selected |
-| `volume` | `{ volume: number }` | slider moved (fires continuously while dragging) |
-| `preview` | `{ id: string }` | play pressed on a tone |
-| `preview-stop` | - | stop pressed on the playing tone |
+| Event          | Detail               | Description                                      |
+| -------------- | -------------------- | ------------------------------------------------ |
+| `change`       | `{ value: string }`  | another tone was selected                        |
+| `volume`       | `{ volume: number }` | slider moved (fires continuously while dragging) |
+| `preview`      | `{ id: string }`     | play pressed on a tone                           |
+| `preview-stop` | -                    | stop pressed on the playing tone                 |
 
 All events bubble and are composed. Parts: `list`, `volume`. Needs `/icons/spritesheet.svg` (icons `play`, `stop`).
 
