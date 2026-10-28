@@ -3,5 +3,10 @@
     "region": "GB",
     "language": "en"
   },
-  "ringtone-picker": "ringtone-picker"
+  "pc-ringtone-picker": {
+    "tones": "Ringtones",
+    "play": "Preview",
+    "stop": "Stop preview",
+    "volume": "Volume"
+  }
 }

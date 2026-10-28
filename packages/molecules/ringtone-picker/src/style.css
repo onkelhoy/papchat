@@ -1,4 +1,99 @@
 :host {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 1rem);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1, 0.25rem);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+    padding-inline: var(--space-3, 0.75rem);
+    padding-block: var(--space-1, 0.25rem);
+    border-radius: var(--radius-medium, 0.5rem);
+}
+
+.row:hover {
+    background-color: var(--background-light, transparent);
+}
+
+pap-radio {
+    flex: 1;
+    min-inline-size: 0;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+}
+
+.volume {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    padding-inline: var(--space-3, 0.75rem);
+}
+
+.label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.percent {
+    min-inline-size: 3ch;
+    text-align: end;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* native range styled with tokens: filled part up to --_fill */
+input[type="range"] {
+    flex: 1;
+    min-inline-size: 0;
+    block-size: 1.25rem;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+input[type="range"]:focus-visible {
+    outline: 2px solid var(--focus-color, var(--primary));
+    outline-offset: var(--space-1, 0.25rem);
+    border-radius: var(--radius-full, 999px);
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    block-size: 0.25rem;
+    border-radius: var(--radius-full, 999px);
+    background: linear-gradient(to right, var(--primary) var(--_fill, 100%), var(--border, var(--text-secondary)) var(--_fill, 100%));
+}
+
+input[type="range"]::-moz-range-track {
+    block-size: 0.25rem;
+    border-radius: var(--radius-full, 999px);
+    background: linear-gradient(to right, var(--primary) var(--_fill, 100%), var(--border, var(--text-secondary)) var(--_fill, 100%));
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    inline-size: 1rem;
+    block-size: 1rem;
+    margin-block-start: -0.375rem;
+    border: 0;
+    border-radius: var(--radius-full, 50%);
+    background-color: var(--primary);
+}
+
+input[type="range"]::-moz-range-thumb {
+    inline-size: 1rem;
+    block-size: 1rem;
+    border: 0;
+    border-radius: var(--radius-full, 50%);
+    background-color: var(--primary);
 }

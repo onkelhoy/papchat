@@ -16,12 +16,33 @@
 </head>
 
 <body>
-    <h1>RingtonePicker | experiment</h1>
+    <h1>pc-ringtone-picker</h1>
+    <p>The component never plays audio: <code>preview</code> sets <code>playing</code> here (auto-stops after 2 s), <code>preview-stop</code> clears it.</p>
+    <p id="log">events show here</p>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-ringtone-picker></pc-ringtone-picker>
-        </pap-codeblock>
+        <h2>Default (3 tones, second selected, volume 60%)</h2>
+        <pc-ringtone-picker id="main"></pc-ringtone-picker>
+    </section>
+
+    <section>
+        <h2>No selection, full volume, one tone</h2>
+        <pc-ringtone-picker id="single"></pc-ringtone-picker>
+    </section>
+
+    <section>
+        <h2>Empty list</h2>
+        <pc-ringtone-picker id="empty" volume="0.3"></pc-ringtone-picker>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark theme</h2>
+        <pc-ringtone-picker id="dark"></pc-ringtone-picker>
+    </section>
+
+    <section>
+        <h2>Created with document.createElement</h2>
+        <div id="created"></div>
     </section>
 </body>
 
