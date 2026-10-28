@@ -2,6 +2,8 @@ import { LIMITS, signalUrl } from "./config";
 import * as identity from "./identity";
 import * as invites from "./invites";
 import * as lobby from "./lobby";
+import * as devices from "./devices";
+import * as ringtone from "./ringtone";
 import * as room from "./room";
 import { setLogging } from "./log";
 import { state, toast } from "./state";
@@ -16,6 +18,8 @@ export * from "./identity";
 export * from "./lobby";
 export * from "./room";
 export * from "./invites";
+export * from "./devices";
+export * as ringtone from "./ringtone";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …
 declare global {
@@ -37,6 +41,8 @@ if (typeof window !== "undefined")
         ...lobby,
         ...room,
         ...invites,
+        ...devices,
+        ringtone,
         lobby,
         identity,
     });

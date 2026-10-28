@@ -254,7 +254,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ## Wave 3: calls (PLAN §2.5 media, §2.8, §6.4–5, §6.7)
 
-### [ ] T3.1 Core: media, ringing, devices · `opus` · needs T2.1
+### [x] T3.1 Core: media, ringing, devices · `opus` · needs T2.1
 - **files:** `core/src/{room.ts,invites.ts,ringtone.ts,devices.ts}`, exports.
 - **do:**
   - `Room`: `start(name)` / `stop(name)` for mic/camera/screen using chosen devices; `captures` signal (`Record<name, MediaStream>`); `streams` signal (`{ uid, name, stream }[]` from `stream` / `stream-ended`, peer → uid via profiles); mute/camera flags broadcast on `state` channel; `capture-ended` updates flags (browser-bar screen stop). `call(uid, "call" | "video")` creates the room, starts mic (+ camera), invites, plays ringback until first remote peer or `invite.accept`; all decline/timeout → toast + close the empty room. `cancel` sends `invite.cancel` to everyone still ringing. `me.status = busy` while in a call, restored after.
@@ -262,6 +262,7 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
   - `ringtone.ts` (PLAN §5): list from `fetch("/audio/ringtones/ringtones.json")`, load via fetch → blob URL, cached; `play(id, { loop })`, `stop()`, `preview(id)`, volume from prefs, `ringback()`, `ping()`. **If a file is missing, synthesize the tone with WebAudio** (ring: two-tone 440/480 Hz pattern; ringback: 440 Hz 2 s on / 4 s off; ping: short 880 Hz) so it works before the user adds mp3s. `play()` rejection → `audioBlocked` signal true.
   - `devices.ts`: `list()` via `enumerateDevices` (refresh on `devicechange`), chosen ids in prefs, `constraints(name)` for `media.start`, `setSink(el)` with `setSinkId` when supported.
 - **done when:** console: A calls B, B rings, accepts, both get each other's mic+camera streams in the signals; screen share from A shows up on B; stopping it from the browser bar clears it; decline and timeout both toast on A.
+- Done: `devices.ts`, `ringtone.ts`, media in `room.ts`, ringing in `invites.ts`. API: `room.start/stop("mic"|"camera"|"screen")`, signals `room.captures/streams/flags`, `room.incall`, `placeCall(uid, "call"|"video")` (hang up with `room.leave()`, which cancels ringing), `acceptInvite(id, withVideo)`, `declineInvite(id)`, `incoming` signal, `ringtone.{loadTones,tones,play,preview,previewing,stop,unlock}`, `devices()`/`listDevices()`/`setSink(el)`/`sinkSupported`. Browser test not run (needs two tabs). `ringtones.json` is still `[]`, so tones are synthesized until the mp3s are listed (see Notes).
 
 ### [x] T3.2 pc-video · `sonnet` · needs T0.3
 - **props:** `stream` (`MediaStream`, property only), `muted`, `mirror`, `fit` (`cover|contain`), `sinkid`. Sets `srcObject`; calls `play()` and on rejection shows a "click to play" overlay button. Clears `srcObject` on disconnect.
@@ -402,3 +403,4 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - T0.5: `@papit/static` (via `meta()` in `@papit/server`) skips assets of `papit.type: "theme"` packages, so `packages/foundations/theme/asset/icons/spritesheet.svg` never reaches `dist/public/icons/`. Fix needed outside T0.5 (e.g. change `@papchat/theme` papit type to `browser`/`web-component`-style, or copy the spritesheet into `pages/app/asset/icons/`). Needed before any icon works on the deployed page. **Resolved:** spritesheet moved to `packages/pages/app/asset/icons/`, theme's `npm run icons` writes there.
 - Root has `npm run signal` (local signal server on :3000) and `npm run pages` (build + static site).
 - Scaffolded `tests/` folders stay and are ignored (T0.2).
+- T3.1: `packages/pages/app/asset/audio/ringtones/ringtones.json` is `[]` though two mp3s sit beside it; list them as `{ id, file, label }` (prefs default id is `classic`). Optional `ringback.mp3` / `message.mp3` also missing (synth fallback used).

@@ -2,11 +2,14 @@ import { signal } from "@papit/signals";
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, RTC, signalUrl } from "./config";
+import { constraints, listDevices, type CaptureName } from "./devices";
+import { setStatus } from "./identity";
+import { ping } from "./ringtone";
 import { peerOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { activeRoom, me, setActiveRoom, setRooms, toast } from "./state";
 import { storage } from "./storage";
-import type { ChatMessage, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom } from "./types";
+import type { ChatMessage, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
 
 // A room (PLAN §2.5): one private mesh network with its own Client. Chat over `client.broadcast`,
 // ephemeral state (typing; mute flags in T3.1) over the `state` channel, files (T4.1) over `file`.
@@ -36,6 +39,12 @@ export type RoomFrom = {
 };
 
 export type RoomHandler<Payload = any> = (payload: Payload, from: RoomFrom) => void;
+
+/** A remote media stream: `name` is `mic`, `camera` or `screen`. `uid` is "" until the peer's profile is known. */
+export type RemoteStream = { peer: string; uid: string; name: string; stream: MediaStream };
+
+/** What a peer says it is sending (broadcast on the `state` channel). */
+export type MediaFlags = { mic: boolean; camera: boolean; screen: boolean };
 
 export type RoomOptions = {
     // the other uid of a 1:1 chat: stored in the network meta so both ends map uid → room
@@ -86,6 +95,22 @@ export class Room extends EventTarget {
     private setUnread: (next: number | ((prev: number) => number)) => void;
     private setStatusSignal: (next: RoomStatus) => void;
 
+    /** Your own captures by name (`mic`, `camera`, `screen`). */
+    readonly captures: () => Record<string, MediaStream>;
+    /** Streams other people send, one entry per peer and name. */
+    readonly streams: () => RemoteStream[];
+    /** uid → what that person says they send; use it to show mute and camera-off before a stream arrives. */
+    readonly flags: () => Record<string, MediaFlags>;
+
+    private setCaptures: (next: Record<string, MediaStream>) => void;
+    private setStreams: (next: RemoteStream[] | ((prev: RemoteStream[]) => RemoteStream[])) => void;
+    private setFlags: (next: Record<string, MediaFlags> | ((prev: Record<string, MediaFlags>) => Record<string, MediaFlags>)) => void;
+    // the captures themselves; the client gets clones, so a rebuild can hand them to the next client
+    private local = new Map<string, MediaStream>();
+    private localEnded = new Map<string, () => void>();
+    private mediaClient: Client | null = null;
+    private starting = new Set<string>();
+
     private _client: Client | null = null;
     private epoch = 0;
     private closed = false;
@@ -119,9 +144,14 @@ export class Room extends EventTarget {
         [this.typing, this.setTyping] = signal<string[]>([]);
         [this.unread, this.setUnread] = signal(unread);
         [this.status, this.setStatusSignal] = signal<RoomStatus>("connecting");
+        [this.captures, this.setCaptures] = signal<Record<string, MediaStream>>({});
+        [this.streams, this.setStreams] = signal<RemoteStream[]>([]);
+        [this.flags, this.setFlags] = signal<Record<string, MediaFlags>>({});
 
         this.onMessage("chat", this.handleChat);
         this.onState("typing", this.handleTyping);
+        this.onState("flags", this.handleFlags);
+        this.addEventListener("client", this.handleClientMedia);
     }
 
     // ------------------------------------------------------------ create / join
@@ -206,6 +236,70 @@ export class Room extends EventTarget {
         this.sendState("typing");
     }
 
+    /** True while you capture something or someone sends you a stream. */
+    get incall(): boolean {
+        return Object.keys(this.captures()).length > 0 || this.streams().length > 0;
+    }
+
+    /**
+     * Starts your mic, camera or screen and sends it to everyone in the room. Asks the browser for
+     * permission, toasts and returns false when that fails (cancelling the screen picker is silent).
+     */
+    async start(name: CaptureName): Promise<boolean> {
+        if (this.closed || !this._client?.network) return false;
+        if (this.local.has(name)) return true;
+        if (this.starting.has(name)) return false;
+
+        this.starting.add(name);
+        try
+        {
+            const source = await capture(name);
+            if (this.closed || !this._client?.network || this.local.has(name))
+            {
+                source.getTracks().forEach(t => t.stop());
+                return this.local.has(name);
+            }
+
+            const onEnded = () => this.stop(name);
+            source.getTracks()[0]?.addEventListener("ended", onEnded);
+            this.local.set(name, source);
+            this.localEnded.set(name, () => source.getTracks()[0]?.removeEventListener("ended", onEnded));
+
+            await this._client.media.start(name, source.clone());
+            this.captured();
+            void listDevices();
+            return true;
+        }
+        catch (error)
+        {
+            this.release(name);
+            this.captured();
+            const reason = captureError(name, error);
+            if (reason) toast("warning", reason);
+            log("room: start failed", name, error);
+            return false;
+        }
+        finally
+        {
+            this.starting.delete(name);
+        }
+    }
+
+    /** Stops your mic, camera or screen and releases the device. */
+    stop(name: CaptureName | string) {
+        if (!this.local.has(name)) return;
+        this.release(name);
+        try
+        {
+            this._client?.media.stop(name);
+        }
+        catch (error)
+        {
+            log("room: stop failed", name, error);
+        }
+        this.captured();
+    }
+
     /** Invites someone in the lobby to this room. False when they aren't reachable in the lobby. */
     invite(uid: string, kind: InviteKind = this.kind, extra: Partial<Invite> = {}): boolean {
         const profile = me();
@@ -282,7 +376,7 @@ export class Room extends EventTarget {
             title: this.title,
             participants: this.participants(),
             unread: this.unread(),
-            incall: false, // T3.1: true while captures or remote streams are active
+            incall: this.incall,
             live: false,
         };
     }
@@ -335,6 +429,96 @@ export class Room extends EventTarget {
         {
             log("room: setProfile failed", error);
         }
+    }
+
+    // ------------------------------------------------------------ media
+
+    // forget one capture (stops its tracks, leaves the client alone)
+    private release(name: string) {
+        const source = this.local.get(name);
+        if (!source) return;
+        this.localEnded.get(name)?.();
+        this.localEnded.delete(name);
+        this.local.delete(name);
+        source.getTracks().forEach(t => t.stop());
+    }
+
+    // after any change to what we capture
+    private captured() {
+        this.setCaptures(Object.fromEntries(this.local));
+        this.sendFlags();
+        this.mediaChanged();
+    }
+
+    private mediaChanged() {
+        this.sync();
+        updateBusy();
+    }
+
+    private ownFlags(): MediaFlags {
+        return { mic: this.local.has("mic"), camera: this.local.has("camera"), screen: this.local.has("screen") };
+    }
+
+    private sendFlags() {
+        this.sendState("flags", this.ownFlags());
+    }
+
+    // a new client: listen to its media and hand it our captures again
+    private handleClientMedia = (event: Event) => {
+        const c = (event as CustomEvent<Client>).detail;
+        this.unlistenMedia();
+        this.mediaClient = c;
+        c.media.addEventListener("stream", this.handleStream);
+        c.media.addEventListener("stream-ended", this.handleStreamEnded);
+        c.media.addEventListener("channel-open", this.handleChannelOpen);
+
+        for (const [name, source] of this.local)
+        {
+            c.media.start(name, source.clone()).catch(error => log("room: restart failed", name, error));
+        }
+        this.sendFlags();
+    };
+
+    private unlistenMedia() {
+        const old = this.mediaClient;
+        this.mediaClient = null;
+        if (!old) return;
+        old.media.removeEventListener("stream", this.handleStream);
+        old.media.removeEventListener("stream-ended", this.handleStreamEnded);
+        old.media.removeEventListener("channel-open", this.handleChannelOpen);
+    }
+
+    private handleStream = (event: Event) => {
+        const { peer, name, stream } = (event as CustomEvent<{ peer: string; name: string; stream: MediaStream }>).detail;
+        const entry: RemoteStream = { peer, uid: this.uidOf(peer) ?? "", name, stream };
+        this.setStreams(list => [...list.filter(s => !(s.peer === peer && s.name === name)), entry]);
+        this.mediaChanged();
+    };
+
+    private handleStreamEnded = (event: Event) => {
+        const { peer, name } = (event as CustomEvent<{ peer: string; name: string }>).detail;
+        this.setStreams(list => list.filter(s => !(s.peer === peer && s.name === name)));
+        this.mediaChanged();
+    };
+
+    // tell a newly linked peer what we send
+    private handleChannelOpen = (event: Event) => {
+        if ((event as CustomEvent<{ label: string }>).detail?.label === "state") this.sendFlags();
+    };
+
+    private handleFlags = (payload: unknown, from: RoomFrom) => {
+        if (!from.uid || from.uid === me()?.uid || typeof payload !== "object" || payload === null) return;
+        const value = payload as Record<string, unknown>;
+        const flags: MediaFlags = { mic: value.mic === true, camera: value.camera === true, screen: value.screen === true };
+        const uid = from.uid;
+        this.setFlags(map => ({ ...map, [uid]: flags }));
+    };
+
+    // peers get their uid once the members are known
+    private resolveStreams() {
+        const list = this.streams();
+        if (!list.some(s => s.uid !== (this.uidOf(s.peer) ?? ""))) return;
+        this.setStreams(list.map(s => ({ ...s, uid: this.uidOf(s.peer) ?? "" })));
     }
 
     // ------------------------------------------------------------ client lifecycle
@@ -399,6 +583,8 @@ export class Room extends EventTarget {
         const old = this._client;
         this._client = null;
         if (!old) return;
+        this.unlistenMedia();
+        this.setStreams([]);
         this.detach(old);
         if (this.stateListener)
         {
@@ -525,6 +711,10 @@ export class Room extends EventTarget {
         this.closed = true;
         this.epoch++;
         this.dropClient();
+        for (const name of [...this.local.keys()]) this.release(name);
+        this.setCaptures({});
+        this.setFlags({});
+        this.mediaChanged();
         this.clearReinvite();
         this.clearAdoptTimer();
         if (this.expectedTimer) clearTimeout(this.expectedTimer);
@@ -617,6 +807,7 @@ export class Room extends EventTarget {
             }
         }
         this.memberByPeer = byPeer;
+        this.resolveStreams();
 
         const next = new Map([...newest.values()].map(m => [m.profile.uid, m.profile]));
         if (this.baseline)
@@ -699,6 +890,7 @@ export class Room extends EventTarget {
         {
             this.setUnread(n => n + 1);
             this.sync();
+            ping();
         }
     };
 
@@ -790,6 +982,58 @@ export class Room extends EventTarget {
         // rebuild outside the client's own event dispatch
         if (detail?.type === "reconnect") setTimeout(() => void this.rebuild(), 0);
     };
+}
+
+// ---------------------------------------------------------------- media helpers
+
+async function capture(name: CaptureName): Promise<MediaStream> {
+    const devices = typeof navigator !== "undefined" ? navigator.mediaDevices : undefined;
+    if (!devices) throw new DOMException("media devices need https", "NotSupportedError");
+
+    const { display, ...wanted } = constraints(name);
+    return display ? devices.getDisplayMedia(wanted) : devices.getUserMedia(wanted);
+}
+
+// the toast text for a failed capture, "" when the user simply cancelled
+function captureError(name: CaptureName, error: unknown): string {
+    const what = name === "mic" ? "microphone" : name === "camera" ? "camera" : "screen";
+    const kind = error instanceof DOMException ? error.name : "";
+
+    if (name === "screen" && (kind === "NotAllowedError" || kind === "AbortError")) return "";
+    if (kind === "NotAllowedError" || kind === "SecurityError") return `Allow ${what} access in your browser to use it`;
+    if (kind === "NotFoundError" || kind === "OverconstrainedError") return `No ${what} found`;
+    if (kind === "NotReadableError") return `The ${what} is in use by another app`;
+    return `Couldn't start the ${what}`;
+}
+
+// busy while in a call (PLAN §2.2), restored afterwards; dnd and an explicit busy are left alone
+let statusBeforeCall: Status | null = null;
+
+function updateBusy() {
+    const profile = me();
+    if (!profile) return;
+
+    const incall = inAnyCall();
+    if (incall && statusBeforeCall === null && (profile.status === "available" || profile.status === "away"))
+    {
+        statusBeforeCall = profile.status;
+        setStatus("busy");
+    }
+    else if (!incall && statusBeforeCall !== null)
+    {
+        const back = statusBeforeCall;
+        statusBeforeCall = null;
+        if (profile.status === "busy") setStatus(back);
+    }
+}
+
+/** True while any room has a capture or a remote stream. */
+export function inAnyCall(): boolean {
+    for (const room of registry.values())
+    {
+        if (room.incall) return true;
+    }
+    return false;
 }
 
 // ---------------------------------------------------------------- registry

@@ -1,10 +1,12 @@
 import { effect } from "@papit/signals";
 
-import { on, profileOf, send } from "./lobby";
+import { LIMITS } from "./config";
+import { on, peerOf, profileOf, send } from "./lobby";
 import { log } from "./log";
-import { allRooms, directRoom, getRoom, isRejected, restoreRooms, Room, selectRoom } from "./room";
-import { lobbyStatus, me, toast } from "./state";
-import type { DeclineReason, Invite, InviteKind } from "./types";
+import { play, ringback, stop as stopRinging } from "./ringtone";
+import { allRooms, directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
+import { incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
+import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, RoomKind } from "./types";
 
 // Invites over the lobby (PLAN §2.4): `invite`, `invite.accept`, `invite.decline`, `invite.cancel`.
 // Chat invites auto-join (toast + unread, no ring). Call/video/stage invites are kept as pending
@@ -18,6 +20,17 @@ const ID_MAX = 200;
 
 // room id → invite waiting for an answer (call/video/stage)
 const pending = new Map<string, PendingInvite>();
+// room id → auto-decline timer of a ringing invite
+const ringTimers = new Map<string, ReturnType<typeof setTimeout>>();
+// room id → outgoing call still waiting for answers
+const outgoing = new Map<string, Outgoing>();
+
+type Outgoing = {
+    room: Room;
+    ringing: Set<string>;
+    timer: ReturnType<typeof setTimeout>;
+    watch: () => void;
+};
 // rooms being joined from an invite right now, so a repeated invite doesn't join twice
 const joining = new Set<string>();
 
@@ -70,20 +83,87 @@ export function pendingInvites(): PendingInvite[] {
  * Accepts a pending invite: tells the inviter (`invite.accept`) and joins the room.
  * T3.1 starts mic/camera after this resolves.
  */
-export async function acceptInvite(roomId: string): Promise<Room | null> {
+export async function acceptInvite(roomId: string, withVideo = false): Promise<Room | null> {
     const invite = pending.get(roomId);
     if (!invite) return null;
-    pending.delete(roomId);
+    stopRing(roomId);
     send(invite.from, "invite.accept", { room: invite.room });
-    return joinFromInvite(invite, false);
+
+    const room = await joinFromInvite(invite, false);
+    if (!room) return null;
+
+    selectRoom(room.id);
+    if (invite.kind === "call" || invite.kind === "video")
+    {
+        await room.start("mic");
+        if (invite.kind === "video" && withVideo) await room.start("camera");
+    }
+    return room;
 }
 
 /** Declines a pending invite and tells the inviter why. */
 export function declineInvite(roomId: string, reason: DeclineReason = "declined"): boolean {
     const invite = pending.get(roomId);
     if (!invite) return false;
-    pending.delete(roomId);
+    stopRing(roomId);
     return send(invite.from, "invite.decline", { room: invite.room, reason });
+}
+
+/**
+ * Calls `uid`: creates a call/video room, starts mic (and camera), invites them and plays the
+ * ringback until they answer. Leaving the room while it rings cancels the invite. Null on failure.
+ */
+export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "video"> = "call"): Promise<Room | null> {
+    const profile = me();
+    if (!profile || uid === profile.uid) return null;
+    const name = profileOf(uid)?.name ?? "that person";
+    if (!peerOf(uid))
+    {
+        toast("warning", `Couldn't reach ${name}`);
+        return null;
+    }
+
+    let room: Room;
+    try
+    {
+        room = await Room.create(kind, "");
+    }
+    catch (error)
+    {
+        log("invites: placeCall failed", error);
+        toast("error", "Couldn't start the call");
+        return null;
+    }
+
+    selectRoom(room.id);
+    if (!await room.start("mic"))
+    {
+        room.leave();
+        return null;
+    }
+    if (kind === "video") await room.start("camera");
+
+    if (!room.invite(uid, kind))
+    {
+        toast("warning", `Couldn't reach ${name}`);
+        room.leave();
+        return null;
+    }
+
+    const call: Outgoing = {
+        room,
+        ringing: new Set([uid]),
+        // the callee declines with `timeout` itself; this covers one that vanished
+        timer: setTimeout(() => expire(call), LIMITS.ringMs + 3_000),
+        watch: effect(() => {
+            const here = room.participants().map(p => p.uid);
+            if (here.length > 0) setTimeout(() => answered(call, here), 0);
+        }),
+    };
+    outgoing.set(room.id, call);
+    ringback();
+    room.addEventListener("leave", () => endCall(call, true), { once: true });
+    return room;
 }
 
 /** Tells everyone still ringing for `roomId` to stop (caller hung up). */
@@ -125,20 +205,36 @@ on<unknown>("invite", (payload, from) => {
         return;
     }
 
-    // T3.1: ring here (incoming signal, ringtone, timeout / dnd / busy auto-decline)
-    pending.set(invite.room, { ...invite, at: Date.now() });
+    const status = me()?.status;
+    if (status === "dnd")
+    {
+        send(invite.from, "invite.decline", { room: invite.room, reason: "dnd" });
+        return;
+    }
+    if (inAnyCall() && prefs().autoDeclineBusy)
+    {
+        send(invite.from, "invite.decline", { room: invite.room, reason: "busy" });
+        return;
+    }
+    ring(invite);
 });
 
 on<unknown>("invite.cancel", (payload) => {
     const room = readId(payload);
     if (!room) return;
-    // T3.1: stop ringing and drop the incoming entry
-    if (pending.delete(room)) log("invites: cancelled", room);
+    const invite = pending.get(room);
+    if (!invite) return;
+    stopRing(room);
+    const name = profileOf(invite.from)?.name ?? "Someone";
+    toast("info", `Missed call from ${name}`);
+    log("invites: cancelled", room);
 });
 
 on<unknown>("invite.accept", (payload, from) => {
-    // T3.1: stop the ringback once someone accepts
-    log("invites: accepted", readId(payload), "by", from.uid);
+    const id = readId(payload);
+    log("invites: accepted", id, "by", from.uid);
+    const call = id ? outgoingOf(id) : undefined;
+    if (call) answered(call, [from.uid ?? ""]);
 });
 
 on<unknown>("invite.decline", (payload, from) => {
@@ -149,7 +245,12 @@ on<unknown>("invite.decline", (payload, from) => {
     const name = from.profile?.name ?? "They";
     log("invites: declined", room, reason, "by", from.uid);
 
-    // T3.1: close an empty call room once everyone declined
+    const call = outgoingOf(room);
+    if (call && from.uid)
+    {
+        call.ringing.delete(from.uid);
+        finishIfEmpty(call);
+    }
     const text = {
         declined: `${name} declined`,
         busy: `${name} is busy`,
@@ -167,6 +268,68 @@ effect(() => {
     // outside the effect run: joining writes signals
     setTimeout(() => void restoreRooms(), 0);
 });
+
+// ---------------------------------------------------------------- ringing
+
+function ring(invite: Invite) {
+    pending.set(invite.room, { ...invite, at: Date.now() });
+    const from = profileOf(invite.from) ?? unknownProfile(invite.from);
+    const call: IncomingCall = { id: invite.room, from, kind: invite.kind, title: invite.title, at: Date.now() };
+    setIncoming(list => [...list.filter(c => c.id !== call.id), call]);
+    ringTimers.set(invite.room, setTimeout(() => declineInvite(invite.room, "timeout"), LIMITS.ringMs));
+    play(prefs().ringtone, { loop: true });
+}
+
+// an invite got an answer (or was cancelled): stop its timer and, with nothing else ringing, the tone
+function stopRing(roomId: string) {
+    pending.delete(roomId);
+    clearTimeout(ringTimers.get(roomId));
+    ringTimers.delete(roomId);
+    setIncoming(list => list.filter(c => c.id !== roomId));
+    if (incoming().length === 0) stopRinging();
+}
+
+function outgoingOf(id: string): Outgoing | undefined {
+    const room = getRoom(id);
+    return room ? outgoing.get(room.id) : undefined;
+}
+
+// someone picked up: no more ringback, and they stop counting as ringing
+function answered(call: Outgoing, uids: string[]) {
+    stopRinging();
+    for (const uid of uids) call.ringing.delete(uid);
+    if (call.ringing.size === 0) endCall(call, false);
+}
+
+function expire(call: Outgoing) {
+    for (const uid of call.ringing)
+    {
+        toast("info", `${profileOf(uid)?.name ?? "They"} didn't answer`);
+    }
+    call.ringing.clear();
+    finishIfEmpty(call);
+}
+
+// nobody left to wait for: with nobody in the room either, the call is over
+function finishIfEmpty(call: Outgoing) {
+    if (call.ringing.size > 0) return;
+    const empty = call.room.participants().length === 0;
+    endCall(call, false);
+    if (empty) call.room.leave();
+}
+
+// stops the ringback and watching; `cancel` also tells whoever is still ringing
+function endCall(call: Outgoing, cancel: boolean) {
+    if (!outgoing.delete(call.room.id)) return;
+    clearTimeout(call.timer);
+    call.watch();
+    stopRinging();
+    if (cancel && call.ringing.size > 0) cancelInvite(call.room.id, [...call.ringing]);
+}
+
+function unknownProfile(uid: string): Profile {
+    return { v: 1, uid, name: "Someone", color: "#6b7280", status: "available" };
+}
 
 // ---------------------------------------------------------------- helpers
 
