@@ -3,25 +3,36 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IncomingCall | experiment</title>
-
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!-- Styles -->
+    <title>pc-incoming-call | experiment</title>
     <link rel="stylesheet" href="style.css" />
-
     <script defer type="module" src="main.js"></script>
 </head>
 
 <body>
-    <h1>IncomingCall | experiment</h1>
+    <h1>pc-incoming-call</h1>
+
     <section>
-        <h2>Example</h2>
-        <pap-codeblock>
-            <pc-incoming-call></pc-incoming-call>
-        </pap-codeblock>
+        <h2>Kinds</h2>
+        <div class="row">
+            <pc-incoming-call id="call"></pc-incoming-call>
+            <pc-incoming-call id="video"></pc-incoming-call>
+            <pc-incoming-call id="stage"></pc-incoming-call>
+            <pc-incoming-call id="chat"></pc-incoming-call>
+        </div>
+        <p id="log">events: -</p>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div class="row" id="created"></div>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <div class="row">
+            <pc-incoming-call id="dark"></pc-incoming-call>
+        </div>
     </section>
 </body>
 

@@ -1,7 +1,16 @@
 {
   "meta": {
     "region": "GB",
-    "language": "en-UK"
+    "language": "en"
   },
-  "incoming-call": "incoming-call"
+  "pc-incoming-call": {
+    "label": "Incoming call from {name}",
+    "chat": "{name} invites you to {title}",
+    "call": "{name} is calling…",
+    "video": "{name} is video calling…",
+    "stage": "{name} invites you to watch {title}",
+    "accept": "Accept",
+    "acceptVideo": "Accept with video",
+    "decline": "Decline"
+  }
 }

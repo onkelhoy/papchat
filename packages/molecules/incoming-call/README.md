@@ -28,6 +28,23 @@ npm install @papchat/incoming-call
 <pc-incoming-call></pc-incoming-call>
 ```
 
+## API
+
+| Property | Attribute | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `call` | `call` | `IncomingCall` (`{ id, from: Profile, kind, title, at }`) | - | the call to show; set as a property, or as a JSON attribute |
+
+`kind` picks the text: `call` "Anna is calling…", `video` "Anna is video calling…", `stage` "Anna invites you to watch Demo", `chat` "Anna invites you to Demo". "Accept with video" is only shown for `video`.
+
+| Event | Detail | Description |
+| --- | --- | --- |
+| `accept` | `{ id: string, video: boolean }` | Accept (`video: false`) or Accept with video (`video: true`). Does not bubble |
+| `decline` | `{ id: string }` | Decline pressed. Does not bubble |
+
+The card never removes itself. It is an `alertdialog` and moves focus to Accept when it appears; the avatar ring pulses unless `prefers-reduced-motion`.
+
+CSS: `--incoming-call-background`, `--incoming-call-max-width`, `::part(card|accept|accept-video|decline)`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)
