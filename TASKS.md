@@ -375,9 +375,10 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `profile-change` `{ partial }`, `prefs-change` `{ partial }`, `language-change`, `request-notifications`, `preview-device` `{ kind }`, `close`.
 - Done: `packages/organisms/settings`. `devices` is `{ audioinput, videoinput, audiooutput }`; extra props `playing`, `camerastream`, `micstream`, `sinkSupported`. `preview-device` `{ kind: "camera"|"mic" }` comes from explicit Test buttons, so the page starts the stream and sets the prop. `prefs-change` for devices carries the whole `devices` object. Ringtone `preview`/`preview-stop` pass through. Theme picker self-applies. Build + typecheck pass; demo not viewed.
 
-### [ ] T6.4 Wire settings and notifications · `opus` · needs T6.3, T3.1
+### [x] T6.4 Wire settings and notifications · `opus` · needs T6.3, T3.1
 - **files:** `core/src/notify.ts`, page.
 - **do:** settings dialog wired to identity/prefs/devices/ringtone. `notify.ts`: `Notification` for incoming calls and messages while hidden (if permitted), title flashing while ringing and hidden. Auto `away` after 5 min hidden, restored on return (never overrides `dnd`/`busy`).
+- Done: `core/src/notify.ts`: `startNotify()` (called at boot), `requestNotifications()`, `canNotify()`. Notifications for new calls and text messages only while hidden and permitted; title flashes `📞 Name` while ringing and hidden; auto `away` only from `available`, restored on return if still `away`. Page: settings opens from the header and the call controls' Devices button; device change restarts a running mic/camera capture; camera/mic tests stop on close. Typecheck + build pass; not run in a browser.
 
 ### [ ] T6.5 Mobile layout pass · `sonnet` · needs T5.4
 - Walk every view at 360 px and 768 px: drawer sidebar, room stage/tabs stacking, incoming call full-width, toasts. Fix within the affected components' `style.css` only.

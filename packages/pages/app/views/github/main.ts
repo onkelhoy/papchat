@@ -9,6 +9,7 @@ import "@papchat/room-list";
 import "@papchat/room";
 import "@papchat/incoming-call";
 import "@papchat/invite-picker";
+import "@papchat/settings";
 import "@papchat/toaster";
 import type { AppHeader } from "@papchat/app-header";
 import type { MemberList } from "@papchat/member-list";
@@ -17,6 +18,7 @@ import type { RoomList } from "@papchat/room-list";
 import type { Room as RoomView, CallTile } from "@papchat/room";
 import type { IncomingCall as IncomingCard } from "@papchat/incoming-call";
 import type { InvitePicker } from "@papchat/invite-picker";
+import type { Settings } from "@papchat/settings";
 import type { Toaster } from "@papchat/toaster";
 import type { AppShell } from "@papchat/app-shell";
 
@@ -25,10 +27,17 @@ import {
     acceptInvite,
     activeRoom,
     audioBlocked,
+    constraints,
     declineInvite,
+    devices,
     incoming,
+    listDevices,
     placeCall,
+    requestNotifications,
     ringtone,
+    sinkSupported,
+    startNotify,
+    updateProfile,
     dismissToast,
     getRoom,
     openChat,
@@ -46,7 +55,7 @@ import {
     setStatus,
     startLobby,
 } from "@papchat/core";
-import type { CaptureName, Profile, Room, Status } from "@papchat/core";
+import type { CaptureName, Prefs, Profile, Room, Status } from "@papchat/core";
 
 // languages with a file in asset/translations (sv.json arrives in T6.7)
 const LANGUAGES = ["en"];
@@ -59,6 +68,7 @@ const roomList = document.querySelector<RoomList>("pc-room-list")!;
 const view = document.querySelector<RoomView>("pc-room")!;
 const picker = document.querySelector<InvitePicker>("pc-invite-picker")!;
 const overlay = document.querySelector<HTMLElement>(".incoming")!;
+const settings = document.querySelector<Settings>("pc-settings")!;
 const toaster = document.querySelector<Toaster>("pc-toaster")!;
 const empty = document.querySelector<HTMLElement>(".empty")!;
 
@@ -82,6 +92,7 @@ async function changeLanguage(code: string) {
     await translator.change(code);
     document.documentElement.lang = code;
     header.language = code;
+    settings.language = code;
     onboarding.language = code;
     empty.textContent = t("empty");
 }
@@ -91,6 +102,9 @@ async function boot() {
     await changeLanguage(pickLanguage());
 
     shell.sidebaropen = prefs().sidebarOpen;
+    settings.sinkSupported = sinkSupported;
+    startNotify();
+    void ringtone.loadTones();
     onboarding.colors = [...PALETTE];
 
     if (me())
@@ -241,6 +255,91 @@ effect(() =>
     }
 });
 
+// settings dialog
+effect(() => { settings.profile = me() ?? undefined; });
+effect(() => { settings.prefs = prefs(); });
+effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
+effect(() => { settings.devices = devices(); });
+effect(() => { settings.playing = ringtone.previewing(); });
+
+function openSettings() {
+    void listDevices();
+    settings.open = true;
+}
+
+// camera / mic test streams for the Devices tab, stopped on close or when a new one starts
+const tests: Partial<Record<"camera" | "mic", MediaStream>> = {};
+function stopTest(kind: "camera" | "mic") {
+    tests[kind]?.getTracks().forEach(t => t.stop());
+    delete tests[kind];
+    if (kind === "camera") settings.camerastream = undefined;
+    else settings.micstream = undefined;
+}
+async function startTest(kind: "camera" | "mic") {
+    stopTest(kind);
+    try
+    {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints(kind));
+        if (!settings.open)
+        {
+            stream.getTracks().forEach(t => t.stop());
+            return;
+        }
+        tests[kind] = stream;
+        if (kind === "camera") settings.camerastream = stream;
+        else settings.micstream = stream;
+        void listDevices();
+    }
+    catch (error)
+    {
+        log("settings: test failed", kind, error);
+        toast("warning", t(kind === "camera" ? "cameraFailed" : "micFailed"));
+    }
+}
+
+// a changed mic/camera applies to a running call: restart that capture with the new device
+function restartCaptures(before: Prefs["devices"], after: Prefs["devices"]) {
+    const room = current();
+    if (!room) return;
+    for (const name of ["mic", "camera"] as const)
+    {
+        if (before[name] === after[name] || !room.captures()[name]) continue;
+        room.stop(name);
+        void room.start(name);
+    }
+    if (tests.camera && before.camera !== after.camera) void startTest("camera");
+    if (tests.mic && before.mic !== after.mic) void startTest("mic");
+}
+
+settings.addEventListener("profile-change", (e) => updateProfile((e as CustomEvent<{ partial: Partial<Pick<Profile, "name" | "color" | "status">> }>).detail.partial));
+settings.addEventListener("prefs-change", (e) =>
+{
+    const { partial } = (e as CustomEvent<{ partial: Partial<Prefs> }>).detail;
+    const before = prefs().devices;
+    setPrefs(partial);
+    if (partial.devices) restartCaptures(before, prefs().devices);
+});
+settings.addEventListener("language-change", (e) =>
+{
+    const { value } = (e as CustomEvent<{ value: string }>).detail;
+    setPrefs({ language: value });
+    changeLanguage(value);
+});
+settings.addEventListener("request-notifications", async () =>
+{
+    if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
+});
+settings.addEventListener("preview-device", (e) => void startTest((e as CustomEvent<{ kind: "camera" | "mic" }>).detail.kind));
+settings.addEventListener("preview", (e) => ringtone.preview((e as CustomEvent<{ id: string }>).detail.id));
+settings.addEventListener("preview-stop", () => ringtone.stop());
+settings.addEventListener("close", () =>
+{
+    settings.open = false;
+    stopTest("camera");
+    stopTest("mic");
+    if (ringtone.previewing()) ringtone.stop();
+});
+
 // unread total in the tab title
 effect(() =>
 {
@@ -296,7 +395,7 @@ view.addEventListener("invite", () =>
     picker.members = members().filter(p => !here.has(p.uid) && p.uid !== me()?.uid);
     picker.open = true;
 });
-view.addEventListener("devices", () => log("devices (T6.4)"));
+view.addEventListener("devices", openSettings);
 
 picker.addEventListener("invite", (e) =>
 {
@@ -327,7 +426,7 @@ header.addEventListener("language-change", (e) =>
     setPrefs({ language: value });
     changeLanguage(value);
 });
-header.addEventListener("open-settings", () => log("open-settings (T6.4)"));
+header.addEventListener("open-settings", openSettings);
 header.addEventListener("go-live", () => log("go-live (T5.4)"));
 
 shell.addEventListener("sidebar-toggle", (e) => setPrefs({ sidebarOpen: (e as CustomEvent<{ open: boolean }>).detail.open }));

@@ -3,6 +3,7 @@ import * as identity from "./identity";
 import * as invites from "./invites";
 import * as lobby from "./lobby";
 import * as devices from "./devices";
+import * as notify from "./notify";
 import * as ringtone from "./ringtone";
 import * as room from "./room";
 import { setLogging } from "./log";
@@ -19,6 +20,7 @@ export * from "./lobby";
 export * from "./room";
 export * from "./invites";
 export * from "./devices";
+export * from "./notify";
 export * as ringtone from "./ringtone";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …
@@ -42,6 +44,7 @@ if (typeof window !== "undefined")
         ...room,
         ...invites,
         ...devices,
+        ...notify,
         ringtone,
         lobby,
         identity,

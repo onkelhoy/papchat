@@ -1,6 +1,6 @@
 # @papchat/core
 
-papchat networking and state: lobby, rooms, stages, invites, file transfer, ringtones, devices
+papchat networking and state: lobby, rooms, stages, invites, file transfer, ringtones, devices, notifications
 
 ![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
