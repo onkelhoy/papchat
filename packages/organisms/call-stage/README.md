@@ -28,6 +28,19 @@ npm install @papchat/call-stage
 <pc-call-stage></pc-call-stage>
 ```
 
+## API
+
+| Property  | Attribute | Type         | Default | Description                                                                          |
+| --------- | --------- | ------------ | ------- | ------------------------------------------------------------------------------------ |
+| `tiles`   | -         | `CallTile[]` | `[]`    | participants `{ id, profile, video?, audio?, muted?, screen?, self?, pinned? }`; property only, assign a new array to update |
+| `sinkid`  | `sinkid`  | `string`     | `""`    | output device id for remote audio (`setSinkId` where supported)                      |
+
+| Event | Detail                           | Description                                                         |
+| ----- | -------------------------------- | ------------------------------------------------------------------- |
+| `pin` | `{ id: string, pinned: boolean }` | a tile was pinned or unpinned (bubbles, composed)                   |
+
+Layout: 1 tile fills the stage, 2 side by side, 3 to 4 a 2x2 grid, 5 to 8 three columns. A pinned tile (or else the first screen share) is the big one with the rest in a strip. In a 1:1 call your `self` tile is a corner overlay. The stage plays remote audio itself (one hidden `<audio>` per non-self tile with `audio`). The host needs a size from its parent. CSS: `--call-stage-gap`, `--call-stage-strip-width`, `--call-stage-self-width`, `::part(tiles|tile)`.
+
 ## License
 
 Licensed under the @Papit License 1.0 - Copyright (c) 2024 Henry Pap (@onkelhoy)

@@ -288,8 +288,9 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 - **events:** `accept` `{ id, video }`, `decline` `{ id }`.
 - Done: `call` is `{ type: Object }` (set the property, or a JSON attribute); `accept`/`decline` don't bubble (listen on the element). Card is `max-inline-size: 22rem` (`--incoming-call-max-width`), so stack several in the overlay slot with a flex column. Focus moves to Accept on connect.
 
-### [ ] T3.7 pc-call-stage · `sonnet` · needs T3.4
+### [x] T3.7 pc-call-stage · `sonnet` · needs T3.4
 - **props:** `tiles` (`{ id, profile, video?, audio?, muted, screen, self }[]`). Responsive grid (1 → full, 2 → side by side, 3–4 → 2×2, up to 8 → 3 cols). A screen tile or a pinned tile becomes the big one with the rest in a strip. Self tile as a small corner overlay in 1:1 calls. **Plays remote audio:** `pc-video-tile` only meters audio, so the stage keeps one hidden `<audio autoplay>` per non-self tile with an `audio` stream (srcObject set imperatively, `sinkid` prop applied via `setSinkId` where supported), removed when the tile goes away.
+- Done: `packages/organisms/call-stage`. `tiles` (`CallTile[]`, property only; `id` stable), `sinkid`; event `pin` `{ id, pinned }` (bubbles, composed; a user pin wins over `tile.pinned`). Plays remote audio itself. Host needs a size from its parent. Build + typecheck pass; demo not viewed.
 
 ### [x] T3.8 pc-invite-picker · `sonnet` · needs T1.2
 - **read:** `@papit/dialog`, `@papit/checkbox`.
