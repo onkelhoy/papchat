@@ -36,7 +36,7 @@ npm install @papchat/video-tile
 | `video`   | -         | `MediaStream` | -       | camera or screen stream; without a live video track the avatar shows; property only |
 | `audio`   | -         | `MediaStream` | -       | mic stream for the level meter and speaking ring (not played); property only        |
 | `muted`   | `muted`   | `boolean`     | `false` | remote mic flag: mic-off icon, no meter, reflected                                  |
-| `self`    | `self`    | `boolean`     | `false` | mirrors the video and mutes the video element, reflected                            |
+| `self`    | `self`    | `boolean`     | `false` | mirrors the video, reflected (tile video is always muted; remote audio plays in the stage) |
 | `screen`  | `screen`  | `boolean`     | `false` | screen share: `fit="contain"`, not mirrored, reflected                              |
 | `pinned`  | `pinned`  | `boolean`     | `false` | pinned state, reflected, toggled by the Pin button                                  |
 

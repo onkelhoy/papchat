@@ -30,7 +30,7 @@ import type { PinEvent } from "./types";
  * @property {MediaStream} video camera or screen stream; no live video track shows the avatar instead
  * @property {MediaStream} audio microphone stream, for the level meter and speaking ring
  * @property {boolean} muted remote mic flag: shows the mic-off icon and hides the meter (reflected)
- * @property {boolean} self your own tile: video mirrored and muted so you do not hear yourself (reflected)
+ * @property {boolean} self your own tile: video mirrored (reflected); tile video is always muted, remote audio plays in the stage
  * @property {boolean} screen a screen share: video uses `fit="contain"` (reflected)
  * @property {boolean} pinned pinned state (reflected, toggled by the Pin button)
  *
@@ -109,14 +109,16 @@ export class VideoTile extends CustomElement {
         return !!this.video?.getVideoTracks().some(track => track.readyState === "live");
     }
 
-    // streams can't go through html``: set them on the children once they exist
+    // streams can't go through html``: set them on the children once they exist. A render that drops
+    // and re-adds the child (video off → on) leaves the @query on the removed one, so only trust a
+    // connected one: otherwise the new pc-video never gets the stream and stays black
     private syncVideo() {
-        const el = this.videoEl ?? this.root.querySelector<Video>("pc-video");
+        const el = this.videoEl?.isConnected ? this.videoEl : this.root.querySelector<Video>("pc-video");
         if (el) el.stream = this.video ?? undefined;
     }
 
     private syncAudio() {
-        const el = this.meterEl ?? this.root.querySelector<LevelMeter>("pc-level-meter");
+        const el = this.meterEl?.isConnected ? this.meterEl : this.root.querySelector<LevelMeter>("pc-level-meter");
         if (el) el.stream = this.audio ?? undefined;
     }
 
@@ -175,7 +177,7 @@ export class VideoTile extends CustomElement {
 
         return html`
             ${hasVideo ? html`
-                <pc-video part="video" fit="${this.screen ? "contain" : "cover"}" muted="${this.self ? "true" : ""}" mirror="${this.self && !this.screen ? "true" : ""}"></pc-video>
+                <pc-video part="video" fit="${this.screen ? "contain" : "cover"}" muted mirror="${this.self && !this.screen ? "true" : ""}"></pc-video>
             ` : ""}
             ${hasVideo ? "" : html`
                 <div class="placeholder">

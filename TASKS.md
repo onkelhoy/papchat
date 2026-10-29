@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 54/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 55/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -429,12 +429,13 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **done when:** both sides mute mic and camera, and the stage stays with both tiles showing the muted icon.
 - Done: `Room.oncall` signal (`incall` reads it): set by `joinCall()` (any successful `start()`, and accepting a call even if the mic is refused), cleared only by `hangUp()` (stops all captures) or the room closing. Mute still stops the capture (frees the device); it no longer ends the call. `MediaFlags` gained `call` (older peers: anything sent = in call). `othersInCall()` = flags.call of present people + stream senders; tiles and the member-list phone icon use it, so people in the chat but not the call get no tile. In a 1:1 the call ends for you when the other drops out (`call` flag true→false, or they leave). Page hangup in a chat room calls `room.hangUp()`. Typecheck + build pass; not run in a browser.
 
-### [ ] T7.3 Remote video sometimes black for one side · `opus` · needs —
+### [x] T7.3 Remote video sometimes black for one side · `opus` · needs —
 - **symptom:** sometimes I can't see a peer's video while the other side can see theirs. Toggling the chat often (not always) brings it back, so the stream arrives but the local `<video>` doesn't show it.
 - **cause?:** findings note T3.10 gap (2): `@papit/web-component` deep-compares `MediaStream`s as equal, so a new or renegotiated stream is not set on `pc-video`. Toggling chat re-renders the stage and sets it again. Also check `video.play()` rejections (autoplay) and `track.onunmute` (a track can arrive muted and unmute later without the element repainting).
 - **do:** `pc-video` sets `srcObject` imperatively whenever stream **id or track set** changes (compare ids, not objects), listens to `addtrack`/`removetrack` on the stream and `unmute` on its tracks, and calls `play()` again (catch it, retry on the next user gesture). Add a `papit` finding for the MediaStream compare if it isn't written up yet.
 - **files:** `atoms/video`, `molecules/video-tile`, maybe page stream hand-off.
 - **done when:** 10 calls across 2 browsers with camera on/off/on and screen share on/off all show video on both sides without touching the chat toggle.
+- Done: the guessed cause was wrong. The MediaStream compare is already fixed in `@papit/web-component` 0.0.13 (non-plain objects compare by identity). Real cause: `pc-video-tile` renders `<pc-video>` only while there is live video, and papit emits `stream-ended` on every remote track `mute` (camera off, or a short network hiccup). When video came back, the tile's `@query videoEl` still pointed at the removed `<pc-video>` (papit only re-queries empty queries), so the new one never got the stream. The chat toggle re-mounted the whole stage, which is why it "fixed" it. The tile now uses the cached child only while `isConnected` (video and level meter). Also: tile `<pc-video>` is always `muted` (remote audio plays in the stage's `<audio>`), so autoplay can't block a camera. Papit finding #12 written. Typecheck + build pass; not run in a browser.
 
 ### [ ] T7.4 Stale presence and "can't reach" after a reload · `opus` · needs —
 - **symptom:** people who closed the app stay "online" for a long time. After a reload, calling someone gave "Couldn't reach …" for a while, then fixed itself.
@@ -486,7 +487,7 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - Add to `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (same format: file, repro, cause, fix, papchat workaround):
   - **`@papit/icon`: icons sometimes don't render.** Investigate first: is the spritesheet fetched once per icon and racing? Is a `<use href>` in shadow DOM set before the sprite loads? Does it fail after a re-render that changes `name`? Is it the `/icons/` base under `--base /papchat/`? Get a repro, then write it up.
   - **`@papit/theme` toggle: "system" should show the applied mode** (sun or moon) while still being selectable, instead of a third generic icon.
-  - The `MediaStream` compare from T7.3, if it isn't there yet.
+  - ~~The `MediaStream` compare~~: already fixed in web-component 0.0.13. T7.3 wrote finding #12 (`@query` keeps a removed element) instead.
 
 ### Phase C: features
 
