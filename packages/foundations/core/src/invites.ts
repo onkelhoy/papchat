@@ -6,7 +6,7 @@ import { log } from "./log";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
 import { allRooms, directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
-import { incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
+import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
 import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, RoomKind } from "./types";
 
 // Invites over the lobby (PLAN §2.4): `invite`, `invite.accept`, `invite.decline`, `invite.cancel`.
@@ -38,13 +38,15 @@ const joining = new Set<string>();
 // ---------------------------------------------------------------- public API
 
 /**
- * Opens the 1:1 chat with `uid`: reuses the open one, else creates a room and invites them.
- * Makes it the `activeRoom`. Null (plus a toast) when it couldn't be created.
+ * Opens the 1:1 chat with `uid`: reuses the open one (inviting them again when they left it),
+ * else creates a room and invites them. Makes it the `activeRoom`. Null (plus a toast) when it
+ * couldn't be created.
  */
 export async function openChat(uid: string): Promise<Room | null> {
     const existing = directRoom(uid);
     if (existing)
     {
+        if (!existing.participants().some(p => p.uid === uid)) existing.invite(uid, "chat");
         selectRoom(existing.id);
         return existing;
     }
@@ -97,8 +99,11 @@ export async function acceptInvite(roomId: string, withVideo = false): Promise<R
         return null;
     }
 
+    // a call in the caller's 1:1 while you still hold an older 1:1 with them: theirs wins
+    const older = invite.direct ? directRoom(invite.from) : null;
     const room = await joinFromInvite(invite, false);
     if (!room) return null;
+    if (older && older !== room) fold(older, room);
 
     selectRoom(room.id);
     if (invite.kind === "call" || invite.kind === "video")
@@ -118,8 +123,9 @@ export function declineInvite(roomId: string, reason: DeclineReason = "declined"
 }
 
 /**
- * Calls `uid`: creates a call/video room, starts mic (and camera), invites them and plays the
- * ringback until they answer. Leaving the room while it rings cancels the invite. Null on failure.
+ * Calls `uid` in your 1:1 chat with them (created first when there is none, so chat and calls
+ * share one conversation): starts mic (and camera), invites them and plays the ringback until
+ * they answer. Hanging up or leaving while it rings cancels the invite. Null on failure.
  */
 export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "video"> = "call"): Promise<Room | null> {
     const profile = me();
@@ -131,10 +137,11 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
         return null;
     }
 
-    let room: Room;
+    let room = directRoom(uid);
+    const fresh = !room;
     try
     {
-        room = await Room.create(kind, "");
+        room ??= await Room.create("chat", "", { direct: uid });
     }
     catch (error)
     {
@@ -143,10 +150,16 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
         return null;
     }
 
+    // a new room is only there for this call; an existing chat stays, only the call ends
+    const giveUp = (target: Room) => {
+        if (fresh) target.leave();
+        else hangUp(target);
+    };
+
     selectRoom(room.id);
     if (!await room.start("mic"))
     {
-        room.leave();
+        giveUp(room);
         return null;
     }
     if (kind === "video") await room.start("camera");
@@ -154,18 +167,23 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     if (!room.invite(uid, kind))
     {
         toast("warning", `Couldn't reach ${name}`);
-        room.leave();
+        giveUp(room);
         return null;
     }
 
+    // whoever is already in the chat hasn't answered yet: only newcomers (or `invite.accept`) count
+    const before = new Set(room.participants().map(p => p.uid));
+    const target = room;
     const call: Outgoing = {
         room,
         ringing: new Set([uid]),
         // the callee declines with `timeout` itself; this covers one that vanished
         timer: setTimeout(() => expire(call), LIMITS.ringMs + 3_000),
         watch: effect(() => {
-            const here = room.participants().map(p => p.uid);
+            const here = target.participants().map(p => p.uid).filter(u => !before.has(u));
             if (here.length > 0) setTimeout(() => answered(call, here), 0);
+            // hung up while ringing (the chat stays, so there's no `leave` to catch it)
+            if (Object.keys(target.captures()).length === 0) setTimeout(() => endCall(call, true), 0);
         }),
     };
     outgoing.set(room.id, call);
@@ -201,17 +219,19 @@ on<unknown>("invite", (payload, from) => {
     }
 
     const existing = getRoom(invite.room);
-    if (existing)
+    if (existing && invite.kind === "chat")
     {
-        if (invite.kind === "chat") existing.bumpUnread();
+        // a 1:1 re-invite only syncs; it isn't news
+        if (!invite.direct) existing.bumpUnread();
         return;
     }
 
     if (invite.kind === "chat")
     {
-        void joinFromInvite(invite, true);
+        void joinChat(invite);
         return;
     }
+    // a call in a room you're already in (your 1:1) rings like any other
 
     const status = me()?.status;
     if (status === "dnd")
@@ -318,12 +338,30 @@ function expire(call: Outgoing) {
     finishIfEmpty(call);
 }
 
-// nobody left to wait for: with nobody in the room either, the call is over
+// nobody left to wait for: with nobody in the call either, it's over (a 1:1 chat stays open)
 function finishIfEmpty(call: Outgoing) {
     if (call.ringing.size > 0) return;
-    const empty = call.room.participants().length === 0;
+    const room = call.room;
+    const empty = room.kind === "chat"
+        ? room.streams().length === 0
+        : room.participants().length === 0;
     endCall(call, false);
-    if (empty) call.room.leave();
+    if (!empty) return;
+    if (room.kind === "chat") hangUp(room);
+    else room.leave();
+}
+
+// ends your part of a call in a room that stays (a chat): stops every capture
+function hangUp(room: Room) {
+    for (const name of Object.keys(room.captures())) room.stop(name);
+}
+
+// one 1:1 per person: `loser` hands its history (and focus) to `winner`, then is left
+function fold(loser: Room, winner: Room) {
+    if (loser === winner) return;
+    winner.absorb(loser);
+    if (activeRoom() === loser.id) selectRoom(winner.id);
+    loser.leave();
 }
 
 // stops the ringback and watching; `cancel` also tells whoever is still ringing
@@ -340,6 +378,31 @@ function unknownProfile(uid: string): Profile {
 }
 
 // ---------------------------------------------------------------- helpers
+
+/**
+ * A chat invite. A 1:1 from someone you already have a 1:1 with (both opened it at once, or they
+ * lost theirs) keeps the room with the smaller network id: the same answer on both ends. When yours
+ * wins they're invited to it (they fold theirs on arrival).
+ */
+async function joinChat(invite: Invite) {
+    const mine = invite.direct ? directRoom(invite.from) : null;
+    if (!mine)
+    {
+        await joinFromInvite(invite, true);
+        return;
+    }
+
+    if (mine.network < invite.room)
+    {
+        log("invites: keeping our 1:1", mine.network, "over", invite.room);
+        mine.invite(invite.from, "chat");
+        return;
+    }
+
+    log("invites: switching 1:1", mine.network, "→", invite.room);
+    const room = await joinFromInvite(invite, false);
+    if (room) fold(mine, room);
+}
 
 async function joinFromInvite(invite: Invite, announce: boolean): Promise<Room | null> {
     if (joining.has(invite.room)) return null;
@@ -389,6 +452,7 @@ function readInvite(payload: unknown, sender: string | null): Invite | null {
         title: typeof value.title === "string" ? value.title.trim().slice(0, 80) : "",
         from,
         members: Array.isArray(value.members) ? value.members.filter(isId).slice(0, 16) : [],
+        ...(value.direct === true ? { direct: true } : {}),
         ...(isId(value.replaces) ? { replaces: value.replaces } : {}),
     };
 }

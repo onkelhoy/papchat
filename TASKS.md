@@ -4,10 +4,10 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ---
 
-## ▶ Resume here (refreshed 2026-10-28)
+## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 52/54 tasks (all `[x]` below, each committed). Waves 0-5 and T6.1-T6.4 are in; nothing is half-finished.
-- **Next, in order:** T6.9 final live pass. T0.6 (go live) is the user's.
+- **Done:** 53/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
@@ -407,8 +407,140 @@ Create `github.com/onkelhoy/papchat`, push `main`, Settings → Pages → Source
 
 ---
 
+## Wave 7: feedback from the first real use (2026-10-29)
+
+Found while testing with real people (one on a phone, one non-technical). Phase A comes first: these are trust breakers. Phase B is cheap UI. Phase C is new features, roughly smallest first. `cause?` lines are guesses from reading the code; confirm before fixing.
+
+### Phase A: bugs
+
+### [x] T7.1 One conversation per person · `opus` · needs —
+- **symptom:** chatting with someone opened 3 sidebar rows with the same name: my chat, their chat (we both clicked at once), and a third one for the call.
+- **cause?:** `invites.ts` `openChat` only checks `directRoom(uid)`, so two people clicking at once create two rooms. `placeCall` always does `Room.create(kind)` and never reuses the direct room. `handleInvite` joins a chat invite even when a direct room with that sender already exists.
+- **do:** (1) A call to someone you already have a 1:1 chat with happens **in that room**: start mic/camera there and ring over the lobby with the existing room id. A new room only when there's no direct room. (2) Simultaneous open: when a direct invite arrives from `uid` and we already have a direct room with them, keep the room with the smaller id (deterministic on both sides). The losing side moves to the winner, and its messages go into the winner's history (resend them as a one-time `merge` batch, or just show them locally above the winner's history). Then leave the loser. (3) Calls to someone with no chat yet create the direct room (kind `call`/`video`), so a later "chat" reuses it.
+- **files:** `core/src/invites.ts`, `core/src/room.ts` (directs, adopt/merge), page if the sidebar needs a tweak.
+- **done when:** in 2 tabs, click chat on both sides at once, then call, then mute both: one row per person the whole time.
+- Done: invites carry `direct: true` for 1:1s. `placeCall` calls inside `directRoom(uid)`, or creates a **`chat`-kind** direct room (no more `call`/`video` rooms for 1:1s), and ringback ends on newcomers/`invite.accept` only, or when you hang up (captures gone). Callee rings for a call in a room it's already in. Two 1:1s with the same person: the smaller network id wins on both ends, the loser's text/system messages are `absorb`ed into the winner and it is left (file cards stay behind). `openChat` re-invites when the other left. **Depends on T7.2:** with calls in chat rooms, the other side hanging up no longer closes your call (no room leave to react to), so your mic stays on alone until T7.2 adds an explicit call state. Typecheck + build pass; not run in a browser.
+
+### [ ] T7.2 Muting everything ends the call (UI) · `opus` · needs —
+- **symptom:** both peers muted, and the call disappeared from the room. Calling again brought it back unmuted. The sidebar then counted an extra conversation.
+- **cause?:** `room.incall` is "has a capture or a remote stream" (`room.ts` `inAnyCall`). Muting stops the mic track, so with no camera both sides look like "not in a call".
+- **do:** an explicit `inCall` signal on `Room`, set when you start or accept a call and cleared only by hanging up or by the room closing. Mute is `track.enabled = false` (or a muted flag sent to peers), not stopping the capture. Stage, call controls and the sidebar phone icon read `inCall`.
+- **files:** `core/src/room.ts`, page wiring, `pc-room` / `pc-call-stage` if they test streams.
+- **done when:** both sides mute mic and camera, and the stage stays with both tiles showing the muted icon.
+
+### [ ] T7.3 Remote video sometimes black for one side · `opus` · needs —
+- **symptom:** sometimes I can't see a peer's video while the other side can see theirs. Toggling the chat often (not always) brings it back, so the stream arrives but the local `<video>` doesn't show it.
+- **cause?:** findings note T3.10 gap (2): `@papit/web-component` deep-compares `MediaStream`s as equal, so a new or renegotiated stream is not set on `pc-video`. Toggling chat re-renders the stage and sets it again. Also check `video.play()` rejections (autoplay) and `track.onunmute` (a track can arrive muted and unmute later without the element repainting).
+- **do:** `pc-video` sets `srcObject` imperatively whenever stream **id or track set** changes (compare ids, not objects), listens to `addtrack`/`removetrack` on the stream and `unmute` on its tracks, and calls `play()` again (catch it, retry on the next user gesture). Add a `papit` finding for the MediaStream compare if it isn't written up yet.
+- **files:** `atoms/video`, `molecules/video-tile`, maybe page stream hand-off.
+- **done when:** 10 calls across 2 browsers with camera on/off/on and screen share on/off all show video on both sides without touching the chat toggle.
+
+### [ ] T7.4 Stale presence and "can't reach" after a reload · `opus` · needs —
+- **symptom:** people who closed the app stay "online" for a long time. After a reload, calling someone gave "Couldn't reach …" for a while, then fixed itself.
+- **cause?:** presence only drops when the webrtc layer notices the peer is gone (slow on phones that are killed or put to sleep, since `pagehide` doesn't always fire). After a reload the person comes back with a new peer id while `peerOf(uid)` still points at the dead one until it times out.
+- **do:** (1) A light heartbeat: every member already re-sends its profile on changes. Add `lastSeen` to members and have each peer broadcast a tiny `ping` every 30 s, only while the tab is visible or in a call (hidden tabs every 60 s). Mark `away`-like "stale" after 75 s and drop after 150 s. Not one message per pair, one lobby broadcast each. Don't let the host kick: everyone ages entries locally, which costs nothing extra. (2) On `join` of a uid that's already listed, the new peer id replaces the old one right away (`uidOf`/`peerOf` maps). (3) Send a best-effort `bye` on `pagehide` and on `visibilitychange` → hidden on phones when not in a call.
+- **files:** `core/src/lobby.ts`, `core/src/config.ts` (timings).
+- **done when:** closing a phone tab removes the person within ~2.5 min. Reload, then call right away: it rings.
+
+### [ ] T7.5 Ringtone on phones · `opus` · needs —
+- **symptom:** on mobile the ringtone often doesn't play. The "allow sound" prompt shows, and tapping it does nothing.
+- **cause?:** `ringtone.ts` `unlock()` does `await context.resume()` **before** `silence.play()`. iOS Safari loses the user activation across the `await`, so the play is still blocked and the unlock silently fails, and then `setAudioBlocked(false)` hides the prompt anyway.
+- **do:** in `unlock()`, start everything synchronously inside the gesture: `context.resume()` and `silence.play()` called without awaiting in between (await both afterwards). Only clear `audioBlocked` when the play actually resolved. Also unlock on the **first tap anywhere** (one-shot `pointerdown` listener at boot), so the prompt rarely shows. Prefer one shared `AudioContext` for ringtones (decode files with `decodeAudioData`) over `new Audio()`, since an unlocked context keeps working on iOS while each new `<audio>` needs its own gesture. Silent-mode switch on iPhone mutes Web Audio: note that under limits.
+- **files:** `core/src/ringtone.ts`, page boot.
+- **done when:** on an iPhone and an Android phone, after one tap anywhere, an incoming call rings (with the app in front).
+
+### [ ] T7.6 Stage can't share the screen · `opus` · needs —
+- **symptom:** going live, sharing the screen didn't work.
+- **cause?:** `stage.ts` `start("screen")` exists, so check the chain: is the button wired for stages (page `main.ts` ~505 handles keys, check the click path), does `getDisplayMedia` run inside the gesture (an `await` before it loses it in Safari/Firefox), and do viewers get a second video stream over the multicast relay (only the first video stream may be rendered).
+- **do:** find which link breaks and fix it. Presenter can switch camera ↔ screen, or show both (screen big, camera small) when the tree allows two video streams.
+- **files:** `core/src/stage.ts`, stage UI in the page/`pc-room`.
+- **done when:** a presenter shares their screen and 2 viewers see it.
+
+### [ ] T7.7 Sharp white edge on the stage when chat is open · `sonnet` · needs —
+- **symptom:** a light, hard 1-px edge around the call stage/room panel while the chat panel is open (screenshot 2026-10-29 21.04.06, right and bottom edges).
+- **do:** find the border (likely the splitter or `pc-room`'s panel container using a light token or `outline`), use the theme's subtle border token and the same radius as the rest. Check light and dark.
+- **files:** `organisms/room` or `organisms/call-stage` `style.css`.
+
+### [ ] T7.8 Phase A live check · `opus` · needs T7.1-T7.7
+- Re-run the scenarios above on 2 desktops + 1 phone. Write anything still broken under Notes.
+
+### Phase B: UI cleanup
+
+### [ ] T7.9 Collapsed sidebar · `sonnet` · needs —
+- **symptom:** collapsed, the sidebar shows clipped text ("ONLII", "Searc", half avatars, "…" menus). Screenshot 2026-10-29 20.49.43.
+- **do:** the collapsed rail shows only: toggle, your avatar, then one centred avatar per conversation (unread badge on the avatar, phone icon as a corner dot), then online people as avatars. Hide headings, search, names and "…" menus (the menu goes to right-click/long-press or the tooltip). Every avatar has a tooltip with the name. Rail width fits the avatar plus `--space-2` on each side.
+- **files:** `templates/app-shell`, `organisms/room-list`, `organisms/member-list`, `molecules/member-item` (each gets a `compact` attribute).
+
+### [ ] T7.10 Header cleanup · `sonnet` · needs —
+- **do:** remove the language flag from the header and put a language select in the settings dialog (General tab). Header keeps: connection status, network name, Go live, theme toggle, avatar. Make the theme toggle a single icon button that cycles light → dark → system, showing the sun/moon of what's **currently applied** (system shows the resolved one, with a small "auto" marker). Tooltip says the mode.
+- **files:** `organisms/app-header`, `organisms/settings`, page.
+- **papit:** write the "system mode should show the applied light/dark icon" request in `PAPCHAT-FINDINGS.md` (T7.12).
+
+### [ ] T7.11 Onboarding without the network picker · `sonnet` · needs —
+- **why:** onboarding's dialog has "Continue" and the network picker has its own "Join" buttons. Two primary actions confused a first-time user.
+- **do:** onboarding asks only name (+ avatar colour) and joins the public lobby. Networks stay in settings. A share link (T7.17) that carries a network skips the choice entirely: onboarding then says "You're joining **<network>**".
+- **files:** `organisms/onboarding`, page.
+
+### [ ] T7.12 Papit findings · `opus` · needs —
+- Add to `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (same format: file, repro, cause, fix, papchat workaround):
+  - **`@papit/icon`: icons sometimes don't render.** Investigate first: is the spritesheet fetched once per icon and racing? Is a `<use href>` in shadow DOM set before the sprite loads? Does it fail after a re-render that changes `name`? Is it the `/icons/` base under `--base /papchat/`? Get a repro, then write it up.
+  - **`@papit/theme` toggle: "system" should show the applied mode** (sun or moon) while still being selectable, instead of a third generic icon.
+  - The `MediaStream` compare from T7.3, if it isn't there yet.
+
+### Phase C: features
+
+### [ ] T7.13 Buzz · `sonnet` · needs —
+- A "Buzz" button in the 1:1 conversation header (and `/buzz`). The receiver's window shakes (CSS animation on the app shell, `prefers-reduced-motion` gets a flash instead), a buzz sound plays, and a "Henry buzzed you" line shows in the chat. Rate-limit: one every 10 s per sender, enforced on both sides. Plays even when the tab is hidden (notification + title flash via `notify.ts`).
+- **files:** `core/src/room.ts` (message type), `core/src/notify.ts`, `organisms/conversation`, `templates/app-shell` style, page.
+
+### [ ] T7.14 More ringtones and a dial tone · `sonnet` · needs — (user adds the audio files)
+- **do:** the user drops files in `asset/audio/ringtones/` and `asset/audio/dialtones/`. Both get a `*.json` manifest (`{ id, name, file }`). Settings gets a "Dial tone" picker next to the ringtone one (`pc-ringtone-picker` reused). `ringback()` plays the chosen file and falls back to the current synth when there's none or it fails to load.
+- **files:** `core/src/ringtone.ts`, `organisms/settings`, page, `asset/audio/README.md`.
+
+### [ ] T7.15 Better audio · `opus` · needs —
+- **step 1 (cheap, do first):** `devices.ts` already asks for `echoCancellation`/`noiseSuppression`. Add `autoGainControl: true`, `channelCount: 1`, `sampleRate: 48000`. Then compare with Teams again. Check the Opus settings in the SDP (`useinbandfec=1`, `maxaveragebitrate` ~ 40000, `usedtx` off). If `@papit/webrtc` has no SDP hook, write a papit finding asking for one. Check that `source.clone()` doesn't drop constraints.
+- **step 2:** RNNoise noise suppression as a setting ("Noise reduction: off / standard / strong"). Run the mic through an `AudioWorklet` with RNNoise compiled to WASM, and send the processed track. Recommended: use `@sapphi-red/web-noise-suppressor` (MIT, RNNoise + Speex as WASM worklets, ~150 kB, lazy-loaded only when turned on). Alternative if you want the Rust showcase: `nnnoiseless` (Rust RNNoise port) → `wasm-pack` → our own worklet. Same result, more work.
+- **files:** `core/src/devices.ts`, `core/src/room.ts` (+ stage) capture path, `organisms/settings`.
+- **done when:** the same mic and room sounds clearly better in an A/B recording (fan or keyboard in the background).
+
+### Rich composer (T7.16a-d)
+Modelled on Teams (user screenshots 2026-10-29 20.41.26 / .45 / .52):
+- **Collapsed** (default): one-line box, placeholder "Type a message". Icons on the right: **format** ("A + pen"), **emoji/GIF** (smiley), **attach** (our existing one), a thin divider, **send** (ours). Leave out Teams' Loop and "+" buttons.
+- **Expanded** (format button pressed, it turns `--primary`): a toolbar row on top of a taller editor. The groups are split by thin dividers: **B I U S** | bulleted list, numbered list | quote, link, code | "…" overflow. The trash icon at the far right clears the draft. The bottom-right icon row stays. The focused box gets a `--primary` bottom border. Leave out Teams' highlight, font colour and font size.
+- **Emoji/GIF popover** (smiley): tabs **All / Emoji / GIFs**, no Stickers. A search field "Find something fun" on top. "All" shows an Emoji row (recently used first) and a GIF row (trending), each with "See all ›" that switches tab. Footer "GIFs powered by GIPHY" + "View Terms" link (GIPHY requires the attribution).
+- Keyboard: Ctrl/Cmd+B/I/U, Enter sends, Shift+Enter new line, Escape closes the popover. Built so it can later move into a `@papit/rich-input` component.
+
+### [ ] T7.16a Message format + safe rendering · `opus` · needs —
+- Messages carry `text` with a small markdown subset (`**b**`, `*i*`, `__u__`, `~~s~~`, `` `code` ``, fenced code, `> quote`, `-`/`1.` lists, `[label](url)`), so old clients still read plain text. `pc-message` renders it by **building DOM nodes from a parser** (never `innerHTML` of user text). Links: only `http(s):`, `rel="noopener noreferrer" target="_blank"`. Old plain messages render unchanged.
+- **files:** `molecules/message` (+ a small `format.ts` parser, shared later by the editor).
+
+### [ ] T7.16b Editor + toolbar · `sonnet` · needs T7.16a
+- `pc-composer` collapsed/expanded as above. Editor: start with a `textarea` where the toolbar wraps the selection in the markdown marks, plus a live preview above it in expanded mode. Move to `contenteditable` only if that feels wrong in use. Paste is plain text. Icons: add `format`, `bold`, `italic`, `underline`, `strike`, `list-bullet`, `list-number`, `quote`, `link`, `code`, `smiley`, `trash` to the spritesheet (`npm run icons` in the theme package).
+- **files:** `molecules/composer`, theme icons, translations (en + sv).
+
+### [ ] T7.16c Emoji picker · `sonnet` · needs T7.16b
+- New `molecules/emoji-picker` (`pc-emoji-picker`): native Unicode emoji only, grouped by category, search by name. Data from `unicode-emoji-json` (or similar), lazy-loaded the first time the popover opens. Recently used list kept in prefs. Inserts at the cursor. Bonus: `:smi` autocomplete in the editor. The popover shell (tabs All/Emoji/GIFs + search) lives in the composer so T7.16d only adds the GIF tab.
+- **files:** `molecules/emoji-picker` (new package, follow the component anatomy above), `molecules/composer`.
+
+### [ ] T7.16d GIFs (GIPHY) · `sonnet` · needs T7.16c
+- New `molecules/gif-picker` (`pc-gif-picker`): trending on open, search debounced 300 ms, grid of `fixed_width` WebP/MP4 previews (lazy, `loading="lazy"`). Tap sends a `gif` message `{ id, url, width, height, title }`, shown inline in `pc-message` straight from GIPHY's CDN (no re-upload), with `title` as alt text. Use `rating=pg-13` (or `g`).
+- **API key:** read from `GIPHY_KEY` injected at build (see Notes "GIPHY key"). No key → the GIFs tab is hidden, nothing breaks. The key is never in git.
+- Core stays dumb about GIPHY: the page does the fetch and gives the picker results. Components never fetch.
+- **files:** `molecules/gif-picker` (new), `molecules/message` (gif kind), `core/src/room.ts` (message kind), page, `.github/workflows/pages.yml` (env).
+
+### [ ] T7.17 Share links · `opus` · needs T7.11
+- **do:** "Copy invite link" in the network settings and in a call's "…" menu. The link is `…/papchat/#join=<network>&key=<password>` for a network, or `#call=<room>&key=…` for a call. Put it in the **hash**, so it never reaches a server or logs. Opening it: onboarding if new, else join right away (network switch asks for confirmation if you're in a call). A call link rings nobody. You join the room and the people in it get a "Henry joined" toast. Optional expiry (`&exp=<unix>`) checked on the client. Make clear in the UI that anyone with the link can join.
+- **files:** `core` (parse + join), page boot, `organisms/settings`, `molecules/call-controls` menu.
+
+### [ ] T7.18 Wave 7 live check + README · `opus` · needs T7.9-T7.17
+- Phone + 2 desktops. Update README features/limits (iPhone silent switch, GIF provider, share-link trust model).
+
+---
+
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
+- **GIPHY key value (user OK'd committing it, 2026-10-29):** `c3UrFheIWGdoGysWX6NHR8DceD5pEc8W`. T7.16d can put it straight in `core/src/config.ts` instead of the build-secret setup below.
+- **GIPHY key (2026-10-29):** the user has a GIPHY key. GitHub Pages is static, so **any key the browser uses is visible in the shipped JS**. A GitHub secret only keeps it out of the repo. That's the normal model for GIPHY's browser keys, so it's acceptable. Setup: repo Settings → Secrets and variables → Actions → `GIPHY_KEY`. `pages.yml` passes `env: GIPHY_KEY: ${{ secrets.GIPHY_KEY }}` to the build, and the build writes it into a generated `config` module (git-ignored), which T7.16d defines. Locally: `GIPHY_KEY=… npm start` or a git-ignored `.env`. If abuse ever matters, put a tiny proxy on the signal server (render.com) that adds the key server-side, and the browser never sees it. GIPHY beta keys are rate-limited, so apply for a production key before sharing the app widely.
 - Don't run `npm run pages` / `npx @papit/static` locally until understood: a run ended with ~31 `node_modules/@papit/*` packages as symlinks into `packages/pages/app/dist/lib/@papit/` (deleting `dist` then broke them; fix was `npm install`). Cause not pinned down (static's source only copies with `cpSync`; the build step or an earlier run may be what linked them). CI is fine.
 - All `en.json` use `"language": "en"` (static names the merged file after it; `en-UK` produced `en-UK.json`).
 - T1.1 papit gap: after a socket reconnect, `Client` keeps its old `id`/router `me`, so every later message to the server carries the stale sender and the signal server rejects it as `spoof`. `leave()` + rejoin on the same Client can't work, so the lobby closes the client and builds a new one. Fix upstream: adopt the new id on reconnect (or expose a `rejoin()`).

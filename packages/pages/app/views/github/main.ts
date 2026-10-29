@@ -488,7 +488,7 @@ view.addEventListener("files", (e) =>
 });
 view.addEventListener("cancel", (e) => current()?.cancelFile((e as CustomEvent<{ fid: string }>).detail.fid));
 
-// header Call / Video: a 1:1 chat rings the other person in a new call room; a group starts here
+// header Call / Video: a 1:1 chat rings the other person in this same room; a group starts here
 view.addEventListener("call", async (e) =>
 {
     const { kind } = (e as CustomEvent<{ kind: "call" | "video" }>).detail;

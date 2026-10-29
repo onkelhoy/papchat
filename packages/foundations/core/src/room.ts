@@ -336,6 +336,7 @@ export class Room extends EventTarget {
             title: this.title,
             from: profile.uid,
             members: [profile.uid, ...this.present.keys()],
+            ...(this.direct === uid ? { direct: true } : {}),
             ...extra,
         };
         const sent = lobbySend(uid, "invite", invite);
@@ -421,6 +422,25 @@ export class Room extends EventTarget {
         if (activeRoom() === this.id) return;
         this.setUnread(n => n + 1);
         this.sync();
+    }
+
+    /**
+     * @internal a second 1:1 with the same person is folded into this one: its messages (not its
+     * file cards, their transfers stay behind) join this history in time order, unread adds up.
+     */
+    absorb(other: Room) {
+        const known = new Set(this.messages().map(m => m.id));
+        const moved = other.messages().filter(m => m.variant !== "file" && !known.has(m.id));
+        if (moved.length > 0)
+        {
+            this.setMessages(list => {
+                const next = [...moved, ...list].sort((a, b) => a.at - b.at);
+                return next.length > LIMITS.messagesKept ? next.slice(next.length - LIMITS.messagesKept) : next;
+            });
+        }
+        if (other.unread() > 0 && activeRoom() !== this.id) this.setUnread(n => n + other.unread());
+        this.sync();
+        log("room: absorbed", other.id, "into", this.id, moved.length, "messages");
     }
 
     /** @internal the network vanished and someone recreated it: follow them there. */

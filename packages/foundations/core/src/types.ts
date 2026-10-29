@@ -64,6 +64,8 @@ export type Invite = {
     title: string;
     from: string;
     members: string[];
+    // the room is the sender's 1:1 with you: you keep one 1:1 per person, so a second one gets merged
+    direct?: boolean;
     // set when a room was rebuilt after its network vanished (server restart): the old network id
     replaces?: string;
 };
