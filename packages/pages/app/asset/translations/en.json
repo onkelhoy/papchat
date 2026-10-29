@@ -15,6 +15,7 @@
     "shortcutCamera": "Turn the camera on or off",
     "shortcutScreen": "Start or stop screen sharing",
     "shortcutClose": "Close a dialog",
-    "filesOnStage": "Files can't be shared on a stage"
+    "filesOnStage": "Files can't be shared on a stage",
+    "buzzWait": "Wait {seconds} s before buzzing again"
   }
 }

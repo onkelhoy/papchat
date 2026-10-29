@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 62/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 63/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -499,9 +499,10 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 
 ### Phase C: features
 
-### [ ] T7.13 Buzz · `sonnet` · needs —
+### [x] T7.13 Buzz · `sonnet` · needs —
 - A "Buzz" button in the 1:1 conversation header (and `/buzz`). The receiver's window shakes (CSS animation on the app shell, `prefers-reduced-motion` gets a flash instead), a buzz sound plays, and a "Henry buzzed you" line shows in the chat. Rate-limit: one every 10 s per sender, enforced on both sides. Plays even when the tab is hidden (notification + title flash via `notify.ts`).
 - **files:** `core/src/room.ts` (message type), `core/src/notify.ts`, `organisms/conversation`, `templates/app-shell` style, page.
+- Done: `Room.buzz()` broadcasts `buzz`, adds "You buzzed X" (or "You buzzed everyone" in a group), and returns false within `LIMITS.buzzGapMs` (10 s; `room.buzzWait` gives the ms left). The receiver ignores a sender's buzzes within 10 s, adds "X buzzed you", bumps unread when it's not the open room, and sets the `buzzed` signal (state.ts). `notify.ts` shows a Notification while hidden (no title flash: a buzz is one moment). `ringtone.buzz()` plays the optional `/audio/sound/buzz.mp3`, or a low two-tone rattle synth like `ping`, without interrupting a ring. UI: `pc-room` got `canbuzz` + a Buzz header button (`volume` icon) firing `buzz`; the page sets it for 1:1s only, `/buzz` in the composer buzzes too, a too-soon buzz toasts the wait. An incoming buzz shakes `pc-app-shell` with the Web Animations API (a brightness flash with `prefers-reduced-motion`), so no app-shell CSS change. Buzz only works outside calls (the room header is hidden in a call). en + sv. Typecheck + build pass; not run in a browser.
 
 ### [ ] T7.14 More ringtones and a dial tone · `sonnet` · needs — (user adds the audio files)
 - **do:** the user drops files in `asset/audio/ringtones/` and `asset/audio/dialtones/`. Both get a `*.json` manifest (`{ id, name, file }`). Settings gets a "Dial tone" picker next to the ringtone one (`pc-ringtone-picker` reused). `ringback()` plays the chosen file and falls back to the current synth when there's none or it fails to load.

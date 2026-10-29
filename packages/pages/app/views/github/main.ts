@@ -31,6 +31,7 @@ import {
     stages,
     watch,
     audioBlocked,
+    buzzed,
     constraints,
     declineInvite,
     devices,
@@ -245,6 +246,7 @@ effect(() =>
     view.typing = room.typing();
     view.files = room.files();
     view.heading = room.title || room.participants().map(p => p.name).join(", ");
+    view.canbuzz = !!room.direct;
 });
 
 // the open room: call stage and controls
@@ -346,6 +348,7 @@ effect(() =>
     view.typing = [];
     view.files = [];
     view.heading = stage.title;
+    view.canbuzz = false;
     view.incall = true;
     view.viewer = !stage.mine;
 
@@ -543,7 +546,29 @@ view.addEventListener("send", (e) =>
     const { text } = (e as CustomEvent<{ text: string }>).detail;
     const stage = shownStage();
     if (stage) stage.send(text);
+    else if (text.trim().toLowerCase() === "/buzz") sendBuzz();
     else current()?.send(text);
+});
+
+// buzz: the header button or "/buzz"; one per 10 s, the wait is toasted
+function sendBuzz() {
+    const room = current();
+    if (!room || room.buzz()) return;
+    const wait = room.buzzWait;
+    if (wait > 0) toast("info", t("buzzWait", { seconds: String(Math.ceil(wait / 1000)) }));
+}
+view.addEventListener("buzz", sendBuzz);
+
+// someone buzzed you: the window shakes (a flash with reduced motion) and the buzz sound plays
+const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+effect(() =>
+{
+    if (!buzzed()) return;
+    ringtone.buzz();
+    const frames = calm.matches
+        ? [{ filter: "brightness(1)" }, { filter: "brightness(1.5)" }, { filter: "brightness(1)" }]
+        : [0, -12, 12, -10, 10, -6, 6, 0].map(x => ({ transform: `translateX(${x}px)` }));
+    shell.animate(frames, { duration: calm.matches ? 500 : 600, easing: "ease-in-out" });
 });
 view.addEventListener("typing", () => { if (!shownStage()) current()?.notifyTyping(); });
 view.addEventListener("files", (e) =>

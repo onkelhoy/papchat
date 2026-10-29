@@ -28,6 +28,8 @@ export const [stages, setStages] = signal<StageSummary[]>([]);
 export const [incoming, setIncoming] = signal<IncomingCall[]>([]);
 export const [toasts, setToasts] = signal<Toast[]>([]);
 export const [audioBlocked, setAudioBlocked] = signal(false);
+/** The last buzz someone sent you (the page shakes, notify shows it while hidden). */
+export const [buzzed, setBuzzed] = signal<{ room: string; uid: string; name: string; at: number } | null>(null);
 
 export function setPrefs(partial: Partial<Prefs>) {
     const next = { ...prefs(), ...partial, v: 1 as const };

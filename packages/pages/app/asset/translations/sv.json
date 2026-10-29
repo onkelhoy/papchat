@@ -15,6 +15,7 @@
     "shortcutCamera": "Slå på eller av kameran",
     "shortcutScreen": "Starta eller sluta dela skärmen",
     "shortcutClose": "Stäng en dialogruta",
-    "filesOnStage": "Filer kan inte delas på en scen"
+    "filesOnStage": "Filer kan inte delas på en scen",
+    "buzzWait": "Vänta {seconds} s innan du buzzar igen"
   }
 }

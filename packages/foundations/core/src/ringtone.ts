@@ -11,7 +11,7 @@ import { audioBlocked, prefs, setAudioBlocked } from "./state";
 
 export type Tone = { id: string; label: string; file: string };
 
-type Sound = "ring" | "ringback" | "ping";
+type Sound = "ring" | "ringback" | "ping" | "buzz";
 
 type Request = { sound: Sound; id?: string; loop: boolean; preview: boolean };
 
@@ -33,11 +33,22 @@ const PATTERNS: Record<Sound, { cycle: number; bursts: Burst[] }> = {
     // 440 Hz, 2 s on / 4 s off
     ringback: { cycle: 6_000, bursts: [{ at: 0, ms: 2_000, freqs: [440] }] },
     ping: { cycle: 250, bursts: [{ at: 0, ms: 150, freqs: [880] }] },
+    // a low, beating rattle: two close frequencies, three quick pulses
+    buzz: {
+        cycle: 700,
+        bursts: [
+            { at: 0, ms: 140, freqs: [150, 157] },
+            { at: 200, ms: 140, freqs: [150, 157] },
+            { at: 400, ms: 220, freqs: [150, 157] },
+        ],
+    },
 };
 
 const FILES: Record<Exclude<Sound, "ring">, string> = {
     ringback: "/audio/ringback.mp3",
     ping: "/audio/sound/message.wav",
+    // optional: without the file the synth pattern above plays
+    buzz: "/audio/sound/buzz.mp3",
 };
 
 // 44 byte wav with no samples worth hearing: a click that lets later sounds play
@@ -86,6 +97,11 @@ export function ringback() {
 /** A short ping that doesn't interrupt a ringing tone and never raises `audioBlocked`. */
 export function ping() {
     void open({ sound: "ping", loop: false, preview: false }, () => undefined).catch(() => undefined);
+}
+
+/** The buzz sound; like `ping` it doesn't interrupt a ringing tone. */
+export function buzz() {
+    void open({ sound: "buzz", loop: false, preview: false }, () => undefined).catch(() => undefined);
 }
 
 /** Stops whatever `play`, `preview` or `ringback` started. */

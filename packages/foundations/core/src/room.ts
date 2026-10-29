@@ -7,7 +7,7 @@ import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { peerOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
-import { activeRoom, me, setActiveRoom, setRooms, toast } from "./state";
+import { activeRoom, me, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
 import { Transfers } from "./transfer";
 import type { ChatMessage, FileEntry, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
@@ -130,6 +130,8 @@ export class Room extends EventTarget {
     private typingUntil = new Map<string, number>();
     private typingTimer: ReturnType<typeof setInterval> | null = null;
     private lastTypingSent = 0;
+    private lastBuzzSent = 0;
+    private lastBuzzFrom = new Map<string, number>();
     private reinviteTimer: ReturnType<typeof setInterval> | null = null;
     private adoptTimer: ReturnType<typeof setTimeout> | null = null;
     private handlers = new Map<string, Set<RoomHandler>>();
@@ -156,6 +158,7 @@ export class Room extends EventTarget {
         [this.oncall, this.setOncall] = signal(false);
 
         this.onMessage("chat", this.handleChat);
+        this.onMessage("buzz", this.handleBuzz);
         this.onState("typing", this.handleTyping);
         this.onState("flags", this.handleFlags);
         this.addEventListener("client", this.handleClientMedia);
@@ -254,6 +257,35 @@ export class Room extends EventTarget {
         this.lastTypingSent = 0;
         this.push(message);
         return true;
+    }
+
+    /**
+     * Buzzes everyone in the room: their window shakes and a sound plays. At most once per
+     * `LIMITS.buzzGapMs`: false when too soon (or not connected).
+     */
+    buzz(): boolean {
+        const profile = me();
+        const c = this._client;
+        const now = Date.now();
+        if (!profile || !c?.network || now - this.lastBuzzSent < LIMITS.buzzGapMs) return false;
+        try
+        {
+            c.broadcast("buzz", { at: now });
+        }
+        catch (error)
+        {
+            log("room: buzz failed", error);
+            return false;
+        }
+        this.lastBuzzSent = now;
+        const other = this.direct ? this.participants().find(p => p.uid === this.direct)?.name : null;
+        this.system(other ? `You buzzed ${other}` : "You buzzed everyone", profile.uid);
+        return true;
+    }
+
+    /** True while a buzz you sent is too recent to send another. */
+    get buzzWait(): number {
+        return Math.max(0, LIMITS.buzzGapMs - (Date.now() - this.lastBuzzSent));
     }
 
     /** Call on every keystroke: tells the others you are typing, at most once per second. */
@@ -994,6 +1026,24 @@ export class Room extends EventTarget {
         }
         // the open chat in a background tab counts as unseen too
         if (activeRoom() !== this.id || document.hidden) ping();
+    };
+
+    // someone buzzed: once per gap per sender, whatever they send
+    private handleBuzz = (_payload: unknown, from: RoomFrom) => {
+        const uid = from.uid;
+        if (!uid || uid === me()?.uid) return;
+        const now = Date.now();
+        if (now - (this.lastBuzzFrom.get(uid) ?? 0) < LIMITS.buzzGapMs) return;
+        this.lastBuzzFrom.set(uid, now);
+
+        const name = from.profile?.name ?? "Someone";
+        this.system(`${name} buzzed you`, uid);
+        if (activeRoom() !== this.id)
+        {
+            this.setUnread(n => n + 1);
+            this.sync();
+        }
+        setBuzzed({ room: this.id, uid, name, at: now });
     };
 
     private handleTyping = (_payload: unknown, from: RoomFrom) => {

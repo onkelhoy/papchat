@@ -41,9 +41,11 @@ const NARROW = "(max-width: 40rem)";
  * @property {boolean} camera camera is on
  * @property {boolean} screen you are sharing your screen
  * @property {boolean} canscreen the browser can share a screen (default true)
+ * @property {boolean} canbuzz show the Buzz button in the header (1:1 chats)
  * @property {string} sinkid output device id for remote audio
  *
  * @fires call `CustomEvent<{ kind: "call" | "video" }>` header buttons, not in a call
+ * @fires buzz the header's Buzz button (bubbles, composed)
  *
  * @slot files content of the Files tab
  *
@@ -56,6 +58,7 @@ export class Room extends CustomElement {
 
     @property({ type: Boolean, reflect: true, rerender: true }) incall: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) viewer: boolean = false;
+    @property({ type: Boolean, rerender: true }) canbuzz: boolean = false;
     @property({ type: String, rerender: true }) heading: string = "";
     @property({ type: String, rerender: true }) me: string = "";
     @property({ type: Array, attribute: false, rerender: true }) messages: ChatMessage[] = [];
@@ -161,6 +164,11 @@ export class Room extends CustomElement {
         this.dispatchEvent(new CustomEvent<CallRequestEvent>("call", { detail: { kind }, bubbles: true, composed: true }));
     }
 
+    @bind
+    private handleBuzz() {
+        this.dispatchEvent(new CustomEvent("buzz", { bubbles: true, composed: true }));
+    }
+
     // the controls don't flip their own state; the chat toggle is ours, the rest is left to the page
     @bind
     private handleToggle(e: CustomEvent<{ control: string }>) {
@@ -210,6 +218,12 @@ export class Room extends CustomElement {
             return html`
                 <div part="header" class="header">
                     <div class="heading">${this.heading}</div>
+                    ${this.canbuzz ? html`
+                        <pap-button size="small" variant="clear" type="button" @click="${this.handleBuzz}">
+                            <pap-icon name="/icons/spritesheet.svg#volume" width="16" height="16" aria-hidden="true"></pap-icon>
+                            ${this.t("buzz")}
+                        </pap-button>
+                    ` : ""}
                     <pap-button size="small" variant="clear" type="button" data-kind="call" @click="${this.handleCall}">
                         <pap-icon name="/icons/spritesheet.svg#phone" width="16" height="16" aria-hidden="true"></pap-icon>
                         ${this.t("call")}

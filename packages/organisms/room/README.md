@@ -48,6 +48,7 @@ npm install @papchat/room
 | `camera`       | `boolean`                 | `false` | camera is on                                                                   |
 | `screen`       | `boolean`                 | `false` | you are sharing your screen                                                    |
 | `canscreen`    | `boolean`                 | `true`  | browser can share a screen                                                     |
+| `canbuzz`      | `boolean`                 | `false` | shows the Buzz button in the header (1:1 chats)                                |
 | `sinkid`       | `string`                  | `""`    | output device id for remote audio                                              |
 
 The Files tab lists a `pc-file-card` for every entry in `files` ("No files shared yet" when empty); the conversation shows the same files inline and is the drop zone.
@@ -57,6 +58,7 @@ The Files tab lists a `pc-file-card` for every entry in `files` ("No files share
 | Event           | Detail                          | Description                                                     |
 | --------------- | ------------------------------- | --------------------------------------------------------------- |
 | `call`          | `{ kind: "call" \| "video" }`   | header buttons, only when not in a call                         |
+| `buzz`          | -                               | header Buzz button (bubbles, composed)                          |
 | `send`          | `{ text }`                      | from the conversation (bubbles, composed)                       |
 | `typing`        | none                            | from the conversation                                           |
 | `files`         | `{ files: File[] }`             | from the conversation                                           |

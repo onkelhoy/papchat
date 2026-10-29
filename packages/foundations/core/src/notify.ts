@@ -3,7 +3,7 @@ import { effect } from "@papit/signals";
 import { setStatus } from "./identity";
 import { log } from "./log";
 import { getRoom } from "./room";
-import { incoming, me, prefs, rooms, setPrefs } from "./state";
+import { buzzed, incoming, me, prefs, rooms, setPrefs } from "./state";
 
 // While the tab is hidden (PLAN §2.8, §6.9): a `Notification` for incoming calls and new messages
 // (when the user allowed it in settings), a flashing title while something rings, and `away`
@@ -48,6 +48,7 @@ export function startNotify() {
     document.addEventListener("visibilitychange", onVisibility);
     watchCalls();
     watchMessages();
+    watchBuzz();
 }
 
 function show(title: string, body: string, tag: string) {
@@ -126,6 +127,16 @@ function watchMessages() {
             const from = room.participants().find(p => p.uid === newest.uid)?.name ?? "Someone";
             show(room.title ? `${from} in ${room.title}` : from, newest.text ?? "", `room:${room.id}`);
         }
+    });
+}
+
+// ---------------------------------------------------------------- buzz
+
+function watchBuzz() {
+    effect(() => {
+        const buzz = buzzed();
+        if (!buzz) return;
+        show(`${buzz.name} buzzed you`, "papchat", `buzz:${buzz.room}`);
     });
 }
 

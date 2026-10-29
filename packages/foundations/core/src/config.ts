@@ -32,6 +32,8 @@ export const LIMITS = {
     // a unicast that came back unreachable (routes still settling after a reload) is sent again
     resendTries: 2,
     resendGapMs: 1_500,
+    // a buzz (shake + sound) at most this often per sender, checked on both ends
+    buzzGapMs: 10_000,
 } as const;
 
 export const LOBBY_NAME = "papchat";
