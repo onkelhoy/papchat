@@ -11,6 +11,8 @@ document.addEventListener("emoji-pick", (e) =>
     log.textContent = `emoji-pick → ${e.detail.emoji} (${e.detail.name})`;
 });
 
+document.querySelectorAll("[data-recent]").forEach(picker => { picker.recent = ["🎉", "👍", "😂", "❤️"]; });
+
 const created = document.createElement("pc-emoji-picker");
 created.className = "box";
 created.recent = ["🚀"];

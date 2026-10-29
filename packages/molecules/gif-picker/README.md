@@ -37,7 +37,7 @@ The picker never fetches: the host searches GIPHY (or anything else) and sets `g
 
 | Property  | Attribute | Type      | Default | Description                                                      |
 | --------- | --------- | --------- | ------- | ---------------------------------------------------------------- |
-| `gifs`    | `gifs`    | `Gif[]`   | `[]`    | `{ id, url, width, height, title }[]` to show (JSON attribute)   |
+| `gifs`    | -         | `Gif[]`   | `[]`    | `{ id, url, width, height, title }[]` to show (property only)    |
 | `loading` | `loading` | `boolean` | `false` | A search is running; shows "Loading GIFs…" while there are none  |
 | `limit`   | `limit`   | `number`  | `0`     | 0 = scrolling two-column grid; > 0 = one row of that many        |
 

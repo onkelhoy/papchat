@@ -56,7 +56,7 @@ Keyboard: the grid is one tab stop; arrow keys move, Home/End jump to the ends, 
 | Property | Attribute | Type       | Default              | Description                                                                 |
 | -------- | --------- | ---------- | -------------------- | --------------------------------------------------------------------------- |
 | `query`  | `query`   | `string`   | `""`                 | Filter by name ("smi", "thumbs up"); empty shows the categories             |
-| `recent` | `recent`  | `string[]` | `[]`                 | Recently used emoji, newest first, shown as their own group (JSON attribute) |
+| `recent` | -         | `string[]` | `[]`                 | Recently used emoji, newest first, shown as their own group (property only) |
 | `limit`  | `limit`   | `number`   | `0`                  | 0 = everything with the category bar; > 0 = one flat row (recent first)    |
 | `src`    | `src`     | `string`   | `/emoji/emoji.json`  | Where the data is fetched from                                              |
 | `nosearch` | `nosearch` | `boolean` | `false`            | Hide the built-in search field (the host has its own and sets `query`)     |

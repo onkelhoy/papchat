@@ -13,7 +13,7 @@ import type { GifPickEvent } from "./types";
  *
  * @element pc-gif-picker
  *
- * @property {Gif[]} gifs the results to show (JSON attribute or property)
+ * @property {Gif[]} gifs the results to show (property only)
  * @property {boolean} loading a search is running (shows a status line while there are no results)
  * @property {number} limit 0 = all in a scrolling grid; > 0 = one row of that many
  *
@@ -26,20 +26,20 @@ export class GifPicker extends CustomElement {
 
     @translate t = useTranslator("pc-gif-picker");
 
-    @property({ type: Array, rerender: true }) gifs: Gif[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) gifs: Gif[] = [];
     @property({ type: Boolean, reflect: true, rerender: true }) loading: boolean = false;
     @property({ type: Number, rerender: true }) limit: number = 0;
 
     @bind
     private handleClick(e: Event) {
         const index = Number((e.currentTarget as HTMLElement).dataset.index);
-        const gif = this.gifs[index];
+        const gif = this.gifs?.[index];
         if (!gif) return;
         this.dispatchEvent(new CustomEvent<GifPickEvent>("gif-pick", { detail: { gif }, bubbles: true, composed: true }));
     }
 
     render() {
-        const gifs = this.limit > 0 ? this.gifs.slice(0, this.limit) : this.gifs;
+        const gifs = this.limit > 0 ? (this.gifs ?? []).slice(0, this.limit) : (this.gifs ?? []);
         const status = gifs.length ? "" : this.loading ? this.t("loading") : this.t("none");
 
         return html`

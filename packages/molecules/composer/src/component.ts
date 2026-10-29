@@ -11,6 +11,7 @@ import { loadEmoji, searchEmoji } from "@papchat/emoji-picker";
 import type { EmojiEntry, EmojiPickEvent } from "@papchat/emoji-picker";
 import "@papchat/gif-picker";
 import type { GifPickEvent } from "@papchat/gif-picker";
+import type { Gif } from "@papchat/core";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -160,6 +161,7 @@ export class Composer extends CustomElement {
     update() {
         super.update();
         this.syncPreview();
+        this.syncPickers();
         return undefined;
     }
 
@@ -394,6 +396,23 @@ export class Composer extends CustomElement {
 
     // ---------------------------------------------------------------- emoji popover
 
+    // arrays and the search go in as properties: attribute bindings pass a placeholder first, which isn't JSON
+    private syncPickers() {
+        const root = this.shadowRoot;
+        if (!root || !this.picking) return;
+        for (const picker of root.querySelectorAll<HTMLElement & { query: string; recent: string[] }>("pc-emoji-picker"))
+        {
+            if (picker.query !== this.pickQuery) picker.query = this.pickQuery;
+            if (picker.recent !== this.recent) picker.recent = this.recent;
+        }
+        for (const picker of root.querySelectorAll<HTMLElement & { gifs: Gif[]; loading: boolean }>("pc-gif-picker"))
+        {
+            const items = this.gifs?.items ?? [];
+            if (picker.gifs !== items) picker.gifs = items;
+            if (picker.loading !== !!this.gifs?.loading) picker.loading = !!this.gifs?.loading;
+        }
+    }
+
     @bind
     private handleEmojiButton() {
         const popover = this.pickPopover;
@@ -626,9 +645,7 @@ export class Composer extends CustomElement {
 
     private renderPicker() {
         const t = this.t;
-        const recent = JSON.stringify(this.recent);
         const gifs = this.gifs;
-        const gifItems = JSON.stringify(gifs?.items ?? []);
 
         // one root element (papit finding #20); each tab's content is its own single-root conditional (#10)
         return html`<div class="pick" role="dialog" aria-label="${t("emoji")}">
@@ -644,17 +661,17 @@ export class Composer extends CustomElement {
                         <h3>${t("tab-emoji")}</h3>
                         <button type="button" class="see-all" data-tab="emoji" @click="${this.handleSeeAll}">${t("see-all")} ›</button>
                     </header>
-                    <pc-emoji-picker limit="${String(ROW_SIZE)}" query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>
+                    <pc-emoji-picker limit="${String(ROW_SIZE)}"></pc-emoji-picker>
                 </section>` : ""}
                 ${this.pickTab === "all" && gifs ? html`<section class="row-section">
                     <header>
                         <h3>${t("tab-gifs")}</h3>
                         <button type="button" class="see-all" data-tab="gifs" @click="${this.handleSeeAll}">${t("see-all")} ›</button>
                     </header>
-                    <pc-gif-picker limit="6" gifs="${gifItems}" loading="${gifs.loading ? "true" : ""}"></pc-gif-picker>
+                    <pc-gif-picker limit="6"></pc-gif-picker>
                 </section>` : ""}
-                ${this.pickTab === "emoji" ? html`<pc-emoji-picker class="full" nosearch query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>` : ""}
-                ${this.pickTab === "gifs" && gifs ? html`<pc-gif-picker class="full" gifs="${gifItems}" loading="${gifs.loading ? "true" : ""}"></pc-gif-picker>` : ""}
+                ${this.pickTab === "emoji" ? html`<pc-emoji-picker class="full" nosearch></pc-emoji-picker>` : ""}
+                ${this.pickTab === "gifs" && gifs ? html`<pc-gif-picker class="full"></pc-gif-picker>` : ""}
             </div>
             ${gifs && this.pickTab !== "emoji" ? html`<footer class="giphy">${t("giphy")} · <a href="${GIPHY_TERMS}" target="_blank" rel="noopener noreferrer">${t("giphy-terms")}</a></footer>` : ""}
         </div>`;

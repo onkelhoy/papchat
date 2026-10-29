@@ -39,7 +39,7 @@ type Section = { id: string; label: string; emojis: EmojiEntry[] };
  * @element pc-emoji-picker
  *
  * @property {string} query filter by name ("smi", "thumbs up"); empty shows the categories
- * @property {string[]} recent recently used emoji, newest first (shown as their own group)
+ * @property {string[]} recent recently used emoji, newest first, shown as their own group (property only)
  * @property {number} limit 0 = everything with the category bar; > 0 = one flat row of that many (recent first)
  * @property {string} src where the data lives (default `/emoji/emoji.json`)
  * @property {boolean} nosearch hide the built-in search field (when the host has its own and sets `query`)
@@ -55,7 +55,7 @@ export class EmojiPicker extends CustomElement {
     @translate t = useTranslator("pc-emoji-picker");
 
     @property({ type: String, rerender: true }) query: string = "";
-    @property({ type: Array, rerender: true }) recent: string[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) recent: string[] = [];
     @property({ type: Number, rerender: true }) limit: number = 0;
     @property({ type: String }) src: string = EMOJI_SRC;
     @property({ type: Boolean, rerender: true }) nosearch: boolean = false;
@@ -98,10 +98,10 @@ export class EmojiPicker extends CustomElement {
         const data = this.data;
         if (!data) return [];
 
-        const query = this.query.trim();
+        const query = (this.query ?? "").trim();
         if (query) return [{ id: "results", label: this.t("results"), emojis: searchEmoji(data, query, this.limit || Infinity) }];
 
-        const recent = this.recent
+        const recent = (this.recent ?? [])
             .map(emoji => data.byEmoji[emoji] ?? { emoji, name: emoji, slug: emoji, group: "recent" })
             .filter((entry, i, list) => list.findIndex(e => e.emoji === entry.emoji) === i);
 
@@ -122,7 +122,7 @@ export class EmojiPicker extends CustomElement {
         if (!body) return;
 
         const sections = this.sections();
-        const key = [this.state, this.query, this.limit, this.recent.join(""), sections.map(s => s.label).join()].join("|");
+        const key = [this.state, this.query ?? "", this.limit, (this.recent ?? []).join(""), sections.map(s => s.label).join()].join("|");
         if (key === this.built) return;
         this.built = key;
 
@@ -142,7 +142,7 @@ export class EmojiPicker extends CustomElement {
             return;
         }
 
-        const flat = this.limit > 0 || this.query.trim() !== "";
+        const flat = this.limit > 0 || (this.query ?? "").trim() !== "";
         const fragment = document.createDocumentFragment();
         for (const section of sections)
         {
@@ -300,7 +300,7 @@ export class EmojiPicker extends CustomElement {
     // ---------------------------------------------------------------- render
 
     private renderNav() {
-        const ids = [...(this.recent.length ? ["recent"] : []), ...(this.data?.groups.map(group => group.id) ?? [])];
+        const ids = [...(this.recent?.length ? ["recent"] : []), ...(this.data?.groups.map(group => group.id) ?? [])];
 
         return html`<nav part="nav" class="nav" aria-label="${this.t("categories")}">
             ${ids.map(id => html`
@@ -312,7 +312,7 @@ export class EmojiPicker extends CustomElement {
     }
 
     render() {
-        const flat = this.limit > 0 || this.query.trim() !== "";
+        const flat = this.limit > 0 || (this.query ?? "").trim() !== "";
         const ready = this.state === "ready";
 
         return html`
