@@ -8,8 +8,6 @@
     "tabs": "Settings sections",
     "close": "Close",
     "profile": "Profile",
-    "sound": "Sound",
-    "devices": "Devices",
     "appearance": "Appearance",
     "notifications": "Notifications",
     "shortcuts": "Shortcuts",
@@ -20,7 +18,7 @@
     "status-busy": "Busy",
     "status-away": "Away",
     "status-dnd": "Do not disturb",
-    "auto-decline": "Auto-decline calls when busy",
+    "auto-decline": "Decline incoming calls while I'm in a call",
     "microphone": "Microphone",
     "camera": "Camera",
     "speaker": "Speaker",
@@ -32,6 +30,8 @@
     "notify-hint": "Your browser will ask for permission.",
     "network": "Network",
     "ringtone": "Ringtone",
-    "dialtone": "Dial tone (while your call rings)"
+    "dialtone": "Dial tone (while your call rings)",
+    "audio": "Audio",
+    "video": "Video"
   }
 }

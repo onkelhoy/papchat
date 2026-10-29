@@ -264,8 +264,8 @@ export class Settings extends CustomElement {
                     <pap-tabs value="profile">
                         <pap-tab value="profile">${this.t("profile")}</pap-tab>
                         <pap-tab value="network">${this.t("network")}</pap-tab>
-                        <pap-tab value="sound">${this.t("sound")}</pap-tab>
-                        <pap-tab value="devices">${this.t("devices")}</pap-tab>
+                        <pap-tab value="audio">${this.t("audio")}</pap-tab>
+                        <pap-tab value="video">${this.t("video")}</pap-tab>
                         <pap-tab value="appearance">${this.t("appearance")}</pap-tab>
                         <pap-tab value="notifications">${this.t("notifications")}</pap-tab>
                         ${this.shortcuts?.length ? html`<pap-tab value="shortcuts">${this.t("shortcuts")}</pap-tab>` : ""}
@@ -287,7 +287,7 @@ export class Settings extends CustomElement {
                                     ${STATUSES.map(status => html`
                                         <pap-radio
                                             key="${status}"
-                                            name="status"
+                                            name="pc-settings-status"
                                             value="${status}"
                                             checked="${profile?.status === status && "true"}"
                                             @change="${(e: Event) => this.handleStatus(status, e)}"
@@ -300,19 +300,7 @@ export class Settings extends CustomElement {
                         <pap-tabpanel value="network">
                             <pc-network-picker network="${this.network}"></pc-network-picker>
                         </pap-tabpanel>
-                        <pap-tabpanel value="sound">
-                            <div class="field">
-                                <span>${this.t("ringtone")}</span>
-                                <pc-ringtone-picker class="ring" label="${this.t("ringtone")}" @change="${this.handleTone}" @volume="${this.handleVolume}"></pc-ringtone-picker>
-                            </div>
-                            <div class="field">
-                                <span>${this.t("dialtone")}</span>
-                                <pc-ringtone-picker class="dial" novolume label="${this.t("dialtone")}" @change="${this.handleDial}" @preview="${this.handleDialPreview}"></pc-ringtone-picker>
-                            </div>
-                            <pap-switch checked="${prefs?.autoDeclineBusy && "true"}" @change="${this.handleAutoDecline}">${this.t("auto-decline")}</pap-switch>
-                        </pap-tabpanel>
-
-                        <pap-tabpanel value="devices">
+                        <pap-tabpanel value="audio">
                             <div class="field">
                                 <span>${this.t("microphone")}</span>
                                 <pc-device-picker kind="audioinput" data-device="mic" @change="${this.handleMic}"></pc-device-picker>
@@ -322,14 +310,29 @@ export class Settings extends CustomElement {
                                 </div>
                             </div>
                             <div class="field">
+                                <span>${this.t("speaker")}</span>
+                                <pc-device-picker kind="audiooutput" data-device="speaker" @change="${this.handleSpeaker}"></pc-device-picker>
+                            </div>
+                            <div class="field">
+                                <span>${this.t("ringtone")}</span>
+                                <pc-ringtone-picker class="ring" label="${this.t("ringtone")}" @change="${this.handleTone}" @volume="${this.handleVolume}"></pc-ringtone-picker>
+                            </div>
+                            <div class="field">
+                                <span>${this.t("dialtone")}</span>
+                                <pc-ringtone-picker class="dial" novolume label="${this.t("dialtone")}" @change="${this.handleDial}" @preview="${this.handleDialPreview}"></pc-ringtone-picker>
+                            </div>
+                            <label class="toggle">
+                                <pap-switch checked="${prefs?.autoDeclineBusy && "true"}" @change="${this.handleAutoDecline}"></pap-switch>
+                                <span>${this.t("auto-decline")}</span>
+                            </label>
+                        </pap-tabpanel>
+
+                        <pap-tabpanel value="video">
+                            <div class="field">
                                 <span>${this.t("camera")}</span>
                                 <pc-device-picker kind="videoinput" data-device="camera" @change="${this.handleCamera}"></pc-device-picker>
                                 <pap-button size="small" variant="clear" data-kind="camera" @click="${this.handleTest}">${this.t("test-camera")}</pap-button>
                                 <div class="camera"><pc-video fit="cover"></pc-video></div>
-                            </div>
-                            <div class="field">
-                                <span>${this.t("speaker")}</span>
-                                <pc-device-picker kind="audiooutput" data-device="speaker" @change="${this.handleSpeaker}"></pc-device-picker>
                             </div>
                         </pap-tabpanel>
 
@@ -345,7 +348,10 @@ export class Settings extends CustomElement {
                         </pap-tabpanel>
 
                         <pap-tabpanel value="notifications">
-                            <pap-switch checked="${prefs?.notifications && "true"}" @change="${this.handleNotifications}">${this.t("notify")}</pap-switch>
+                            <label class="toggle">
+                                <pap-switch checked="${prefs?.notifications && "true"}" @change="${this.handleNotifications}"></pap-switch>
+                                <span>${this.t("notify")}</span>
+                            </label>
                             <p class="hint">${this.t("notify-hint")}</p>
                         </pap-tabpanel>
 

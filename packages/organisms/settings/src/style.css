@@ -142,3 +142,15 @@ pap-input:focus-within::part(wrapper) {
     outline: 2px solid var(--focus-color);
     outline-offset: -1px;
 }
+
+/* pap-switch shows no text of its own: the label beside it names it, and clicking the text toggles it */
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    cursor: pointer;
+}
+
+.toggle pap-switch {
+    flex: none;
+}

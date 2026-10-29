@@ -8,8 +8,6 @@
     "tabs": "Inställningsavsnitt",
     "close": "Stäng",
     "profile": "Profil",
-    "sound": "Ljud",
-    "devices": "Enheter",
     "appearance": "Utseende",
     "notifications": "Notiser",
     "shortcuts": "Kortkommandon",
@@ -20,7 +18,7 @@
     "status-busy": "Upptagen",
     "status-away": "Borta",
     "status-dnd": "Stör ej",
-    "auto-decline": "Avvisa samtal automatiskt när jag är upptagen",
+    "auto-decline": "Avvisa inkommande samtal medan jag är i ett samtal",
     "microphone": "Mikrofon",
     "camera": "Kamera",
     "speaker": "Högtalare",
@@ -32,6 +30,8 @@
     "notify-hint": "Webbläsaren frågar om tillåtelse.",
     "network": "Nätverk",
     "ringtone": "Ringsignal",
-    "dialtone": "Kopplingston (medan ditt samtal ringer)"
+    "dialtone": "Kopplingston (medan ditt samtal ringer)",
+    "audio": "Ljud",
+    "video": "Video"
   }
 }

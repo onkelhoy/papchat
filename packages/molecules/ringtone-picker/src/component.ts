@@ -31,6 +31,9 @@ import type { RingtoneChangeEvent, RingtonePreviewEvent, RingtoneVolumeEvent, To
  * @csspart list the radio group
  * @csspart volume the range input
  */
+// pap-radio groups radios by `name` across the whole page (shadow roots too), so every picker needs its own
+let groups = 0;
+
 export class RingtonePicker extends CustomElement {
     static sheet = sheet;
 
@@ -42,6 +45,8 @@ export class RingtonePicker extends CustomElement {
     @property({ type: String, rerender: true }) playing: string = "";
     @property({ type: Boolean, reflect: true, rerender: true }) novolume: boolean = false;
     @property({ type: String, rerender: true }) label: string = "";
+
+    private group = `pc-ringtone-picker-${++groups}`;
 
     @bind
     private handleSelect(id: string, e: Event) {
@@ -96,7 +101,7 @@ export class RingtonePicker extends CustomElement {
                     return html`
                         <div class="row" key="${tone.id}">
                             <pap-radio
-                                name="pc-ringtone-picker"
+                                name="${this.group}"
                                 value="${tone.id}"
                                 checked="${this.value === tone.id && "true"}"
                                 @change="${(e: Event) => this.handleSelect(tone.id, e)}"

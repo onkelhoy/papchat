@@ -1,6 +1,6 @@
 # @papchat/settings
 
-Settings dialog: profile, sound, devices, appearance, notifications
+Settings dialog: profile, network, audio (mic, speaker, ringtone, dial tone), video (camera), appearance, notifications
 
 ![Logo](https://raw.githubusercontent.com/onkelhoy/papchat/refs/heads/main/asset/logo.svg)
 
