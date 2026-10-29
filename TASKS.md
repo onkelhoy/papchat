@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 55/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 56/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -437,12 +437,13 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **done when:** 10 calls across 2 browsers with camera on/off/on and screen share on/off all show video on both sides without touching the chat toggle.
 - Done: the guessed cause was wrong. The MediaStream compare is already fixed in `@papit/web-component` 0.0.13 (non-plain objects compare by identity). Real cause: `pc-video-tile` renders `<pc-video>` only while there is live video, and papit emits `stream-ended` on every remote track `mute` (camera off, or a short network hiccup). When video came back, the tile's `@query videoEl` still pointed at the removed `<pc-video>` (papit only re-queries empty queries), so the new one never got the stream. The chat toggle re-mounted the whole stage, which is why it "fixed" it. The tile now uses the cached child only while `isConnected` (video and level meter). Also: tile `<pc-video>` is always `muted` (remote audio plays in the stage's `<audio>`), so autoplay can't block a camera. Papit finding #12 written. Typecheck + build pass; not run in a browser.
 
-### [ ] T7.4 Stale presence and "can't reach" after a reload · `opus` · needs —
+### [x] T7.4 Stale presence and "can't reach" after a reload · `opus` · needs —
 - **symptom:** people who closed the app stay "online" for a long time. After a reload, calling someone gave "Couldn't reach …" for a while, then fixed itself.
 - **cause?:** presence only drops when the webrtc layer notices the peer is gone (slow on phones that are killed or put to sleep, since `pagehide` doesn't always fire). After a reload the person comes back with a new peer id while `peerOf(uid)` still points at the dead one until it times out.
 - **do:** (1) A light heartbeat: every member already re-sends its profile on changes. Add `lastSeen` to members and have each peer broadcast a tiny `ping` every 30 s, only while the tab is visible or in a call (hidden tabs every 60 s). Mark `away`-like "stale" after 75 s and drop after 150 s. Not one message per pair, one lobby broadcast each. Don't let the host kick: everyone ages entries locally, which costs nothing extra. (2) On `join` of a uid that's already listed, the new peer id replaces the old one right away (`uidOf`/`peerOf` maps). (3) Send a best-effort `bye` on `pagehide` and on `visibilitychange` → hidden on phones when not in a call.
 - **files:** `core/src/lobby.ts`, `core/src/config.ts` (timings).
 - **done when:** closing a phone tab removes the person within ~2.5 min. Reload, then call right away: it rings.
+- Done (papchat only, no papit change): `lobby.ts` broadcasts `here` every 30 s (60 s while hidden). Any message marks its sender heard; newcomers count as heard on arrival. Peers silent for 150 s drop out of `members`/`peerByUid` (they stay in `memberByPeer`, so a later message brings them back at once). After our own tab comes back to the front, nobody is dropped for 70 s (we may have been asleep too). The newest-peer-per-uid rule was already there. "Can't reach" after a reload: unicasts are remembered for 10 s per receiving peer, and an `unreachable` resends them up to 2× after 1.5 s to the uid's newest peer by then; the toast shows only when that fails. No `bye` message: `pagehide` already closes the client. Timings in `LIMITS`. Peers on an older build (no `here`) drop after 150 s until they send something. Typecheck + build pass; not run in a browser.
 
 ### [ ] T7.5 Ringtone on phones · `opus` · needs —
 - **symptom:** on mobile the ringtone often doesn't play. The "allow sound" prompt shows, and tapping it does nothing.

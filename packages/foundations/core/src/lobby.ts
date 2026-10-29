@@ -51,6 +51,18 @@ const handlers = new Map<string, Set<LobbyHandler>>();
 const timers = new Set<{ id: ReturnType<typeof setTimeout>; resolve: () => void }>();
 const lastUnreachable = new Map<string, number>();
 
+// presence (PLAN §2.2): peer → when we last heard from it (any message, or its arrival)
+const heardAt = new Map<string, number>();
+let heartbeat: ReturnType<typeof setTimeout> | null = null;
+// after our own tab was asleep we heard nothing either: don't drop anyone until they had time to beat
+let graceUntil = 0;
+
+// recent unicasts by receiving peer, to send again when they come back unreachable
+type Sent = { uid: string; type: string; payload: unknown; tries: number; at: number };
+const RECENT_MS = 10_000;
+const recent = new Map<string, Sent[]>();
+const retrying = new Set<string>();
+
 // ---------------------------------------------------------------- public API
 
 /**
@@ -71,6 +83,8 @@ export async function startLobby(): Promise<boolean> {
     running = true;
     rebooting = false;
     if (typeof window !== "undefined") window.addEventListener("pagehide", handlePageHide);
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleVisibility);
+    beat();
     return startClient();
 }
 
@@ -79,19 +93,34 @@ export function stopLobby() {
     running = false;
     stopClient();
     if (typeof window !== "undefined") window.removeEventListener("pagehide", handlePageHide);
+    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", handleVisibility);
+    if (heartbeat) clearTimeout(heartbeat);
+    heartbeat = null;
+    heardAt.clear();
+    recent.clear();
+    retrying.clear();
     peerByUid = new Map();
     memberByPeer = new Map();
     setMembers([]);
     setLobbyStatus("idle");
 }
 
-/** Unicast an app message to whoever has `uid` (their newest peer). False when unknown or not in the lobby. */
+/**
+ * Unicast an app message to whoever has `uid` (their newest peer). False when unknown or not in the
+ * lobby. Comes back unreachable → sent again a couple of times before "Couldn't reach" shows.
+ */
 export function send(uid: string, type: string, payload?: unknown): boolean {
+    return sendTry(uid, type, payload, 0);
+}
+
+function sendTry(uid: string, type: string, payload: unknown, tries: number): boolean {
     const peer = peerByUid.get(uid);
     if (!client?.network || !peer) return false;
     try
     {
-        return client.send(peer, type, payload);
+        const sent = client.send(peer, type, payload);
+        if (sent) remember(peer, { uid, type, payload, tries, at: Date.now() });
+        return sent;
     }
     catch (error)
     {
@@ -563,7 +592,7 @@ function handleMembers(event: Event) {
         const c = client!;
         const { members, profiles } = (event as CustomEvent<{ members: string[]; profiles: Record<string, unknown> }>).detail;
         const byPeer = new Map<string, Member>();
-        const newest = new Map<string, Member>();
+        const now = Date.now();
 
         for (const peer of members)
         {
@@ -571,21 +600,17 @@ function handleMembers(event: Event) {
             const member = readMember(peer, profiles[peer]);
             if (!member) continue;
             byPeer.set(peer, member);
-
-            const current = newest.get(member.profile.uid);
-            if (!current || member.at > current.at || (member.at === current.at && peer > current.peer))
-            {
-                newest.set(member.profile.uid, member);
-            }
+            // a newcomer counts as heard; a known one keeps its time (a join elsewhere isn't a sign of life)
+            if (!heardAt.has(peer)) heardAt.set(peer, now);
+        }
+        for (const peer of heardAt.keys())
+        {
+            if (!byPeer.has(peer)) heardAt.delete(peer);
         }
 
+
         memberByPeer = byPeer;
-        peerByUid = new Map([...newest.values()].map(m => [m.profile.uid, m.peer]));
-        setMembers(
-            [...newest.values()]
-                .map(m => m.profile)
-                .sort((a, b) => a.name.localeCompare(b.name) || (a.uid < b.uid ? -1 : 1)),
-        );
+        publish();
         syncStatus();
     }
     catch (error)
@@ -604,6 +629,7 @@ function handleMessage(event: Event) {
         return;
     }
 
+    heard(sender);
     const member = memberByPeer.get(sender);
     const from: LobbyFrom = { peer: sender, uid: member?.profile.uid ?? null, profile: member?.profile ?? null };
     for (const handler of [...set])
@@ -625,6 +651,7 @@ function handleUnreachable(event: Event) {
     {
         const { receiver } = (event as CustomEvent<{ receiver: string; ref: string }>).detail;
         log("lobby: unreachable", receiver);
+        if (resend(receiver)) return;
 
         // one toast per person for a burst of undeliverable messages
         const now = Date.now();
@@ -662,6 +689,107 @@ function handleError(event: Event) {
     log("lobby: error", detail?.type, detail?.message, detail?.payload);
     // rebuild outside the client's own event dispatch
     if (detail?.type === "reconnect") setTimeout(reconnect, 0);
+}
+
+// ---------------------------------------------------------------- presence
+
+// members by uid (newest peer wins) among the peers heard from lately, yourself left out
+function publish() {
+    const now = Date.now();
+    const newest = new Map<string, Member>();
+    for (const [peer, member] of memberByPeer)
+    {
+        if (!fresh(peer, now)) continue;
+        const current = newest.get(member.profile.uid);
+        if (!current || member.at > current.at || (member.at === current.at && peer > current.peer))
+        {
+            newest.set(member.profile.uid, member);
+        }
+    }
+
+    peerByUid = new Map([...newest.values()].map(m => [m.profile.uid, m.peer]));
+    setMembers(
+        [...newest.values()]
+            .map(m => m.profile)
+            .sort((a, b) => a.name.localeCompare(b.name) || (a.uid < b.uid ? -1 : 1)),
+    );
+}
+
+function fresh(peer: string, now: number): boolean {
+    return now < graceUntil || now - (heardAt.get(peer) ?? now) < LIMITS.staleMs;
+}
+
+// any message is a sign of life; one from someone we had dropped brings them back
+function heard(peer: string) {
+    const now = Date.now();
+    const was = fresh(peer, now);
+    if (memberByPeer.has(peer) || heardAt.has(peer)) heardAt.set(peer, now);
+    if (!was && memberByPeer.has(peer)) publish();
+}
+
+// one tiny broadcast per interval, then drop whoever went quiet (only republished when that changes)
+function beat() {
+    if (heartbeat) clearTimeout(heartbeat);
+    heartbeat = null;
+    if (!running) return;
+
+    if (client?.network) broadcast("here");
+    const now = Date.now();
+    // kept past a peer's departure (a send to someone who just reloaded is retried to their new peer)
+    for (const [peer, list] of recent)
+    {
+        if (now - (list.at(-1)?.at ?? 0) > RECENT_MS) recent.delete(peer);
+    }
+    const stale = [...peerByUid.values()].filter(peer => !fresh(peer, now));
+    if (stale.length > 0)
+    {
+        log("lobby: quiet for too long, dropping", stale);
+        publish();
+    }
+
+    const hidden = typeof document !== "undefined" && document.hidden;
+    heartbeat = setTimeout(beat, hidden ? LIMITS.heartbeatHiddenMs : LIMITS.heartbeatMs);
+}
+
+// back in front: say so right away, and give everyone a hidden-interval to beat before ageing them
+function handleVisibility() {
+    if (document.hidden) return;
+    graceUntil = Date.now() + LIMITS.heartbeatHiddenMs + 10_000;
+    beat();
+}
+
+// `here` only needs to arrive (handleMessage marks the sender heard)
+on("here", () => { });
+
+// ---------------------------------------------------------------- resend
+
+function remember(peer: string, entry: Sent) {
+    const list = (recent.get(peer) ?? []).filter(e => entry.at - e.at < RECENT_MS);
+    list.push(entry);
+    recent.set(peer, list.slice(-8));
+}
+
+// what was sent to `peer` lately goes out again shortly (to their newest peer by then); true while
+// a retry is on its way, so the burst of unreachables for one send stays quiet
+function resend(peer: string): boolean {
+    if (retrying.has(peer)) return true;
+    const now = Date.now();
+    const again = (recent.get(peer) ?? []).filter(e => now - e.at < RECENT_MS && e.tries < LIMITS.resendTries);
+    recent.delete(peer);
+    if (again.length === 0) return false;
+
+    retrying.add(peer);
+    const current = epoch;
+    void wait(LIMITS.resendGapMs).then(() => {
+        retrying.delete(peer);
+        if (current !== epoch) return;
+        for (const e of again)
+        {
+            log("lobby: sending again", e.type, "to", e.uid, `(${e.tries + 1})`);
+            sendTry(e.uid, e.type, e.payload, e.tries + 1);
+        }
+    });
+    return true;
 }
 
 function handlePageHide(event: PageTransitionEvent) {
