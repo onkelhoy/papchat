@@ -90,6 +90,65 @@ shell.addEventListener("sidebar-toggle", syncCompact);
 customElements.whenDefined("pc-app-shell").then(syncCompact);
 
 const t = (key: string, vars?: Record<string, string>) => useTranslator("app")(key, vars);
+
+// pap-icon fetches its file per icon and can render before the fetch lands, leaving the icon empty
+// (papit finding #13): load the sprites once into its shared registry, then re-name any icon that
+// rendered empty so it picks them up. Icons created later find them straight away.
+const ICON_FILES = ["/icons/spritesheet.svg", "/icons/sun.svg", "/icons/moon.svg", "/icons/computer.svg"];
+
+async function preloadIcons() {
+    await customElements.whenDefined("pap-icon");
+    const registry = (customElements.get("pap-icon") as unknown as { icons?: Map<string, string> }).icons;
+    if (!registry) return;
+
+    const parser = new DOMParser();
+    await Promise.all(ICON_FILES.map(async url =>
+    {
+        try
+        {
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const svg = parser.parseFromString(await res.text(), "image/svg+xml").querySelector("svg");
+            if (!svg) return;
+
+            // the same markup pap-icon stores itself: a <symbol> becomes an <svg part="svg">
+            const add = (element: Element, names: string[]) =>
+            {
+                element.setAttribute("part", "svg");
+                element.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+                const markup = element.outerHTML.replace(/^<symbol/, "<svg").replace(/symbol>$/, "svg>");
+                for (const name of names) if (name && !registry.has(name)) registry.set(name, markup);
+            };
+            const symbols = svg.querySelectorAll("symbol");
+            if (symbols.length > 0) symbols.forEach(symbol => add(symbol, [symbol.id]));
+            else add(svg, [url.split("/").pop()!.replace(/\.svg$/, ""), svg.id]);
+        }
+        catch (error)
+        {
+            console.warn("[papchat] icons: could not load", url, error);
+        }
+    }));
+    refreshIcons(document);
+}
+
+function refreshIcons(root: Document | ShadowRoot) {
+    for (const el of root.querySelectorAll("*"))
+    {
+        if (el.localName === "pap-icon")
+        {
+            const icon = el as HTMLElement & { name?: string };
+            const name = icon.name;
+            if (name && !icon.shadowRoot?.querySelector("svg"))
+            {
+                icon.name = "";
+                icon.name = name;
+            }
+        }
+        if (el.shadowRoot) refreshIcons(el.shadowRoot);
+    }
+}
+
+void preloadIcons();
 const canScreen = !!navigator.mediaDevices?.getDisplayMedia;
 
 const current = (): Room | null => activeRoom() ? getRoom(activeRoom()!) : null;

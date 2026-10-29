@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 61/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 62/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -490,11 +490,12 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **files:** `organisms/onboarding`, page.
 - Done: onboarding is name, colour and language only, with one "Continue". The `network`/`networks` properties, the picker and `networks-refresh` are gone; the page no longer loads networks for it. New `joining: { name, password } | null` property (for T7.17): when set, it shows "You're joining **name**" and `submit.network` carries it; otherwise `network` is null (public lobby). `@papchat/network-picker` stays in the package.json (lockfile). en + sv. Build + typecheck pass; not checked by eye.
 
-### [ ] T7.12 Papit findings · `opus` · needs —
+### [x] T7.12 Papit findings · `opus` · needs —
 - Add to `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (same format: file, repro, cause, fix, papchat workaround):
   - **`@papit/icon`: icons sometimes don't render.** Investigate first: is the spritesheet fetched once per icon and racing? Is a `<use href>` in shadow DOM set before the sprite loads? Does it fail after a re-render that changes `name`? Is it the `/icons/` base under `--base /papchat/`? Get a repro, then write it up.
   - **`@papit/theme` toggle: "system" should show the applied mode** (sun or moon) while still being selectable, instead of a third generic icon.
   - ~~The `MediaStream` compare~~: already fixed in web-component 0.0.13. T7.3 wrote finding #12 (`@query` keeps a removed element) instead.
+- Done: finding #13 (`@papit/icon`): `after` awaits the fetch but the decorator's `requestUpdate()` (50 ms debounce) doesn't wait for it, so a slow fetch leaves `render()` without `assignedName` for good. Also no shared in-flight fetch (every icon fetches the spritesheet), and a disconnect aborts the fetch with no retry on reconnect. Finding #14: theme-picker "system" should show the theme in effect. Workaround in the page (`preloadIcons()` in `main.ts`): fetch the spritesheet + sun/moon/computer once, fill `Icon.icons` (reached via `customElements.get("pap-icon")`, no new dependency) with the same markup pap-icon stores, then re-set `name` on every `pap-icon` (through shadow roots) that has no `<svg>`. Build + typecheck pass; not checked in a browser.
 
 ### Phase C: features
 
