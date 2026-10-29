@@ -70,6 +70,12 @@ export function constraints(name: CaptureName): CaptureConstraints {
                 ...(chosen.mic ? { deviceId: { ideal: chosen.mic } } : {}),
                 echoCancellation: true,
                 noiseSuppression: true,
+                autoGainControl: true,
+                // speech: one channel at Opus's native rate, no resampling
+                channelCount: { ideal: 1 },
+                sampleRate: { ideal: 48_000 },
+                // Chrome's voice isolation where the platform has it; others ignore an unknown constraint
+                ...({ voiceIsolation: true } as MediaTrackConstraints),
             },
         };
     }

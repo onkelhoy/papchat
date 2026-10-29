@@ -520,6 +520,7 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **step 2:** RNNoise noise suppression as a setting ("Noise reduction: off / standard / strong"). Run the mic through an `AudioWorklet` with RNNoise compiled to WASM, and send the processed track. Recommended: use `@sapphi-red/web-noise-suppressor` (MIT, RNNoise + Speex as WASM worklets, ~150 kB, lazy-loaded only when turned on). Alternative if you want the Rust showcase: `nnnoiseless` (Rust RNNoise port) → `wasm-pack` → our own worklet. Same result, more work.
 - **files:** `core/src/devices.ts`, `core/src/room.ts` (+ stage) capture path, `organisms/settings`.
 - **done when:** the same mic and room sounds clearly better in an A/B recording (fan or keyboard in the background).
+- Step 1 done (2026-10-29): mic constraints now add `autoGainControl`, `channelCount: { ideal: 1 }`, `sampleRate: { ideal: 48000 }` and Chrome's `voiceIsolation` (ignored where unsupported). `source.clone()` keeps the processed track, so nothing is lost there. Opus/SDP tuning is skipped: papit's handshake calls `setLocalDescription()` with no SDP or sender hook, and Chrome's defaults (mono, ~32 kbps, in-band FEC) are fine. Not a papit finding (not a real block). **Step 2 waits on the user:** RNNoise needs a new dependency (`@sapphi-red/web-noise-suppressor`) plus serving its worklet + wasm files.
 
 ### Rich composer (T7.16a-d)
 Modelled on Teams (user screenshots 2026-10-29 20.41.26 / .45 / .52):
