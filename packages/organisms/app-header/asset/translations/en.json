@@ -17,9 +17,10 @@
     "away": "Away",
     "dnd": "Do not disturb",
     "network": "Private network: {name}",
-    "theme-light": "Light theme",
-    "theme-dark": "Dark theme",
-    "theme-system": "Automatic theme ({mode})",
-    "title-example": "e.g. Holiday photos"
+    "theme-light": "Light",
+    "theme-dark": "Dark",
+    "theme-system": "System",
+    "title-example": "e.g. Holiday photos",
+    "theme": "Theme: {mode}"
   }
 }

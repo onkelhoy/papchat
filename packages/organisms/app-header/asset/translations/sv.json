@@ -17,9 +17,10 @@
     "away": "Borta",
     "dnd": "Stör ej",
     "network": "Privat nätverk: {name}",
-    "theme-light": "Ljust tema",
-    "theme-dark": "Mörkt tema",
-    "theme-system": "Automatiskt tema ({mode})",
-    "title-example": "t.ex. Semesterbilder"
+    "theme-light": "Ljust",
+    "theme-dark": "Mörkt",
+    "theme-system": "System",
+    "title-example": "t.ex. Semesterbilder",
+    "theme": "Tema: {mode}"
   }
 }

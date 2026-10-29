@@ -22,7 +22,7 @@ textarea {
     overflow-y: auto;
     padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
     border: 1px solid light-dark(oklch(0% 0 0 / 0.2), oklch(100% 0 0 / 0.25));
-    border-radius: var(--radius-medium, 0.5rem);
+    border-radius: var(--radius-small, 0.5rem);
     background: transparent;
     color: var(--text);
     font: inherit;
@@ -33,11 +33,10 @@ textarea::placeholder {
     color: var(--text-secondary);
 }
 
-/* the same calm focus as the inputs: border and a soft ring, no hard outline */
+/* the same focus as the inputs: one outline over the border, inset so nothing clips it */
 textarea:focus-visible {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 25%, transparent);
+    outline: 2px solid var(--focus-color);
+    outline-offset: -1px;
 }
 
 textarea:disabled {

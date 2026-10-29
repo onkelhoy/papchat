@@ -43,7 +43,7 @@ npm install @papchat/app-header
 | `go-live`         | `{ title: string }`                                    | "Go live" opens a dialog asking for a title; confirming fires this with the trimmed, non-empty title |
 | `end-live`        | -                                                      | "End broadcast" clicked (only while `live`)                  |
 
-None of the events bubble. The header composes `pc-avatar`, `pc-presence`, `pc-connection-status` and a hidden `pap-theme-picker storage="local"` (it applies and remembers the theme). The theme button cycles light → dark → system and shows the theme in effect, with an "A" mark for system. Language lives in the settings dialog. The page must serve `/icons/spritesheet.svg` (`broadcast`, `settings`) and `/icons/sun.svg|moon.svg`. `::part(bar)` styles the row.
+None of the events bubble. The header composes `pc-avatar`, `pc-presence`, `pc-connection-status` and a hidden `pap-theme-picker storage="local"` (it applies and remembers the theme). The theme button opens a Light / Dark / System menu; its icon is the theme in effect (System on a light system shows the sun) while the menu keeps System ticked. Language lives in the settings dialog. The page must serve `/icons/spritesheet.svg` (`broadcast`, `settings`) and `/icons/sun.svg|moon.svg|computer.svg`. `::part(bar)` styles the row.
 
 ## License
 

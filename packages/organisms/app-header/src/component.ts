@@ -21,14 +21,16 @@ import type { GoLiveEvent, StatusChangeEvent } from "./types";
 export const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 
 type Theme = "light" | "dark" | "system";
-const NEXT: Record<Theme, Theme> = { light: "dark", dark: "system", system: "light" };
+const THEMES: Theme[] = ["light", "dark", "system"];
+const THEME_ICON: Record<Theme, string> = { light: "sun", dark: "moon", system: "computer" };
 const DARK = "(prefers-color-scheme: dark)";
 
 /**
  * Top bar of the app: connection state, "Go live", theme, settings and the user's own avatar with
- * a status menu. It only reports what the user did, the page applies it. The theme button cycles
- * light → dark → system and shows the theme in effect (system shows the resolved one with an "auto"
- * mark); a hidden `pap-theme-picker storage="local"` applies and remembers it.
+ * a status menu. It only reports what the user did, the page applies it. The theme button opens a
+ * Light / Dark / System menu; its icon is always the theme you see (System on a light system shows
+ * the sun) while the menu keeps System ticked. A hidden `pap-theme-picker storage="local"` applies
+ * and remembers the choice.
  *
  * @element pc-app-header
  *
@@ -59,6 +61,7 @@ export class AppHeader extends CustomElement {
     @property({ type: String, attribute: false, rerender: true }) private liveTitle: string = "";
 
     @query("pap-menu.status") private statusMenu!: Menu;
+    @query("pap-menu.themes") private themeMenu?: Menu;
     @query({ selector: "pap-theme-picker", load: function (this: AppHeader, el: Element) { this.theme = (el as ThemePicker).value ?? "system"; } }) private picker?: ThemePicker;
 
     // the picker's choice, and what the system prefers (for "system")
@@ -93,10 +96,10 @@ export class AppHeader extends CustomElement {
         this.systemDark = e.matches;
     }
 
-    @bind
-    private handleThemeButton() {
+    private pickTheme(theme: Theme) {
+        this.themeMenu?.hidePopover();
         const picker = this.picker ?? this.root.querySelector<ThemePicker>("pap-theme-picker");
-        if (picker) picker.value = NEXT[this.theme];
+        if (picker && picker.value !== theme) picker.value = theme;
     }
 
     // also fires when the settings dialog's picker changed the page theme (it observes the same target)
@@ -117,7 +120,10 @@ export class AppHeader extends CustomElement {
             return;
         }
 
+        // the field isn't bound to liveTitle (a bound value fights the typing): clear it directly
         this.liveTitle = "";
+        const input = this.root.querySelector<HTMLElement & { value: string }>("pap-input#live-title");
+        if (input) input.value = "";
         this.asking = true;
     }
 
@@ -143,16 +149,22 @@ export class AppHeader extends CustomElement {
     }
 
     private renderTheme() {
-        const shown = this.theme === "system" ? (this.systemDark ? "dark" : "light") : this.theme;
-        const label = this.theme === "system"
-            ? this.t("theme-system", { mode: this.t(`theme-${shown}`) })
-            : this.t(`theme-${shown}`);
+        // the icon is what you see; the menu says what you chose
+        const shown: Theme = this.theme === "system" ? (this.systemDark ? "dark" : "light") : this.theme;
+        const label = this.t("theme", { mode: this.t(`theme-${this.theme}`) });
 
         return html`
-            <pap-button class="theme" size="icon" variant="clear" aria-label="${label}" title="${label}" @click="${this.handleThemeButton}">
-                <pap-icon name="${`/icons/${shown === "dark" ? "moon" : "sun"}.svg`}" aria-hidden="true"></pap-icon>
-                ${this.theme === "system" ? html`<span class="auto" aria-hidden="true">A</span>` : ""}
+            <pap-button class="theme" size="icon" variant="clear" popovertarget="theme-menu" aria-haspopup="menu" aria-label="${label}" title="${label}">
+                <pap-icon name="${`/icons/${THEME_ICON[shown]}.svg`}" aria-hidden="true"></pap-icon>
             </pap-button>
+            <pap-menu id="theme-menu" class="themes" placement="bottom-right">
+                ${THEMES.map(theme => html`
+                    <pap-menuitem role="menuitemradio" aria-checked="${String(theme === this.theme)}" @click="${() => this.pickTheme(theme)}">
+                        <pap-icon name="${`/icons/${THEME_ICON[theme]}.svg`}" aria-hidden="true"></pap-icon>
+                        <span>${this.t(`theme-${theme}`)}</span>
+                    </pap-menuitem>
+                `)}
+            </pap-menu>
         `;
     }
 
@@ -208,7 +220,6 @@ export class AppHeader extends CustomElement {
                         maxlength="80"
                         aria-label="${this.t("title-label")}"
                         placeholder="${this.t("title-example")}"
-                        value="${this.liveTitle}"
                         @input="${this.handleTitle}"
                         @change="${this.handleTitle}"
                     ></pap-input>
