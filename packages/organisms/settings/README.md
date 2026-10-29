@@ -38,6 +38,7 @@ npm install @papchat/settings
 | `profile`       | `Profile`             | -       | own profile (property only)                                          |
 | `prefs`         | `Prefs`               | -       | preferences (property only)                                          |
 | `tones`         | `{ id, label }[]`     | `[]`    | ringtone choices (property only)                                     |
+| `dialtones`     | `{ id, label }[]`     | `[]`    | dial tone choices: what a caller hears while it rings (property only) |
 | `devices`       | `{ audioinput, videoinput, audiooutput }` | empty lists | `{ deviceId, label }[]` per kind (property only)  |
 | `language`      | `string`              | `"en"`  | current language code                                                |
 | `playing`       | `string`              | `""`    | ringtone id being previewed, set by the page                         |
@@ -55,6 +56,7 @@ npm install @papchat/settings
 | `language-change`       | `{ value }`                   | another language chosen                                               |
 | `request-notifications` | none                          | switch turned on; the page asks permission and sets `prefs.notifications`. Turning it off emits `prefs-change` |
 | `preview-device`        | `{ kind: "camera" \| "mic" }` | a test button was pressed; the page sets `camerastream` / `micstream` |
+| `preview-dial`          | `{ id }`                      | play was pressed on a dial tone; the page plays it and sets `playing` |
 | `preview`, `preview-stop` | `{ id }` / none             | pass through from the ringtone picker                                 |
 | `close`                 | none                          | dismissed by the user; the page sets `open = false`                   |
 

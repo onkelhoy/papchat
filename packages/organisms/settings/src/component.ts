@@ -37,6 +37,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {Profile} profile own profile (property only)
  * @property {Prefs} prefs preferences (property only)
  * @property {Tone[]} tones ringtone choices (property only)
+ * @property {Tone[]} dialtones dial tone choices, the tone a caller hears while it rings (property only)
  * @property {DeviceLists} devices devices split by kind (property only)
  * @property {string} language current language code
  * @property {string} playing id of the ringtone being previewed
@@ -48,12 +49,13 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
- * @fires prefs-change `{ partial }` ringtone, volume, devices or auto-decline changed
+ * @fires prefs-change `{ partial }` ringtone, dial tone, volume, devices or auto-decline changed
  * @fires language-change `{ value }`
  * @fires network-change `{ network }` from the Network tab's `pc-network-picker` (`null` = public); the page reconnects
  * @fires networks-refresh the Network tab wants a fresh `networks` list
  * @fires request-notifications switch turned on: the page asks for permission, then sets `prefs.notifications`
  * @fires preview-device `{ kind: "camera" | "mic" }` a test button was pressed
+ * @fires preview-dial `{ id }` play was pressed on a dial tone (`preview-stop` passes through as for ringtones)
  * @fires close the dialog was dismissed (the page sets `open = false`)
  *
  * @csspart dialog the `pap-dialog`
@@ -67,6 +69,7 @@ export class Settings extends CustomElement {
     @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
     @property({ type: Object, attribute: false, rerender: true }) prefs?: Prefs;
     @property({ type: Array, attribute: false, rerender: true }) tones: Tone[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) dialtones: Tone[] = [];
     @property({ type: Object, attribute: false, rerender: true }) devices: DeviceLists = { audioinput: [], videoinput: [], audiooutput: [] };
     @property({ type: String, rerender: true }) language: string = "en";
     @property({ type: String, rerender: true }) playing: string = "";
@@ -77,7 +80,8 @@ export class Settings extends CustomElement {
     @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
 
-    @query("pc-ringtone-picker") private ringtones?: Synced;
+    @query("pc-ringtone-picker.ring") private ringtones?: Synced;
+    @query("pc-ringtone-picker.dial") private dials?: Synced;
     @query("pc-network-picker") private picker?: Synced;
     @query("pc-language-picker") private languages?: Synced;
     @query("pc-video") private video?: Synced;
@@ -99,6 +103,12 @@ export class Settings extends CustomElement {
             this.ringtones.value = prefs?.ringtone ?? "";
             this.ringtones.volume = prefs?.volume ?? 1;
             this.ringtones.playing = this.playing;
+        }
+        if (this.dials)
+        {
+            this.dials.tones = this.dialtones;
+            this.dials.value = prefs?.dialtone || this.dialtones[0]?.id || "";
+            this.dials.playing = this.playing;
         }
         if (this.picker)
         {
@@ -170,6 +180,19 @@ export class Settings extends CustomElement {
     private handleTone(e: CustomEvent<{ value: string }>) {
         e.stopPropagation();
         this.emitPrefs({ ringtone: e.detail.value });
+    }
+
+    @bind
+    private handleDial(e: CustomEvent<{ value: string }>) {
+        e.stopPropagation();
+        this.emitPrefs({ dialtone: e.detail.value });
+    }
+
+    // the dial picker's preview is ours to rename: the page plays it as a dial tone
+    @bind
+    private handleDialPreview(e: CustomEvent<{ id: string }>) {
+        e.stopPropagation();
+        this.emit<{ id: string }>("preview-dial", { id: e.detail.id });
     }
 
     @bind
@@ -278,7 +301,14 @@ export class Settings extends CustomElement {
                             <pc-network-picker network="${this.network}"></pc-network-picker>
                         </pap-tabpanel>
                         <pap-tabpanel value="sound">
-                            <pc-ringtone-picker @change="${this.handleTone}" @volume="${this.handleVolume}"></pc-ringtone-picker>
+                            <div class="field">
+                                <span>${this.t("ringtone")}</span>
+                                <pc-ringtone-picker class="ring" label="${this.t("ringtone")}" @change="${this.handleTone}" @volume="${this.handleVolume}"></pc-ringtone-picker>
+                            </div>
+                            <div class="field">
+                                <span>${this.t("dialtone")}</span>
+                                <pc-ringtone-picker class="dial" novolume label="${this.t("dialtone")}" @change="${this.handleDial}" @preview="${this.handleDialPreview}"></pc-ringtone-picker>
+                            </div>
                             <pap-switch checked="${prefs?.autoDeclineBusy && "true"}" @change="${this.handleAutoDecline}">${this.t("auto-decline")}</pap-switch>
                         </pap-tabpanel>
 

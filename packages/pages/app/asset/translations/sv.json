@@ -16,6 +16,7 @@
     "shortcutScreen": "Starta eller sluta dela skärmen",
     "shortcutClose": "Stäng en dialogruta",
     "filesOnStage": "Filer kan inte delas på en scen",
-    "buzzWait": "Vänta {seconds} s innan du buzzar igen"
+    "buzzWait": "Vänta {seconds} s innan du buzzar igen",
+    "dialSynth": "Klassiskt pip"
   }
 }

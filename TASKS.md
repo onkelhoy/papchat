@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 63/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 64/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -504,10 +504,11 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **files:** `core/src/room.ts` (message type), `core/src/notify.ts`, `organisms/conversation`, `templates/app-shell` style, page.
 - Done: `Room.buzz()` broadcasts `buzz`, adds "You buzzed X" (or "You buzzed everyone" in a group), and returns false within `LIMITS.buzzGapMs` (10 s; `room.buzzWait` gives the ms left). The receiver ignores a sender's buzzes within 10 s, adds "X buzzed you", bumps unread when it's not the open room, and sets the `buzzed` signal (state.ts). `notify.ts` shows a Notification while hidden (no title flash: a buzz is one moment). `ringtone.buzz()` plays the optional `/audio/sound/buzz.mp3`, or a low two-tone rattle synth like `ping`, without interrupting a ring. UI: `pc-room` got `canbuzz` + a Buzz header button (`volume` icon) firing `buzz`; the page sets it for 1:1s only, `/buzz` in the composer buzzes too, a too-soon buzz toasts the wait. An incoming buzz shakes `pc-app-shell` with the Web Animations API (a brightness flash with `prefers-reduced-motion`), so no app-shell CSS change. Buzz only works outside calls (the room header is hidden in a call). en + sv. Typecheck + build pass; not run in a browser.
 
-### [ ] T7.14 More ringtones and a dial tone · `sonnet` · needs — (user adds the audio files)
+### [x] T7.14 More ringtones and a dial tone · `sonnet` · needs — (user adds the audio files)
 - **do:** the user drops files in `asset/audio/ringtones/` and `asset/audio/dialtones/`. Both get a `*.json` manifest (`{ id, name, file }`). Settings gets a "Dial tone" picker next to the ringtone one (`pc-ringtone-picker` reused). `ringback()` plays the chosen file and falls back to the current synth when there's none or it fails to load.
 - **files:** `core/src/ringtone.ts`, `organisms/settings`, page, `asset/audio/README.md`.
 - **Files added by the user (2026-10-29):** `ringtones/Adventure Pulse.mp3` and `dialtones/Ringback Tone.mp3`. Rename them without spaces first (papit finding #11: the static fetch shim misses paths with spaces), e.g. `adventure-pulse.mp3`, `ringback.mp3`, and add them to the manifests. Playback is Web Audio now (T7.5): decode with `bufferOf()`.
+- Done: renamed to `ringtones/adventure-pulse.mp3` (added to `ringtones.json` as "Adventure Pulse") and `dialtones/ringback-tone.mp3` (new `dialtones/dialtones.json`, "Ringback Tone"). Core: `Prefs.dialtone` ("" = first file), `loadDialtones()` / `dialtones` signal, `SYNTH_DIAL = "classic"` for the built-in beep, `ringback()` plays the chosen file, else the first one, else the synth; `previewDial(id)`. The old `/audio/ringback.mp3` path is gone. `pc-ringtone-picker` got `novolume` and `label`. `pc-settings` Sound tab: "Ringtone" picker (with volume) and a "Dial tone" picker (no volume), `dialtones` property, its preview renamed to `preview-dial`. The page lists the dial files plus "Classic beep" (that label doesn't re-translate on a live language switch until reload). en + sv. READMEs updated. Typecheck + build pass; not played in a browser.
 
 ### [ ] T7.15 Better audio · `opus` · needs —
 - **step 1 (cheap, do first):** `devices.ts` already asks for `echoCancellation`/`noiseSuppression`. Add `autoGainControl: true`, `channelCount: 1`, `sampleRate: 48000`. Then compare with Teams again. Check the Opus settings in the SDP (`useinbandfec=1`, `maxaveragebitrate` ~ 40000, `usedtx` off). If `@papit/webrtc` has no SDP hook, write a papit finding asking for one. Check that `source.clone()` doesn't drop constraints.

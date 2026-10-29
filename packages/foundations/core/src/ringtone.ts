@@ -44,8 +44,7 @@ const PATTERNS: Record<Sound, { cycle: number; bursts: Burst[] }> = {
     },
 };
 
-const FILES: Record<Exclude<Sound, "ring">, string> = {
-    ringback: "/audio/ringback.mp3",
+const FILES: Record<Exclude<Sound, "ring" | "ringback">, string> = {
     ping: "/audio/sound/message.wav",
     // optional: without the file the synth pattern above plays
     buzz: "/audio/sound/buzz.mp3",
@@ -54,12 +53,18 @@ const FILES: Record<Exclude<Sound, "ring">, string> = {
 // 44 byte wav with no samples worth hearing: a click that lets later sounds play
 const SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
+/** The dial tone id of the built-in synth beep (always offered, and the fallback without files). */
+export const SYNTH_DIAL = "classic";
+
 /** The tones the user can pick from (`ringtones.json`), filled by `loadTones`. */
 export const [tones, setTones] = signal<Tone[]>([]);
+/** The dial tones (`dialtones.json`), filled by `loadDialtones`. The synth (`SYNTH_DIAL`) isn't in it. */
+export const [dialtones, setDialtones] = signal<Tone[]>([]);
 /** Id of the tone being previewed right now, "" when none. */
 export const [previewing, setPreviewing] = signal("");
 
 let list: Promise<Tone[]> | null = null;
+let dialList: Promise<Tone[]> | null = null;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 let context: AudioContext | null = null;
 let current: Playback | null = null;
@@ -79,6 +84,19 @@ export function loadTones(): Promise<Tone[]> {
     return list;
 }
 
+/** Fetches the dial tone list once. Resolves to `[]` when there is none. */
+export function loadDialtones(): Promise<Tone[]> {
+    dialList ??= fetch("/audio/dialtones/dialtones.json")
+        .then(res => res.ok ? res.json() : [])
+        .then(readTones)
+        .catch((): Tone[] => [])
+        .then(found => {
+            setDialtones(found);
+            return found;
+        });
+    return dialList;
+}
+
 /** Plays tone `id` (the user's ringtone). Loops with `loop: true` until `stop()`. */
 export function play(id: string, options: { loop?: boolean } = {}) {
     void begin({ sound: "ring", id, loop: !!options.loop, preview: false });
@@ -89,9 +107,14 @@ export function preview(id: string) {
     void begin({ sound: "ring", id, loop: false, preview: true });
 }
 
-/** The caller's ringing tone, looped until `stop()`. */
+/** The caller's ringing tone (the chosen dial tone, else the first file, else the synth), looped until `stop()`. */
 export function ringback() {
-    void begin({ sound: "ringback", loop: true, preview: false });
+    void begin({ sound: "ringback", id: prefs().dialtone, loop: true, preview: false });
+}
+
+/** Plays dial tone `id` once for the settings picker; `previewing` holds `id` meanwhile. */
+export function previewDial(id: string) {
+    void begin({ sound: "ringback", id, loop: false, preview: true });
 }
 
 /** A short ping that doesn't interrupt a ringing tone and never raises `audioBlocked`. */
@@ -293,6 +316,13 @@ async function running(): Promise<AudioContext> {
 // ---------------------------------------------------------------- files
 
 async function sourceOf(request: Request): Promise<AudioBuffer | null> {
+    if (request.sound === "ringback")
+    {
+        if (request.id === SYNTH_DIAL) return null;
+        const list = await loadDialtones();
+        const tone = list.find(t => t.id === request.id) ?? list[0];
+        return tone ? bufferOf(`/audio/dialtones/${tone.file}`) : null;
+    }
     if (request.sound !== "ring") return bufferOf(FILES[request.sound]);
 
     const tones = await loadTones();

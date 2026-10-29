@@ -190,6 +190,7 @@ async function boot() {
     settings.sinkSupported = sinkSupported;
     startNotify();
     void ringtone.loadTones();
+    void ringtone.loadDialtones();
     onboarding.colors = [...PALETTE];
 
     if (me())
@@ -433,6 +434,8 @@ effect(() => { settings.prefs = prefs(); });
 effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
+// the files first (the first is the default), then the built-in beep they fall back to
+effect(() => { settings.dialtones = [...ringtone.dialtones().map(({ id, label }) => ({ id, label })), { id: ringtone.SYNTH_DIAL, label: t("dialSynth") }]; });
 effect(() => { settings.devices = devices(); });
 effect(() => { settings.playing = ringtone.previewing(); });
 
@@ -512,6 +515,7 @@ settings.addEventListener("request-notifications", async () =>
 settings.addEventListener("preview-device", (e) => void startTest((e as CustomEvent<{ kind: "camera" | "mic" }>).detail.kind));
 settings.addEventListener("preview", (e) => ringtone.preview((e as CustomEvent<{ id: string }>).detail.id));
 settings.addEventListener("preview-stop", () => ringtone.stop());
+settings.addEventListener("preview-dial", (e) => ringtone.previewDial((e as CustomEvent<{ id: string }>).detail.id));
 settings.addEventListener("close", () =>
 {
     settings.open = false;

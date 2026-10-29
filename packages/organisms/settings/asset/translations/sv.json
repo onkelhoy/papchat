@@ -30,6 +30,8 @@
     "language": "Språk",
     "notify": "Visa notiser för meddelanden och samtal",
     "notify-hint": "Webbläsaren frågar om tillåtelse.",
-    "network": "Nätverk"
+    "network": "Nätverk",
+    "ringtone": "Ringsignal",
+    "dialtone": "Kopplingston (medan ditt samtal ringer)"
   }
 }

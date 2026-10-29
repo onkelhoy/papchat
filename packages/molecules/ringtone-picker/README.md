@@ -38,6 +38,8 @@ Never plays audio itself: the page plays the sound on `preview` and sets `playin
 | `value`   | `value`   | `string`                          | `""`    | id of the selected tone                          |
 | `volume`  | `volume`  | `number`                          | `1`     | 0 to 1                                           |
 | `playing` | `playing` | `string`                          | `""`    | id of the tone being previewed (set by the page) |
+| `novolume` | `novolume` | `boolean`                       | `false` | hides the volume slider (reflected)              |
+| `label`   | `label`   | `string`                          | `""`    | accessible name of the list (default "Ringtones") |
 
 | Event          | Detail               | Description                                      |
 | -------------- | -------------------- | ------------------------------------------------ |

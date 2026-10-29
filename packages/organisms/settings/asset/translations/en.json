@@ -30,6 +30,8 @@
     "language": "Language",
     "notify": "Show notifications for messages and calls",
     "notify-hint": "Your browser will ask for permission.",
-    "network": "Network"
+    "network": "Network",
+    "ringtone": "Ringtone",
+    "dialtone": "Dial tone (while your call rings)"
   }
 }

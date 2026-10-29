@@ -21,6 +21,8 @@ import type { RingtoneChangeEvent, RingtonePreviewEvent, RingtoneVolumeEvent, To
  * @property {string} value id of the selected tone
  * @property {number} volume 0 to 1 (default 1)
  * @property {string} playing id of the tone being previewed, set by the page
+ * @property {boolean} novolume hide the volume slider, e.g. for a second picker next to one that has it (reflected)
+ * @property {string} label accessible name of the list (default "Ringtones")
  *
  * @fires change `CustomEvent<{ value }>` another tone was selected (bubbles, composed)
  * @fires volume `CustomEvent<{ volume }>` the slider moved (bubbles, composed)
@@ -38,6 +40,8 @@ export class RingtonePicker extends CustomElement {
     @property({ type: String, rerender: true }) value: string = "";
     @property({ type: Number, rerender: true }) volume: number = 1;
     @property({ type: String, rerender: true }) playing: string = "";
+    @property({ type: Boolean, reflect: true, rerender: true }) novolume: boolean = false;
+    @property({ type: String, rerender: true }) label: string = "";
 
     @bind
     private handleSelect(id: string, e: Event) {
@@ -85,7 +89,7 @@ export class RingtonePicker extends CustomElement {
         const volume = Number.isFinite(this.volume) ? this.volume : 1;
 
         return html`
-            <div part="list" class="list" role="radiogroup" aria-label="${this.t("tones")}">
+            <div part="list" class="list" role="radiogroup" aria-label="${this.label || this.t("tones")}">
                 ${tones.map(tone =>
                 {
                     const playing = this.playing === tone.id;
@@ -111,7 +115,7 @@ export class RingtonePicker extends CustomElement {
                 })}
             </div>
 
-            <label class="volume">
+            ${this.novolume ? "" : html`<label class="volume">
                 <span class="label">${this.t("volume")}</span>
                 <input
                     part="volume"
@@ -125,7 +129,7 @@ export class RingtonePicker extends CustomElement {
                     @input="${this.handleVolume}"
                 />
                 <span class="percent" aria-hidden="true">${`${Math.round(volume * 100)}%`}</span>
-            </label>
+            </label>`}
         `;
     }
 }

@@ -14,6 +14,8 @@ export type Profile = {
 export type Prefs = {
     v: 1;
     ringtone: string;
+    // the caller's tone while it rings: a `dialtones.json` id, `SYNTH_DIAL` for the built-in beep, "" = the first file
+    dialtone: string;
     volume: number;
     language: string;
     autoDeclineBusy: boolean;

@@ -1,4 +1,5 @@
 [
     { "id": "beep-boom", "file": "beep-boom.mp3", "label": "Beep-Boom" },
-    { "id": "quack", "file": "quack.mp3", "label": "Quack Quack" }
+    { "id": "quack", "file": "quack.mp3", "label": "Quack Quack" },
+    { "id": "adventure-pulse", "file": "adventure-pulse.mp3", "label": "Adventure Pulse" }
 ]
