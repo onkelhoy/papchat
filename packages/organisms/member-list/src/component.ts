@@ -29,6 +29,7 @@ const ORDER: Status[] = ["available", "busy", "away", "dnd"];
  * @property {Profile} me        you; property only
  * @property {string[]} incall   uids currently in a call; property only
  * @property {StageSummary[]} stages live broadcasts, shown above the list in a "Live now" section (hidden when empty); property only
+ * @property {boolean} compact   avatars only (collapsed sidebar): no heading, search or live section (reflected)
  * @property {boolean} canInvite adds "Invite to current room" to each row menu (attribute `caninvite`)
  *
  * @fires member-action `CustomEvent<{ uid, action }>` from a row (bubbles, composed)
@@ -50,6 +51,7 @@ export class MemberList extends CustomElement {
     @property({ type: Array, attribute: false, rerender: true }) incall: string[] = [];
     @property({ type: Array, attribute: false, rerender: true }) stages: StageSummary[] = [];
     @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) compact: boolean = false;
 
     @property({ type: String, attribute: false, rerender: true }) private query: string = "";
 
@@ -98,6 +100,7 @@ export class MemberList extends CustomElement {
             item.self = row.self;
             item.incall = (this.incall ?? []).includes(row.profile.uid);
             item.canInvite = this.canInvite;
+            item.compact = this.compact;
         });
 
         return undefined;

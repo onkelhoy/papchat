@@ -49,3 +49,11 @@ pap-group {
     padding-block: var(--space-2, 0.5rem);
     min-inline-size: 0;
 }
+
+/* collapsed sidebar: only the avatars */
+:host([compact]) .heading,
+:host([compact]) pap-input,
+:host([compact]) .live,
+:host([compact]) .empty {
+    display: none;
+}

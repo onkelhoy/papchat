@@ -34,6 +34,7 @@ npm install @papchat/room-list
 | -------- | --------- | --------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
 | `rooms`  | -         | `RoomSummary[]` | `[]`    | `{ id, kind, title, participants, unread, incall, live }` (type from `@papchat/core`); rendered in the given order |
 | `active` | `active`  | `string`        | -       | id of the open room; its row gets `aria-current="true"`                                                            |
+| `compact` | `compact` | `boolean`       | `false` | one avatar per row (collapsed sidebar); title in a tooltip, unread and call as corner marks (reflected) |
 
 | Event    | Detail           | Description                                      |
 | -------- | ---------------- | ------------------------------------------------ |

@@ -108,3 +108,35 @@ pc-badge {
     padding: var(--space-3, 0.75rem);
     color: var(--text-secondary);
 }
+
+/* collapsed sidebar: one avatar per row, centred; unread and calls become corner marks */
+:host([compact]) .select {
+    position: relative;
+    justify-content: center;
+    padding: var(--space-1, 0.25rem);
+}
+
+:host([compact]) .avatars pc-avatar + pc-avatar,
+:host([compact]) .title,
+:host([compact]) .more,
+:host([compact]) pc-badge[variant="live"] {
+    display: none;
+}
+
+:host([compact]) pc-badge,
+:host([compact]) .call {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+}
+
+:host([compact]) .call {
+    inset-block-start: auto;
+    inset-block-end: 0;
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+}
+
+:host([compact]) .row[data-current="true"] {
+    box-shadow: inset 2px 0 0 var(--primary);
+}

@@ -29,6 +29,7 @@ import type { MemberAction, MemberActionEvent, MemberFilesEvent } from "./types"
  *
  * @property {Profile} profile the member (`uid`, `name`, `color`, `status`); property only
  * @property {boolean} self     this is you: shows a "You" badge, no menu, no events (reflected)
+ * @property {boolean} compact  avatar only (collapsed sidebar): name and status move to a tooltip, ⋯ menu via right-click (reflected)
  * @property {boolean} incall   shows a small phone icon (reflected)
  * @property {boolean} canInvite shows "Invite to current room" in the menu (attribute `caninvite`)
  *
@@ -54,6 +55,7 @@ export class MemberItem extends CustomElement {
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) self: boolean = false;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) incall: boolean = false;
     @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
+    @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); } }) compact: boolean = false;
 
     // true while focus is on the row or inside it: puts the ⋯ button in the tab order
     @property({ type: Boolean, attribute: false, rerender: true }) private focused: boolean = false;
@@ -110,6 +112,9 @@ export class MemberItem extends CustomElement {
         if (this.self) parts.push(this.t("you"));
         if (this.incall) parts.push(this.t("incall"));
         this.setAttribute("aria-label", parts.join(", "));
+        // only the avatar shows when compact: the name moves to a tooltip
+        if (this.compact) this.setAttribute("title", parts.join(", "));
+        else this.removeAttribute("title");
     }
 
     private dispatchAction(action: MemberAction) {

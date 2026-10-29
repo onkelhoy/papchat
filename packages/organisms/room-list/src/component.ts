@@ -24,6 +24,7 @@ const MAX_AVATARS = 3;
  *
  * @property {RoomSummary[]} rooms the rooms to list, in the order given
  * @property {string} active id of the open room, gets `aria-current`
+ * @property {boolean} compact one avatar per row (collapsed sidebar): title in a tooltip, unread as a dot (reflected)
  *
  * @fires select `CustomEvent<{ id: string }>` when a row is chosen
  * @fires leave `CustomEvent<{ id: string }>` when "Leave" is chosen in a row menu
@@ -37,6 +38,7 @@ export class RoomList extends CustomElement {
 
     @property({ type: Array, attribute: false, rerender: true }) rooms: RoomSummary[] = [];
     @property({ type: String }) active?: string;
+    @property({ type: Boolean, reflect: true, rerender: true }) compact: boolean = false;
 
     private labelOf(room: RoomSummary): string {
         const title = room.title?.trim();
@@ -69,9 +71,10 @@ export class RoomList extends CustomElement {
 
         return html`
             <div part="row" class="row" role="listitem" data-current="${String(current)}">
-                <button type="button" class="select" aria-current="${current ? "true" : "false"}" @click="${() => this.handleSelect(room)}">
+                <button type="button" class="select" aria-current="${current ? "true" : "false"}" title="${this.compact ? title : ""}" @click="${() => this.handleSelect(room)}">
                     <span class="avatars" aria-hidden="true">
                         ${room.participants.slice(0, MAX_AVATARS).map(p => html`<pc-avatar size="s" name="${p.name}" color="${p.color}" uid="${p.uid}"></pc-avatar>`)}
+                        ${room.participants.length ? "" : html`<pc-avatar size="s" name="${title}"></pc-avatar>`}
                     </span>
                     <span class="title">${title}</span>
                     ${room.incall ? html`<pap-icon class="call" name="/icons/spritesheet.svg#phone" role="img" aria-label="${this.t("incall")}"></pap-icon>` : ""}

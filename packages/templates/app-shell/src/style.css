@@ -34,6 +34,12 @@ pap-sidebar {
     border-inline-end: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
 }
 
+/* collapsed: the rail is 4rem, so a smaller gutter leaves room for a whole avatar */
+pap-sidebar:not([open])::part(nav),
+pap-sidebar:not([open])::part(header) {
+    padding-inline: var(--space-2, 0.5rem);
+}
+
 [part="main"] {
     grid-area: main;
     min-inline-size: 0;

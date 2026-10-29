@@ -46,6 +46,7 @@ A search box filters by name (client side). `me` is listed first as a `self` row
 | `me`        | -           | `Profile`                   | -       | you; shown first with a "You" badge, counted in the heading |
 | `incall`    | -           | `string[]`                  | `[]`    | uids shown with the in-call phone icon              |
 | `canInvite` | `caninvite` | `boolean`                   | `false` | adds "Invite to current room" to each row menu      |
+| `compact`   | `compact`   | `boolean`                   | `false` | avatars only (collapsed sidebar): no heading, search or live section (reflected) |
 | `stages`    | -           | `StageSummary[]`            | `[]`    | live broadcasts: a "Live now" `pap-accordion` of `pc-stage-card`s above the list, hidden when empty |
 
 | Event           | Detail                                                             | Description                                                              |

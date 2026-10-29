@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 58/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 59/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -472,10 +472,11 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 
 ### Phase B: UI cleanup
 
-### [ ] T7.9 Collapsed sidebar · `sonnet` · needs —
+### [x] T7.9 Collapsed sidebar · `sonnet` · needs —
 - **symptom:** collapsed, the sidebar shows clipped text ("ONLII", "Searc", half avatars, "…" menus). Screenshot 2026-10-29 20.49.43.
 - **do:** the collapsed rail shows only: toggle, your avatar, then one centred avatar per conversation (unread badge on the avatar, phone icon as a corner dot), then online people as avatars. Hide headings, search, names and "…" menus (the menu goes to right-click/long-press or the tooltip). Every avatar has a tooltip with the name. Rail width fits the avatar plus `--space-2` on each side.
 - **files:** `templates/app-shell`, `organisms/room-list`, `organisms/member-list`, `molecules/member-item` (each gets a `compact` attribute).
+- Done: `compact` (reflected) on `pc-room-list`, `pc-member-list` (passes it to its items) and `pc-member-item`. Room rows show one centred avatar (a name-initial avatar when nobody else is in the room, in both modes), the title as a native tooltip, the unread badge top-right and the phone icon bottom-right; ⋯ and the Live badge are hidden. The member list hides the heading, search, Live section and empty text. Member rows show the avatar with presence and a tooltip (name, status); the ⋯ menu still opens on right-click. App-shell narrows the collapsed rail's gutter to `--space-2` (`::part(nav|header)`). The page sets `compact = !shell.sidebaropen` on load and on `sidebar-toggle`. READMEs updated. Typecheck + build pass; not checked by eye, and the demo pages have no compact example yet.
 
 ### [ ] T7.10 Header cleanup · `sonnet` · needs —
 - **do:** remove the language flag from the header and put a language select in the settings dialog (General tab). Header keeps: connection status, network name, Go live, theme toggle, avatar. Make the theme toggle a single icon button that cycles light → dark → system, showing the sun/moon of what's **currently applied** (system shows the resolved one, with a small "auto" marker). Tooltip says the mode.

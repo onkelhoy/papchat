@@ -129,3 +129,23 @@ pap-menuitem pap-icon {
     inline-size: 1.125rem;
     block-size: 1.125rem;
 }
+
+/* collapsed sidebar: the avatar alone, centred; the ⋯ menu still opens on right-click */
+:host([compact]) {
+    position: relative;
+    justify-content: center;
+    padding: var(--space-1, 0.25rem);
+}
+
+:host([compact]) .text {
+    display: none;
+}
+
+:host([compact]) [part="trigger"] {
+    position: absolute;
+    inset: 0;
+    inline-size: auto;
+    block-size: auto;
+    opacity: 0;
+    pointer-events: none;
+}

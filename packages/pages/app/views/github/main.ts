@@ -78,6 +78,16 @@ const overlay = document.querySelector<HTMLElement>(".incoming")!;
 const settings = document.querySelector<Settings>("pc-settings")!;
 const toaster = document.querySelector<Toaster>("pc-toaster")!;
 const empty = document.querySelector<HTMLElement>(".empty")!;
+const shell = document.querySelector<HTMLElement & { sidebaropen: boolean }>("pc-app-shell")!;
+
+// a collapsed sidebar shows avatars only (the drawer on phones is either open or out of sight)
+function syncCompact() {
+    const compact = !shell.sidebaropen;
+    roomList.compact = compact;
+    list.compact = compact;
+}
+shell.addEventListener("sidebar-toggle", syncCompact);
+customElements.whenDefined("pc-app-shell").then(syncCompact);
 
 const t = (key: string, vars?: Record<string, string>) => useTranslator("app")(key, vars);
 const canScreen = !!navigator.mediaDevices?.getDisplayMedia;
