@@ -32,6 +32,11 @@
     "ringtone": "Ringsignal",
     "dialtone": "Kopplingston (medan ditt samtal ringer)",
     "audio": "Ljud",
-    "video": "Video"
+    "video": "Video",
+    "noise": "Brusreducering",
+    "noise-off": "Av",
+    "noise-standard": "Standard",
+    "noise-strong": "Stark (tydligare röst, mer processorkraft)",
+    "noise-hint": "Tar bort bakgrundsljud från din mikrofon innan det skickas. Testet ovan använder det också."
   }
 }

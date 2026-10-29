@@ -2,12 +2,13 @@ import { signal } from "@papit/signals";
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, RTC, signalUrl } from "./config";
+import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { peerOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
-import { activeRoom, me, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
+import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
 import { Transfers } from "./transfer";
 import type { ChatMessage, FileEntry, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
@@ -348,6 +349,7 @@ export class Room extends EventTarget {
             if (this.closed || !this._client?.network || this.local.has(name))
             {
                 source.getTracks().forEach(t => t.stop());
+                releaseDenoise(source);
                 return this.local.has(name);
             }
 
@@ -554,6 +556,7 @@ export class Room extends EventTarget {
         this.localEnded.delete(name);
         this.local.delete(name);
         source.getTracks().forEach(t => t.stop());
+        releaseDenoise(source);
     }
 
     // after any change to what we capture
@@ -1143,7 +1146,9 @@ async function capture(name: CaptureName): Promise<MediaStream> {
     if (!devices) throw new DOMException("media devices need https", "NotSupportedError");
 
     const { display, ...wanted } = constraints(name);
-    return display ? devices.getDisplayMedia(wanted) : devices.getUserMedia(wanted);
+    if (display) return devices.getDisplayMedia(wanted);
+    const stream = await devices.getUserMedia(wanted);
+    return name === "mic" ? denoise(stream, prefs().noiseReduction) : stream;
 }
 
 // the toast text for a failed capture, "" when the user simply cancelled

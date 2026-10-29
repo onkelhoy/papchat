@@ -21,6 +21,7 @@ export * from "./lobby";
 export * from "./room";
 export * from "./invites";
 export * from "./devices";
+export * from "./denoise";
 export * from "./notify";
 export * from "./transfer";
 export * from "./stage";

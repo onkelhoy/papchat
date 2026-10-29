@@ -32,6 +32,11 @@
     "ringtone": "Ringtone",
     "dialtone": "Dial tone (while your call rings)",
     "audio": "Audio",
-    "video": "Video"
+    "video": "Video",
+    "noise": "Noise reduction",
+    "noise-off": "Off",
+    "noise-standard": "Standard",
+    "noise-strong": "Strong (clearer voice, uses more CPU)",
+    "noise-hint": "Cleans background noise from your microphone before it's sent. The test above uses it too."
   }
 }

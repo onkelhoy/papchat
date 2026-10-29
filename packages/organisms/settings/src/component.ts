@@ -23,6 +23,7 @@ import type {
 } from "./types";
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
+const NOISE: Prefs["noiseReduction"][] = ["off", "standard", "strong"];
 
 type Synced = HTMLElement & Record<string, unknown>;
 
@@ -202,6 +203,13 @@ export class Settings extends CustomElement {
     }
 
     @bind
+    private handleNoise(level: Prefs["noiseReduction"], e: Event) {
+        // the radio being unchecked fires change too
+        if (!(e.currentTarget as HTMLInputElement).checked) return;
+        if (level !== this.prefs?.noiseReduction) this.emitPrefs({ noiseReduction: level });
+    }
+
+    @bind
     private handleAutoDecline(e: Event) {
         const checked = !!(e.currentTarget as HTMLInputElement).checked;
         if (checked !== this.prefs?.autoDeclineBusy) this.emitPrefs({ autoDeclineBusy: checked });
@@ -309,6 +317,21 @@ export class Settings extends CustomElement {
                                     <pc-level-meter></pc-level-meter>
                                 </div>
                             </div>
+                            <fieldset class="field">
+                                <legend>${this.t("noise")}</legend>
+                                <div class="status">
+                                    ${NOISE.map(level => html`
+                                        <pap-radio
+                                            key="${level}"
+                                            name="pc-settings-noise"
+                                            value="${level}"
+                                            checked="${(prefs?.noiseReduction ?? "off") === level && "true"}"
+                                            @change="${(e: Event) => this.handleNoise(level, e)}"
+                                        >${this.t(`noise-${level}`)}</pap-radio>
+                                    `)}
+                                </div>
+                                <p class="hint">${this.t("noise-hint")}</p>
+                            </fieldset>
                             <div class="field">
                                 <span>${this.t("speaker")}</span>
                                 <pc-device-picker kind="audiooutput" data-device="speaker" @change="${this.handleSpeaker}"></pc-device-picker>

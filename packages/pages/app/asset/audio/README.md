@@ -10,3 +10,8 @@ Drop your premade sounds here. They are served at `/audio/...` (`public/audio/..
 | `sound/message.wav` | short ping for an incoming message (another chat, or this one while the tab is hidden) |
 
 File names must not contain spaces: the static build's fetch shim misses them (papit finding #11).
+
+## `denoise/`
+
+Mic noise reduction (Settings → Audio → Noise reduction): AudioWorklets and WebAssembly models from [`@sapphi-red/web-noise-suppressor`](https://github.com/sapphi-red/web-noise-suppressor) (MIT, see `denoise/LICENSE`). "Standard" is RNNoise (`rnnoise*.wasm`), "Strong" is GTCRN (`gtcrn.wasm`). They're only fetched when a level is turned on. Don't edit them by hand: after updating the package, run `npm run denoise` in `packages/foundations/core` to copy them again.
+

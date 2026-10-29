@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 66/77 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 67/77 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -518,12 +518,13 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 ### [x] T7.14c Settings tidy-up (user, 2026-10-29) · `opus`
 - Done: tabs are now Profile, Network, **Audio** (microphone + test, speaker, ringtone + volume, dial tone, auto-decline), **Video** (camera + test), Appearance, Notifications (Shortcuts when given). "Sound" and "Devices" are gone. Ringtone selection was broken because `pap-radio` groups by `name` page-wide (finding #16) and both pickers used `pc-ringtone-picker`: each picker now has its own group name, and settings' status radios use `pc-settings-status`. `pap-switch` never shows its text (finding #17): both switches sit in a `<label class="toggle">` with the text beside them. Auto-decline reads "Decline incoming calls while I'm in a call". en + sv. Build + typecheck pass; not checked by eye.
 
-### [ ] T7.15 Better audio · `opus` · needs —
+### [x] T7.15 Better audio · `opus` · needs —
 - **step 1 (cheap, do first):** `devices.ts` already asks for `echoCancellation`/`noiseSuppression`. Add `autoGainControl: true`, `channelCount: 1`, `sampleRate: 48000`. Then compare with Teams again. Check the Opus settings in the SDP (`useinbandfec=1`, `maxaveragebitrate` ~ 40000, `usedtx` off). If `@papit/webrtc` has no SDP hook, write a papit finding asking for one. Check that `source.clone()` doesn't drop constraints.
 - **step 2:** RNNoise noise suppression as a setting ("Noise reduction: off / standard / strong"). Run the mic through an `AudioWorklet` with RNNoise compiled to WASM, and send the processed track. Recommended: use `@sapphi-red/web-noise-suppressor` (MIT, RNNoise + Speex as WASM worklets, ~150 kB, lazy-loaded only when turned on). Alternative if you want the Rust showcase: `nnnoiseless` (Rust RNNoise port) → `wasm-pack` → our own worklet. Same result, more work.
 - **files:** `core/src/devices.ts`, `core/src/room.ts` (+ stage) capture path, `organisms/settings`.
 - **done when:** the same mic and room sounds clearly better in an A/B recording (fan or keyboard in the background).
 - Step 1 done (2026-10-29): mic constraints now add `autoGainControl`, `channelCount: { ideal: 1 }`, `sampleRate: { ideal: 48000 }` and Chrome's `voiceIsolation` (ignored where unsupported). `source.clone()` keeps the processed track, so nothing is lost there. Opus/SDP tuning is skipped: papit's handshake calls `setLocalDescription()` with no SDP or sender hook, and Chrome's defaults (mono, ~32 kbps, in-band FEC) are fine. Not a papit finding (not a real block). **Step 2 waits on the user:** RNNoise needs a new dependency (`@sapphi-red/web-noise-suppressor`) plus serving its worklet + wasm files.
+- Step 2 done: `@sapphi-red/web-noise-suppressor@0.4.1` (MIT) is in core's dependencies, pinned, but it isn't imported at runtime (its JS is only thin `AudioWorkletNode` wrappers, and the dev server's import map leaves new packages out). `npm run denoise` in core copies the RNNoise and GTCRN worklets, wasm and LICENSE to `pages/app/asset/audio/denoise/` (committed, ~580 kB, fetched only when used). `core/src/denoise.ts`: one 48 kHz AudioContext, the worklet added through a blob URL (the static build doesn't rewrite `addModule()` URLs), SIMD wasm when supported, a mono `AudioWorkletNode` mic → node → `MediaStreamDestination`; `releaseDenoise()` also stops the raw mic, and a raw track ending ends the cleaned one. Any failure falls back to the plain mic. `Prefs.noiseReduction`: "off" (default) | "standard" (RNNoise) | "strong" (GTCRN). Room and stage mic captures and the settings mic test run through it. Settings → Audio has a Noise reduction radio group (`pc-settings-noise`) with a hint; changing it restarts a live mic and the mic test. Typecheck + build pass; not heard in a browser.
 
 ### Rich composer (T7.16a-d)
 Modelled on Teams (user screenshots 2026-10-29 20.41.26 / .45 / .52):

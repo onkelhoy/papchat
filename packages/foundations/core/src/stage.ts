@@ -2,10 +2,11 @@ import { effect, signal } from "@papit/signals";
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, RTC, signalUrl } from "./config";
+import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { broadcast as lobbyBroadcast, lobbyClient, on, profileOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
-import { lobbyStatus, me, members, setStages, stages, toast } from "./state";
+import { lobbyStatus, me, members, prefs, setStages, stages, toast } from "./state";
 import type { ChatMessage, Invite, Profile, StageSummary } from "./types";
 
 // Stages (PLAN §2.7): one presenter broadcasting to many viewers over a multicast tree rooted at
@@ -118,10 +119,12 @@ export class Stage {
         try
         {
             const { display, ...wanted } = constraints(name);
-            const source = display ? await navigator.mediaDevices.getDisplayMedia(wanted) : await navigator.mediaDevices.getUserMedia(wanted);
+            const raw = display ? await navigator.mediaDevices.getDisplayMedia(wanted) : await navigator.mediaDevices.getUserMedia(wanted);
+            const source = name === "mic" ? await denoise(raw, prefs().noiseReduction) : raw;
             if (this.ended)
             {
                 source.getTracks().forEach(t => t.stop());
+                releaseDenoise(source);
                 return false;
             }
             if (name === "screen") screenHint(source);
@@ -275,7 +278,9 @@ export class Stage {
     // ------------------------------------------------------------ internals
 
     private release(name: string) {
-        this.local.get(name)?.getTracks().forEach(t => t.stop());
+        const source = this.local.get(name);
+        source?.getTracks().forEach(t => t.stop());
+        if (source) releaseDenoise(source);
         this.local.delete(name);
         this.setCaptures(Object.fromEntries(this.local));
     }

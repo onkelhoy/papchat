@@ -12,6 +12,7 @@ export const DEFAULT_PREFS: Prefs = {
     v: 1,
     ringtone: "beep-boom",
     dialtone: "",
+    noiseReduction: "off",
     volume: 0.8,
     language: "",
     autoDeclineBusy: false,

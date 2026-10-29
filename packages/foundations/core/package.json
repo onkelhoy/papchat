@@ -17,7 +17,8 @@
     "postversion": "papit-version",
     "component": "npm create @papit -- --component",
     "test:update-snapshots": "npx playwright test --update-snapshots -c tests/playwright.config.ts",
-    "test:chrome": "npm test -- --project=chromium"
+    "test:chrome": "npm test -- --project=chromium",
+    "denoise": "d=../../../node_modules/@sapphi-red/web-noise-suppressor && o=../../pages/app/asset/audio/denoise && mkdir -p $o && cp $d/dist/rnnoise/workletProcessor.js $o/rnnoise-worklet.js && cp $d/dist/gtcrn/workletProcessor.js $o/gtcrn-worklet.js && cp $d/dist/rnnoise.wasm $d/dist/rnnoise_simd.wasm $d/dist/gtcrn.wasm $d/LICENSE $o/"
   },
   "main": "./lib/bundle.js",
   "types": "./lib/bundle.d.ts",
@@ -53,16 +54,17 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@papit/signals": "*",
     "@papit/webrtc": "*",
-    "@papit/signals": "*"
+    "@sapphi-red/web-noise-suppressor": "0.4.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.64.1",
-    "playwright": "1.64.1",
-    "typescript": "5.9.3",
+    "@papit/codeblock": "*",
     "@papit/theme": "*",
     "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@playwright/test": "1.64.1",
+    "playwright": "1.64.1",
+    "typescript": "5.9.3"
   },
   "browserslist": [
     "defaults",

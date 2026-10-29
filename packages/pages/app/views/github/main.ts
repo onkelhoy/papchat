@@ -31,6 +31,8 @@ import {
     stages,
     watch,
     audioBlocked,
+    denoise,
+    releaseDenoise,
     buzzed,
     constraints,
     declineInvite,
@@ -452,7 +454,9 @@ function openSettings() {
 // camera / mic test streams for the Devices tab, stopped on close or when a new one starts
 const tests: Partial<Record<"camera" | "mic", MediaStream>> = {};
 function stopTest(kind: "camera" | "mic") {
-    tests[kind]?.getTracks().forEach(t => t.stop());
+    const stream = tests[kind];
+    stream?.getTracks().forEach(t => t.stop());
+    if (stream) releaseDenoise(stream);
     delete tests[kind];
     if (kind === "camera") settings.camerastream = undefined;
     else settings.micstream = undefined;
@@ -461,10 +465,13 @@ async function startTest(kind: "camera" | "mic") {
     stopTest(kind);
     try
     {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints(kind));
+        const raw = await navigator.mediaDevices.getUserMedia(constraints(kind));
+        // the mic test runs through the chosen noise reduction, so its meter shows what others hear
+        const stream = kind === "mic" ? await denoise(raw, prefs().noiseReduction) : raw;
         if (!settings.open)
         {
             stream.getTracks().forEach(t => t.stop());
+            releaseDenoise(stream);
             return;
         }
         tests[kind] = stream;
@@ -492,13 +499,26 @@ function restartCaptures(before: Prefs["devices"], after: Prefs["devices"]) {
     if (tests.mic && before.mic !== after.mic) void startTest("mic");
 }
 
+// a new noise reduction level applies to a running mic (call or stage) and to the mic test
+function restartMic() {
+    const target: Room | Stage | null = shownStage() ?? current();
+    if (target?.captures().mic)
+    {
+        target.stop("mic");
+        void target.start("mic");
+    }
+    if (tests.mic) void startTest("mic");
+}
+
 settings.addEventListener("profile-change", (e) => updateProfile((e as CustomEvent<{ partial: Partial<Pick<Profile, "name" | "color" | "status">> }>).detail.partial));
 settings.addEventListener("prefs-change", (e) =>
 {
     const { partial } = (e as CustomEvent<{ partial: Partial<Prefs> }>).detail;
     const before = prefs().devices;
+    const noise = prefs().noiseReduction;
     setPrefs(partial);
     if (partial.devices) restartCaptures(before, prefs().devices);
+    if (partial.noiseReduction && partial.noiseReduction !== noise) restartMic();
 });
 settings.addEventListener("networks-refresh", () => void refreshNetworks());
 settings.addEventListener("network-change", (e) => switchNetwork((e as CustomEvent<{ network: { name: string; password: string } | null }>).detail.network));
