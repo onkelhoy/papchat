@@ -76,7 +76,8 @@
     "@papit/translator": "*",
     "@papit/codeblock": "*",
     "@papchat/theme": "*",
-    "unicode-emoji-json": "0.9.0"
+    "unicode-emoji-json": "0.9.0",
+    "emojilib": "4.0.3"
   },
   "browserslist": [
     "defaults",

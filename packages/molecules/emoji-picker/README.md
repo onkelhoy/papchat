@@ -36,8 +36,9 @@ npm install @papchat/emoji-picker
 </script>
 ```
 
-Native Unicode emoji only (no images), grouped by category, searchable by name. The data
-(`asset/emoji/emoji.json`, ~50 kB, from [unicode-emoji-json](https://github.com/muan/unicode-emoji-json), MIT)
+Native Unicode emoji only (no images), grouped by category, searchable by name and keywords. The data
+(`asset/emoji/emoji.json`, ~150 kB / ~47 kB gzipped: names from [unicode-emoji-json](https://github.com/muan/unicode-emoji-json),
+keywords from [emojilib](https://github.com/muan/emojilib), both MIT)
 is fetched the first time a picker connects and must be served at `/emoji/emoji.json` (or set `src`).
 Emoji newer than Emoji 15.1 are left out, since older phones show them as boxes. Rebuild the data with
 `npm run emoji` after bumping `unicode-emoji-json`.
