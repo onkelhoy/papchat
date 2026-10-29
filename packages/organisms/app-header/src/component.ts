@@ -123,7 +123,13 @@ export class AppHeader extends CustomElement {
         // the field isn't bound to liveTitle (a bound value fights the typing): clear it directly
         this.liveTitle = "";
         const input = this.root.querySelector<HTMLElement & { value: string }>("pap-input#live-title");
-        if (input) input.value = "";
+        if (input)
+        {
+            input.value = "";
+            // its own value may still be "" while the native field holds the typed text
+            const field = input.shadowRoot?.querySelector("input");
+            if (field) field.value = "";
+        }
         this.asking = true;
     }
 
