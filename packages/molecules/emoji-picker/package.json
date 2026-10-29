@@ -57,7 +57,8 @@
   },
   "dependencies": {
     "@papit/web-component": "*",
-    "@papit/translator": "*"
+    "@papit/translator": "*",
+    "@papit/icon": "*"
   },
   "peerDependencies": {
     "react": "^19"

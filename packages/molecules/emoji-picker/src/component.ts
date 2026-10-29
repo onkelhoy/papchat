@@ -1,6 +1,7 @@
 // system
 import { bind, CustomElement, html, property } from "@papit/web-component";
 import { translate, useTranslator } from "@papit/translator";
+import "@papit/icon";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -8,18 +9,18 @@ import { EMOJI_SRC, loadEmoji, searchEmoji } from "./data";
 import type { EmojiData, EmojiEntry } from "./data";
 import type { EmojiPickEvent } from "./types";
 
-// the category bar: one emoji stands for each group
+// the category bar: a line icon per group (spritesheet ids)
 const GROUP_ICONS: Record<string, string> = {
-    recent: "🕘",
-    smileys_emotion: "😀",
-    people_body: "👋",
-    animals_nature: "🐻",
-    food_drink: "🍔",
-    travel_places: "✈️",
-    activities: "⚽",
-    objects: "💡",
-    symbols: "❤️",
-    flags: "🏁",
+    recent: "emoji-recent",
+    smileys_emotion: "smile",
+    people_body: "emoji-people",
+    animals_nature: "emoji-animals",
+    food_drink: "emoji-food",
+    travel_places: "emoji-travel",
+    activities: "emoji-activities",
+    objects: "emoji-objects",
+    symbols: "emoji-symbols",
+    flags: "emoji-flags",
 };
 
 type Section = { id: string; label: string; emojis: EmojiEntry[] };
@@ -58,6 +59,8 @@ export class EmojiPicker extends CustomElement {
     @property({ type: String }) src: string = EMOJI_SRC;
 
     @property({ type: String, attribute: false, rerender: true }) private state: "loading" | "ready" | "error" = "loading";
+    // the group at the top of the scrolled list, highlighted in the bar
+    @property({ type: String, attribute: false, rerender: true }) private current: string = "";
 
     private data?: EmojiData;
     // what the grid was last built from, so it's only rebuilt when that changes
@@ -261,8 +264,25 @@ export class EmojiPicker extends CustomElement {
     @bind
     private handleNav(e: Event) {
         const id = (e.currentTarget as HTMLElement).dataset.group;
-        const section = this.shadowRoot?.querySelector<HTMLElement>(`section[data-group="${id}"]`);
-        section?.scrollIntoView({ block: "start" });
+        const body = this.shadowRoot?.querySelector<HTMLElement>("[part='body']");
+        const section = body?.querySelector<HTMLElement>(`section[data-group="${id}"]`);
+        if (!body || !section || !id) return;
+
+        // scroll only the list (scrollIntoView would scroll every scrolling ancestor, the page too)
+        body.scrollTop = section.offsetTop;
+        this.current = id;
+    }
+
+    @bind
+    private handleScroll(e: Event) {
+        const body = e.currentTarget as HTMLElement;
+        let current = "";
+        for (const section of body.querySelectorAll<HTMLElement>("section[data-group]"))
+        {
+            if (section.offsetTop > body.scrollTop + 8) break;
+            current = section.dataset.group ?? "";
+        }
+        if (current !== this.current) this.current = current;
     }
 
     @bind
@@ -277,7 +297,9 @@ export class EmojiPicker extends CustomElement {
 
         return html`<nav part="nav" class="nav" aria-label="${this.t("categories")}">
             ${ids.map(id => html`
-                <button type="button" data-group="${id}" aria-label="${this.t(id)}" title="${this.t(id)}" @click="${this.handleNav}">${GROUP_ICONS[id] ?? "•"}</button>
+                <button type="button" data-group="${id}" aria-label="${this.t(id)}" title="${this.t(id)}" aria-current="${(this.current || ids[0]) === id ? "true" : ""}" @click="${this.handleNav}">
+                    <pap-icon name="${`/icons/spritesheet.svg#${GROUP_ICONS[id] ?? "smile"}`}" aria-hidden="true"></pap-icon>
+                </button>
             `)}
         </nav>`;
     }
@@ -287,10 +309,10 @@ export class EmojiPicker extends CustomElement {
         const ready = this.state === "ready";
 
         return html`
-            ${ready && !flat ? this.renderNav() : ""}
             <p class="status" role="status" hidden="${this.state === "loading" ? "" : "hidden"}">${this.t("loading")}</p>
             ${this.state === "error" ? html`<p class="status">${this.t("error")} <button type="button" class="retry" @click="${this.handleRetry}">${this.t("retry")}</button></p>` : ""}
-            <div part="body" class="${flat ? "body flat" : "body"}" @click="${this.handleClick}" @keydown="${this.handleKeydown}"></div>
+            <div part="body" class="${flat ? "body flat" : "body"}" @click="${this.handleClick}" @keydown="${this.handleKeydown}" @scroll="${this.handleScroll}"></div>
+            ${ready && !flat ? this.renderNav() : ""}
         `;
     }
 }
