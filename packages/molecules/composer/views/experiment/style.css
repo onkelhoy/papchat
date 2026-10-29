@@ -32,8 +32,3 @@ body {
     flex-direction: column;
     gap: var(--space-4, 16px);
 }
-
-pc-composer {
-    border: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
-    border-radius: var(--radius-medium, 0.5rem);
-}
