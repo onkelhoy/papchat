@@ -4,12 +4,15 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ---
 
-## ▶ Resume here (refreshed 2026-10-29)
+## ▶ Resume here (refreshed 2026-10-29, late)
 
-- **Done:** 70/78 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
-- **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
-- **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
-- **Agents:** Sonnet only, one or two at a time.
+- **Done:** 70/78 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed.
+- **Next, in order:** T7.16c emoji picker → T7.16d GIFs (GIPHY key is under Notes) → T7.17 share links (onboarding already has `joining` for it). The user asks for one task at a time: do one, report, stop.
+- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
+- **Known local issue:** the dev server most likely serves an old `/icons/spritesheet.svg` from the git-ignored static build output (`docs/public/icons/`, `packages/pages/app/docs/public/icons/`), so new icons (format, toolbar, smile…) are blank in demos until the user rebuilds docs or deletes `packages/pages/app/docs/`. Don't run `npm run pages` yourself.
+- **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
+- **Not run in a browser:** everything above is typecheck + build only; the user reviews live with `npm start` (dev server doesn't reload new translations: restart it).
+- **Agents:** Sonnet only, one or two at a time, only when asked.
 - **Open question for the user:** demo pages' `@import "@papit/theme"` 500s because `@papit/server` doesn't rewrite bare CSS imports (static does). Fix in papit server, or switch demos to `/node_modules/...` paths.
 
 ---
