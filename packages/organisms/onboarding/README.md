@@ -50,10 +50,11 @@ Components never import core: `colors` is a copy of `PALETTE` from `@papchat/cor
 | `color`    | `color`    | `string`   | first of `colors`       | chosen swatch, drives the avatar preview      |
 | `language` | `language` | `string`   | `"en"`                  | language code shown in the picker             |
 | `colors`   | -          | `string[]` | the 8 `PALETTE` colours | swatches (CSS colours)                        |
+| `joining`  | -          | `{ name, password } \| null` | `null`  | private network from a share link: shown as "You're joining …" and submitted; null joins the public one |
 
 | Event             | Detail                      | Description                                                       |
 | ----------------- | --------------------------- | ----------------------------------------------------------------- |
-| `submit`          | `{ name, color, language }` | valid form submitted (button or Enter); bubbles, composed         |
+| `submit`          | `{ name, color, language, network }` | valid form submitted (button or Enter); bubbles, composed         |
 | `language-change` | `{ value }`                 | picker changed, so the page can translate live; bubbles, composed |
 
 CSS: `::part(dialog)`. Keys in `asset/translations/en.json` under `pc-onboarding`.

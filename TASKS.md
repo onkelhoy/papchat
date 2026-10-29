@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 60/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 61/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -484,10 +484,11 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **papit:** write the "system mode should show the applied light/dark icon" request in `PAPCHAT-FINDINGS.md` (T7.12).
 - Done: the header's language picker, `language` property and `language-change` event are gone (settings already had a language select; the page no longer wires the header for it). The theme is one icon button: it cycles light → dark → system, shows the sun or moon of the theme in effect (system resolves via `prefers-color-scheme`, live) with a small "A" mark, and has a tooltip and aria-label ("Automatic theme (Dark theme)"). A hidden `pap-theme-picker storage="local"` still applies and stores the choice, so the settings picker stays in sync through the `data-theme` it observes. en + sv strings. `@papchat/language-picker` stays in the header's `package.json` (removing it would desync the lockfile without `npm install`). Build + typecheck pass; not checked by eye.
 
-### [ ] T7.11 Onboarding without the network picker · `sonnet` · needs —
+### [x] T7.11 Onboarding without the network picker · `sonnet` · needs —
 - **why:** onboarding's dialog has "Continue" and the network picker has its own "Join" buttons. Two primary actions confused a first-time user.
 - **do:** onboarding asks only name (+ avatar colour) and joins the public lobby. Networks stay in settings. A share link (T7.17) that carries a network skips the choice entirely: onboarding then says "You're joining **<network>**".
 - **files:** `organisms/onboarding`, page.
+- Done: onboarding is name, colour and language only, with one "Continue". The `network`/`networks` properties, the picker and `networks-refresh` are gone; the page no longer loads networks for it. New `joining: { name, password } | null` property (for T7.17): when set, it shows "You're joining **name**" and `submit.network` carries it; otherwise `network` is null (public lobby). `@papchat/network-picker` stays in the package.json (lockfile). en + sv. Build + typecheck pass; not checked by eye.
 
 ### [ ] T7.12 Papit findings · `opus` · needs —
 - Add to `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (same format: file, repro, cause, fix, papchat workaround):

@@ -141,7 +141,6 @@ async function boot() {
         onboarding.name = "";
         onboarding.color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
         onboarding.open = true;
-        void listNetworks().then(list => { onboarding.networks = list; });
     }
 }
 
@@ -642,7 +641,6 @@ onboarding.addEventListener("language-change", (e) =>
     setPrefs({ language: value });
     changeLanguage(value);
 });
-onboarding.addEventListener("networks-refresh", async () => { onboarding.networks = await listNetworks(); });
 onboarding.addEventListener("submit", (e) =>
 {
     const { name, color, language, network: net } = (e as unknown as CustomEvent<{ name: string; color: string; language: string; network: { name: string; password: string } | null }>).detail;

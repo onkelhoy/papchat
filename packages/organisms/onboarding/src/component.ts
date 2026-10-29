@@ -8,8 +8,6 @@ import "@papit/radio";
 import "@papit/button";
 import "@papchat/avatar";
 import "@papchat/language-picker";
-import "@papchat/network-picker";
-import type { NetworkChangeEvent, NetworkEntry } from "@papchat/network-picker";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -31,8 +29,9 @@ export const DEFAULT_COLORS: string[] = [
 export const NAME_MAX = 32;
 
 /**
- * Modal "Who are you?" dialog: name, colour, language and network (the public papchat one, or
- * a private one by name and password). It cannot be
+ * Modal "Who are you?" dialog: name, colour and language. It joins the public papchat network,
+ * unless `joining` names a private one (from a share link), which is then shown and submitted.
+ * Picking a network is in the settings dialog: one choice less for a first visit. It cannot be
  * dismissed (close button, Escape) while `open` is set: the page closes it by
  * setting `open = false` after handling `submit`.
  *
@@ -46,11 +45,9 @@ export const NAME_MAX = 32;
  * @property {string} color the chosen colour, one of `colors`
  * @property {string} language code of the chosen language (default "en")
  * @property {string[]} colors the swatches (default: the 8 colours of `PALETTE` in core)
- * @property {string} network name of the picked network, "" for the public one
- * @property {NetworkEntry[]} networks the networks on the server, for the picker (property only)
+ * @property {{ name: string, password: string } | null} joining a private network to join (share link), null for the public one (property only)
  *
- * @fires submit `CustomEvent<{ name, color, language, network }>` valid form submitted (bubbles, composed)
- * @fires networks-refresh the picker wants a fresh `networks` (bubbles, composed)
+ * @fires submit `CustomEvent<{ name, color, language, network }>` valid form submitted; `network` is `joining` (bubbles, composed)
  * @fires language-change `CustomEvent<{ value }>` the language was changed, so the page can translate live (bubbles, composed)
  * @csspart dialog the `pap-dialog`
  */
@@ -64,11 +61,7 @@ export class Onboarding extends CustomElement {
     @property({ type: String, rerender: true }) color: string = "";
     @property({ type: String, rerender: true }) language: string = "en";
     @property({ type: Array, attribute: false, rerender: true }) colors: string[] = DEFAULT_COLORS;
-    @property({ type: String, rerender: true }) network: string = "";
-    @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
-
-    // what the picker chose, used on submit; null = public
-    private picked: NetworkChangeEvent["network"] = null;
+    @property({ type: Object, attribute: false, rerender: true }) joining: OnboardingSubmitEvent["network"] = null;
 
     // errors only show after a first attempt, not while the field is still empty
     @property({ type: Boolean, attribute: false, rerender: true }) private attempted: boolean = false;
@@ -81,22 +74,6 @@ export class Onboarding extends CustomElement {
 
     private get valid(): boolean {
         return this.trimmed.length >= 1 && this.trimmed.length <= NAME_MAX;
-    }
-
-    // objects can't go through html``: hand the list to the picker after each patch
-    update() {
-        super.update();
-        const picker = this.shadowRoot?.querySelector<HTMLElement & { networks: NetworkEntry[] }>("pc-network-picker");
-        if (picker) picker.networks = this.networks;
-        return undefined;
-    }
-
-    // nothing connects yet: remember the pick and mark it in the list
-    @bind
-    private handlePick(e: CustomEvent<NetworkChangeEvent>) {
-        e.stopPropagation();
-        this.picked = e.detail.network;
-        this.network = this.picked?.name ?? "";
     }
 
     @bind
@@ -143,7 +120,7 @@ export class Onboarding extends CustomElement {
                 name: this.trimmed,
                 color: this.color || this.colors[0],
                 language: this.language,
-                network: this.picked,
+                network: this.joining ?? null,
             },
             bubbles: true,
             composed: true,
@@ -196,10 +173,7 @@ export class Onboarding extends CustomElement {
                         <pc-language-picker value="${this.language}" @change="${this.handleLanguage}"></pc-language-picker>
                     </div>
 
-                    <div class="network">
-                        <span class="label">${this.t("network")}</span>
-                        <pc-network-picker network="${this.network}" @network-change="${this.handlePick}"></pc-network-picker>
-                    </div>
+                    ${this.joining ? html`<p class="network">${this.t("joining")} <strong>${this.joining.name}</strong></p>` : ""}
 
                     <pap-button type="submit" size="large">${this.t("submit")}</pap-button>
                 </form>
