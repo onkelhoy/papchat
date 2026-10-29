@@ -149,3 +149,8 @@ pap-menuitem pap-icon {
     opacity: 0;
     pointer-events: none;
 }
+
+/* only there so pap-menu can find its trigger (see renderMenu) */
+.menu-anchor {
+    display: contents;
+}

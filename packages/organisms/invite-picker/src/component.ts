@@ -129,7 +129,7 @@ export class InvitePicker extends CustomElement {
                         ${list.map(member => html`
                             <li key="${member.uid}">
                                 <pap-checkbox
-                                    checked="${this.selected.has(member.uid) && "true"}"
+                                    checked="${this.selected.has(member.uid) ? "true" : ""}"
                                     @change="${(e: Event) => this.handleToggle(member.uid, e)}"
                                 >
                                     <span class="member">

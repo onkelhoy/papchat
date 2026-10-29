@@ -25,6 +25,9 @@ import type {
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const NOISE: Prefs["noiseReduction"][] = ["off", "standard", "strong"];
 
+// pap-radio groups by `name` page-wide: every instance gets its own names
+let instances = 0;
+
 type Synced = HTMLElement & Record<string, unknown>;
 
 /**
@@ -65,6 +68,8 @@ export class Settings extends CustomElement {
     static sheet = sheet;
 
     @translate t = useTranslator("pc-settings");
+
+    private group = `pc-settings-${++instances}`;
 
     @property({ type: Boolean, rerender: true }) open: boolean = false;
     @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
@@ -295,9 +300,9 @@ export class Settings extends CustomElement {
                                     ${STATUSES.map(status => html`
                                         <pap-radio
                                             key="${status}"
-                                            name="pc-settings-status"
+                                            name="${`${this.group}-status`}"
                                             value="${status}"
-                                            checked="${profile?.status === status && "true"}"
+                                            checked="${profile?.status === status ? "true" : ""}"
                                             @change="${(e: Event) => this.handleStatus(status, e)}"
                                         >${this.t(`status-${status}`)}</pap-radio>
                                     `)}
@@ -310,7 +315,6 @@ export class Settings extends CustomElement {
                         </pap-tabpanel>
                         <pap-tabpanel value="audio">
                             <div class="field">
-                                <span>${this.t("microphone")}</span>
                                 <pc-device-picker kind="audioinput" data-device="mic" @change="${this.handleMic}"></pc-device-picker>
                                 <div class="preview">
                                     <pap-button size="small" variant="clear" data-kind="mic" @click="${this.handleTest}">${this.t("test-mic")}</pap-button>
@@ -323,9 +327,9 @@ export class Settings extends CustomElement {
                                     ${NOISE.map(level => html`
                                         <pap-radio
                                             key="${level}"
-                                            name="pc-settings-noise"
+                                            name="${`${this.group}-noise`}"
                                             value="${level}"
-                                            checked="${(prefs?.noiseReduction ?? "off") === level && "true"}"
+                                            checked="${(prefs?.noiseReduction ?? "off") === level ? "true" : ""}"
                                             @change="${(e: Event) => this.handleNoise(level, e)}"
                                         >${this.t(`noise-${level}`)}</pap-radio>
                                     `)}
@@ -333,7 +337,6 @@ export class Settings extends CustomElement {
                                 <p class="hint">${this.t("noise-hint")}</p>
                             </fieldset>
                             <div class="field">
-                                <span>${this.t("speaker")}</span>
                                 <pc-device-picker kind="audiooutput" data-device="speaker" @change="${this.handleSpeaker}"></pc-device-picker>
                             </div>
                             <div class="field">
@@ -345,14 +348,13 @@ export class Settings extends CustomElement {
                                 <pc-ringtone-picker class="dial" novolume label="${this.t("dialtone")}" @change="${this.handleDial}" @preview="${this.handleDialPreview}"></pc-ringtone-picker>
                             </div>
                             <label class="toggle">
-                                <pap-switch checked="${prefs?.autoDeclineBusy && "true"}" @change="${this.handleAutoDecline}"></pap-switch>
+                                <pap-switch checked="${prefs?.autoDeclineBusy ? "true" : ""}" @change="${this.handleAutoDecline}"></pap-switch>
                                 <span>${this.t("auto-decline")}</span>
                             </label>
                         </pap-tabpanel>
 
                         <pap-tabpanel value="video">
                             <div class="field">
-                                <span>${this.t("camera")}</span>
                                 <pc-device-picker kind="videoinput" data-device="camera" @change="${this.handleCamera}"></pc-device-picker>
                                 <pap-button size="small" variant="clear" data-kind="camera" @click="${this.handleTest}">${this.t("test-camera")}</pap-button>
                                 <div class="camera"><pc-video fit="cover"></pc-video></div>
@@ -372,7 +374,7 @@ export class Settings extends CustomElement {
 
                         <pap-tabpanel value="notifications">
                             <label class="toggle">
-                                <pap-switch checked="${prefs?.notifications && "true"}" @change="${this.handleNotifications}"></pap-switch>
+                                <pap-switch checked="${prefs?.notifications ? "true" : ""}" @change="${this.handleNotifications}"></pap-switch>
                                 <span>${this.t("notify")}</span>
                             </label>
                             <p class="hint">${this.t("notify-hint")}</p>

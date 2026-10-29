@@ -28,6 +28,8 @@ export const DEFAULT_COLORS: string[] = [
 // same limit as `NAME_MAX` in @papchat/core
 export const NAME_MAX = 32;
 
+let instances = 0;
+
 /**
  * Modal "Who are you?" dialog: name, colour and language. It joins the public papchat network,
  * unless `joining` names a private one (from a share link), which is then shown and submitted.
@@ -55,6 +57,9 @@ export class Onboarding extends CustomElement {
     static sheet = sheet;
 
     @translate t = useTranslator("pc-onboarding");
+
+    // pap-radio groups by `name` page-wide: one name per instance
+    private group = `pc-onboarding-color-${++instances}`;
 
     @property({ type: Boolean, rerender: true }) open: boolean = false;
     @property({ type: String, rerender: true }) name: string = "";
@@ -158,10 +163,10 @@ export class Onboarding extends CustomElement {
                         ${this.colors.map((c, i) => html`
                             <pap-radio
                                 key="${c}"
-                                name="pc-onboarding-color"
+                                name="${this.group}"
                                 value="${c}"
                                 aria-label="${`${this.t("color")} ${i + 1}`}"
-                                checked="${c === color && "true"}"
+                                checked="${c === color ? "true" : ""}"
                                 style="${`--_swatch: ${c}`}"
                                 @change="${(e: Event) => this.handleColor(c, e)}"
                             ></pap-radio>

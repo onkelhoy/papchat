@@ -60,3 +60,8 @@
 pap-menuitem[aria-selected="true"] {
     font-weight: 600;
 }
+
+/* only there so pap-menu can find its trigger (see render) */
+.menu-anchor {
+    display: contents;
+}

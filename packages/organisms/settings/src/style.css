@@ -154,3 +154,8 @@ pap-input:focus-within::part(wrapper) {
 .toggle pap-switch {
     flex: none;
 }
+
+/* more room around the content than pap-dialog's own few pixels */
+pap-dialog::part(dialog) {
+    padding: var(--space-4, 1rem);
+}

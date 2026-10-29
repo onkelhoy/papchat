@@ -74,6 +74,8 @@ export class DevicePicker extends CustomElement {
 
         return html`
             <span part="label" id="label" class="label">${this.t(`kind.${this.kind}`)}</span>
+            <!-- pap-menu looks for its trigger from its parent element: not the shadow root itself -->
+            <div class="menu-anchor">
             <button part="trigger" type="button" popovertarget="menu" aria-haspopup="listbox" aria-labelledby="label value">
                 <span id="value" class="value">${this.currentLabel}</span>
                 <span class="chevron" aria-hidden="true"></span>
@@ -88,6 +90,7 @@ export class DevicePicker extends CustomElement {
                     </pap-menuitem>
                 `)}
             </pap-menu>
+            </div>
         `;
     }
 }

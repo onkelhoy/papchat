@@ -262,7 +262,8 @@ export class MemberItem extends CustomElement {
     }
 
     private renderMenu(name: string) {
-        return html`
+        // pap-menu looks for its trigger from its parent element: not the shadow root itself
+        return html`<span class="menu-anchor">
             <button part="trigger" type="button" popovertarget="menu" tabindex="${this.focused ? "0" : "-1"}" aria-haspopup="menu" aria-label="${this.t("actions", { name })}">
                 <span aria-hidden="true">⋯</span>
             </button>
@@ -286,6 +287,7 @@ export class MemberItem extends CustomElement {
                     </pap-menuitem>
                 ` : ""}
             </pap-menu>
+        </span>
         `;
     }
 }

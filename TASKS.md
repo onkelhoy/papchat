@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 67/77 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 68/78 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -525,6 +525,10 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **done when:** the same mic and room sounds clearly better in an A/B recording (fan or keyboard in the background).
 - Step 1 done (2026-10-29): mic constraints now add `autoGainControl`, `channelCount: { ideal: 1 }`, `sampleRate: { ideal: 48000 }` and Chrome's `voiceIsolation` (ignored where unsupported). `source.clone()` keeps the processed track, so nothing is lost there. Opus/SDP tuning is skipped: papit's handshake calls `setLocalDescription()` with no SDP or sender hook, and Chrome's defaults (mono, ~32 kbps, in-band FEC) are fine. Not a papit finding (not a real block). **Step 2 waits on the user:** RNNoise needs a new dependency (`@sapphi-red/web-noise-suppressor`) plus serving its worklet + wasm files.
 - Step 2 done: `@sapphi-red/web-noise-suppressor@0.4.1` (MIT) is in core's dependencies, pinned, but it isn't imported at runtime (its JS is only thin `AudioWorkletNode` wrappers, and the dev server's import map leaves new packages out). `npm run denoise` in core copies the RNNoise and GTCRN worklets, wasm and LICENSE to `pages/app/asset/audio/denoise/` (committed, ~580 kB, fetched only when used). `core/src/denoise.ts`: one 48 kHz AudioContext, the worklet added through a blob URL (the static build doesn't rewrite `addModule()` URLs), SIMD wasm when supported, a mono `AudioWorkletNode` mic → node → `MediaStreamDestination`; `releaseDenoise()` also stops the raw mic, and a raw track ending ends the cleaned one. Any failure falls back to the plain mic. `Prefs.noiseReduction`: "off" (default) | "standard" (RNNoise) | "strong" (GTCRN). Room and stage mic captures and the settings mic test run through it. Settings → Audio has a Noise reduction radio group (`pc-settings-noise`) with a hint; changing it restarts a live mic and the mic test. Typecheck + build pass; not heard in a browser.
+
+
+### [x] T7.15b Settings fixes (user, 2026-10-29) · `opus`
+- Done: the "can't select" radios: `pap-radio` styles `:host([checked])`, and our `checked="${x && "true"}"` bindings wrote `checked="false"` (still matches), so unchecked radios looked checked. Every `checked` binding now gives `""` when false (ringtone picker, settings, onboarding, invite picker). Radio group names are per instance (settings status/noise, onboarding colours), since pap-radio's group map is page-wide (finding #16, updated). Device menus opened in the dialog's corner: `pap-menu` can't find a trigger when it is a direct child of a shadow root (finding #18), so `pc-device-picker` and `pc-member-item` wrap trigger + menu in a `display: contents` element. Settings no longer adds a second label above each device picker (the picker has its own). Settings dialog padding is `--space-4`. Build + typecheck pass; not checked by eye.
 
 ### Rich composer (T7.16a-d)
 Modelled on Teams (user screenshots 2026-10-29 20.41.26 / .45 / .52):

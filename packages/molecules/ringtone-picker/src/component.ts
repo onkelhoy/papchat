@@ -103,7 +103,7 @@ export class RingtonePicker extends CustomElement {
                             <pap-radio
                                 name="${this.group}"
                                 value="${tone.id}"
-                                checked="${this.value === tone.id && "true"}"
+                                checked="${this.value === tone.id ? "true" : ""}"
                                 @change="${(e: Event) => this.handleSelect(tone.id, e)}"
                             >${tone.label}</pap-radio>
                             <pap-button
