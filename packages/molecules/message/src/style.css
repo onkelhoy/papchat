@@ -139,3 +139,17 @@ a:focus-visible {
     padding: 0;
     background: none;
 }
+
+/* a GIF fills its bubble, no padding, at most the bubble's width */
+.bubble.gif {
+    padding: 0;
+    overflow: hidden;
+    background: none;
+}
+
+.bubble.gif img {
+    display: block;
+    max-inline-size: min(100%, 16rem);
+    block-size: auto;
+    border-radius: inherit;
+}

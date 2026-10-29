@@ -7,7 +7,8 @@ import { constraints, listDevices, screenHint, type CaptureName } from "./device
 import { broadcast as lobbyBroadcast, lobbyClient, on, profileOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { lobbyStatus, me, members, prefs, setStages, stages, toast } from "./state";
-import type { ChatMessage, Invite, Profile, StageSummary } from "./types";
+import type { ChatMessage, Gif, Invite, Profile, StageSummary } from "./types";
+import { cleanGif } from "./gif";
 
 // Stages (PLAN §2.7): one presenter broadcasting to many viewers over a multicast tree rooted at
 // the presenter. Only the presenter captures; everyone chats with `client.broadcast`. The lobby
@@ -203,16 +204,17 @@ export class Stage {
 
     // ------------------------------------------------------------ everyone
 
-    /** Sends a chat message to everyone on the stage. */
-    send(text: string): boolean {
+    /** Sends a chat message (or a GIF) to everyone on the stage. */
+    send(text: string, gif?: Gif): boolean {
         const profile = me();
-        const clean = String(text ?? "").trim().slice(0, LIMITS.messageChars);
+        const sent = gif ? cleanGif(gif) : null;
+        const clean = sent ? sent.url : String(text ?? "").trim().slice(0, LIMITS.messageChars);
         if (!clean || !profile || this.ended) return false;
 
-        const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: "text", text: clean };
+        const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: sent ? "gif" : "text", text: clean, ...(sent ? { gif: sent } : {}) };
         try
         {
-            this.client.broadcast("chat", { id: message.id, text: message.text, at: message.at });
+            this.client.broadcast("chat", { id: message.id, text: message.text, at: message.at, ...(sent ? { gif: sent } : {}) });
         }
         catch (error)
         {
@@ -322,7 +324,8 @@ export class Stage {
         const id = typeof value.id === "string" && value.id ? value.id.slice(0, 64) : crypto.randomUUID();
         if (!text || this.messages().some(m => m.id === id)) return;
         const at = typeof value.at === "number" && Number.isFinite(value.at) ? Math.min(value.at, Date.now()) : Date.now();
-        this.push({ id, uid, at, variant: "text", text });
+        const gif = cleanGif(value.gif);
+        this.push(gif ? { id, uid, at, variant: "gif", text, gif } : { id, uid, at, variant: "text", text });
     };
 
     private handleMembers = () => {

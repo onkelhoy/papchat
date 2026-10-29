@@ -320,3 +320,22 @@ pc-emoji-picker.full {
     min-block-size: 12rem;
     --emoji-picker-background: var(--background);
 }
+
+pc-gif-picker.full {
+    flex: 1;
+    min-block-size: 12rem;
+}
+
+.row-section + .row-section {
+    margin-block-start: var(--space-2, 0.5rem);
+}
+
+/* GIPHY asks for attribution wherever its results show */
+.giphy {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.giphy a {
+    color: var(--primary);
+}

@@ -13,7 +13,7 @@ import "@papchat/file-card";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { CallRequestEvent, CallTile, ChatMessage, FileEntry, Profile } from "./types";
+import type { CallRequestEvent, CallTile, ChatMessage, FileEntry, GifState, Profile } from "./types";
 
 const NARROW = "(max-width: 40rem)";
 
@@ -44,6 +44,7 @@ const NARROW = "(max-width: 40rem)";
  * @property {boolean} canbuzz show the Buzz button in the header (1:1 chats)
  * @property {string} sinkid output device id for remote audio
  * @property {string[]} recentEmoji recently used emoji for the composer's picker (property only)
+ * @property {GifState | null} gifs GIF results for the composer's picker, null hides GIFs (property only)
  *
  * @fires call `CustomEvent<{ kind: "call" | "video" }>` header buttons, not in a call
  * @fires buzz the header's Buzz button (bubbles, composed)
@@ -74,12 +75,13 @@ export class Room extends CustomElement {
     @property({ type: Boolean, rerender: true }) canscreen: boolean = true;
     @property({ type: String, rerender: true }) sinkid: string = "";
     @property({ type: Array, attribute: false, rerender: true }) recentEmoji: string[] = [];
+    @property({ type: Object, attribute: false, rerender: true }) gifs: GifState | null = null;
 
     @property({ type: Boolean, attribute: false, rerender: true }) private narrow: boolean = false;
     // chat panel next to the stage, toggled from the controls
     @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
-    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[] };
+    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[]; gifs: GifState | null };
     @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
 
     @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean };
@@ -116,6 +118,7 @@ export class Room extends CustomElement {
             conversation.typing = this.typing;
             conversation.files = this.files;
             conversation.recentEmoji = this.recentEmoji;
+            conversation.gifs = this.gifs;
         }
 
         const stage = this.stage;

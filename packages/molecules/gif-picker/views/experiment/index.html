@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pc-gif-picker | experiment</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer type="module" src="main.js"></script>
+</head>
+
+<body>
+    <h1>pc-gif-picker</h1>
+    <p id="log">gif-pick events show here</p>
+
+    <section>
+        <h2>Grid</h2>
+        <pc-gif-picker class="box sample"></pc-gif-picker>
+    </section>
+
+    <section>
+        <h2>One row (limit="3")</h2>
+        <pc-gif-picker class="sample" limit="3"></pc-gif-picker>
+    </section>
+
+    <section>
+        <h2>Loading / no results</h2>
+        <pc-gif-picker loading></pc-gif-picker>
+        <pc-gif-picker></pc-gif-picker>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <pc-gif-picker class="box sample"></pc-gif-picker>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div id="created"></div>
+    </section>
+</body>
+
+</html>

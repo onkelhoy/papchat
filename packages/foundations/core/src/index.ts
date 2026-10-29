@@ -25,6 +25,7 @@ export * from "./denoise";
 export * from "./notify";
 export * from "./transfer";
 export * from "./stage";
+export * from "./gif";
 export * as ringtone from "./ringtone";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …

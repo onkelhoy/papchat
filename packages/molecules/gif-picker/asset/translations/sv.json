@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-gif-picker": {
+    "label": "GIF:ar",
+    "gif": "GIF",
+    "loading": "Laddar GIF:ar…",
+    "none": "Inga GIF:ar hittades"
+  }
+}

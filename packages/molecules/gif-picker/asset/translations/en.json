@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-gif-picker": {
+    "label": "GIFs",
+    "gif": "GIF",
+    "loading": "Loading GIFs…",
+    "none": "No GIFs found"
+  }
+}

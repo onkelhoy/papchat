@@ -11,7 +11,8 @@ import { log } from "./log";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
 import { Transfers } from "./transfer";
-import type { ChatMessage, FileEntry, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
+import type { ChatMessage, FileEntry, Gif, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
+import { cleanGif } from "./gif";
 
 // A room (PLAN §2.5): one private mesh network with its own Client. Chat over `client.broadcast`,
 // ephemeral state (typing; mute flags in T3.1) over the `state` channel, files (T4.1) over `file`.
@@ -237,17 +238,18 @@ export class Room extends EventTarget {
         this.push({ id: `file:${fid}`, uid, at, variant: "file", text: "", fid });
     }
 
-    /** Sends a chat message to everyone in the room. False when empty or not connected. */
-    send(text: string): boolean {
+    /** Sends a chat message (or a GIF) to everyone in the room. False when empty or not connected. */
+    send(text: string, gif?: Gif): boolean {
         const profile = me();
-        const clean = String(text ?? "").trim().slice(0, LIMITS.messageChars);
+        const sent = gif ? cleanGif(gif) : null;
+        const clean = sent ? sent.url : String(text ?? "").trim().slice(0, LIMITS.messageChars);
         const c = this._client;
         if (!clean || !profile || !c?.network) return false;
 
-        const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: "text", text: clean };
+        const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: sent ? "gif" : "text", text: clean, ...(sent ? { gif: sent } : {}) };
         try
         {
-            c.broadcast("chat", { id: message.id, text: message.text, at: message.at, uid: message.uid });
+            c.broadcast("chat", { id: message.id, text: message.text, at: message.at, uid: message.uid, ...(sent ? { gif: sent } : {}) });
         }
         catch (error)
         {
@@ -1020,7 +1022,8 @@ export class Room extends EventTarget {
         if (this.messages().some(m => m.id === id)) return;
 
         this.stopTyping(uid);
-        this.push({ id, uid, at, variant: "text", text });
+        const gif = cleanGif(value.gif);
+        this.push(gif ? { id, uid, at, variant: "gif", text, gif } : { id, uid, at, variant: "text", text });
         if (uid === me()?.uid) return;
         if (activeRoom() !== this.id)
         {

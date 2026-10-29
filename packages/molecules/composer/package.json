@@ -62,7 +62,8 @@
     "@papit/button": "*",
     "@papit/icon": "*",
     "@papchat/message": "*",
-    "@papchat/emoji-picker": "*"
+    "@papchat/emoji-picker": "*",
+    "@papchat/gif-picker": "*"
   },
   "peerDependencies": {
     "react": "^19"
@@ -79,7 +80,8 @@
     "@papchat/theme": "*",
     "@papit/theme": "*",
     "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/codeblock": "*",
+    "@papchat/core": "*"
   },
   "browserslist": [
     "defaults",

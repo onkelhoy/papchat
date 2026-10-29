@@ -5,7 +5,7 @@ import "@papchat/time";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { ChatMessage, Profile } from "@papchat/core";
+import type { ChatMessage, Gif, Profile } from "@papchat/core";
 import { render as renderText } from "./format";
 import type { MessageVariant } from "./types";
 
@@ -23,7 +23,7 @@ import type { MessageVariant } from "./types";
  *
  * @element pc-message
  *
- * @property {ChatMessage} message the message (`text`, `at`, `uid`, `variant`)
+ * @property {ChatMessage} message the message (`text`, `at`, `uid`, `variant`; a `gif` message shows `gif` as an image)
  * @property {Profile} author the sender; falls back to `message.uid` for the avatar
  * @property {boolean} mine own message (reflected)
  * @property {boolean} grouped hide avatar and name (reflected)
@@ -44,10 +44,12 @@ export class Message extends CustomElement {
     update() {
         super.update();
         const bubble = this.shadowRoot?.querySelector<HTMLElement>("[part='bubble']");
-        const text = this.message?.text ?? "";
+        const gif = this.message?.variant === "gif" ? this.message.gif : undefined;
+        const text = gif ? `gif:${gif.url}` : this.message?.text ?? "";
         if (bubble && bubble.dataset.text !== text)
         {
-            bubble.replaceChildren(renderText(text));
+            bubble.replaceChildren(gif ? renderGif(gif) : renderText(text));
+            bubble.classList.toggle("gif", !!gif);
             bubble.dataset.text = text;
         }
         return undefined;
@@ -78,6 +80,18 @@ export class Message extends CustomElement {
             </div>
         `;
     }
+}
+
+// straight from GIPHY's CDN (core only lets https *.giphy.com URLs through); the title is the alt text
+function renderGif(gif: Gif) {
+    const img = document.createElement("img");
+    img.src = gif.url;
+    img.alt = gif.title || "GIF";
+    img.width = gif.width;
+    img.height = gif.height;
+    img.loading = "lazy";
+    img.decoding = "async";
+    return img;
 }
 
 declare global {

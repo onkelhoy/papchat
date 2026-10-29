@@ -1,0 +1,64 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+.status {
+    margin: 0;
+    padding: var(--space-3, 0.75rem) 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.status[hidden] {
+    display: none;
+}
+
+/* two columns of previews, the list scrolls (only the list) */
+.grid {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-1, 0.25rem);
+    align-content: start;
+}
+
+/* one row: as many as fit, cut at the end */
+.grid.row {
+    overflow: hidden;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 6rem;
+}
+
+.gif {
+    display: block;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-small, 0.5rem);
+    overflow: hidden;
+    background-color: light-dark(oklch(0% 0 0 / 0.06), oklch(100% 0 0 / 0.08));
+    cursor: pointer;
+    aspect-ratio: 4 / 3;
+}
+
+.gif:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 1px;
+}
+
+.gif img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+}

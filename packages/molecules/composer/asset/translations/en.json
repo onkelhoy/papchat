@@ -26,6 +26,9 @@
     "tab-emoji": "Emoji",
     "search": "Find something fun",
     "see-all": "See all",
-    "suggestions": "Emoji suggestions"
+    "suggestions": "Emoji suggestions",
+    "tab-gifs": "GIFs",
+    "giphy": "GIFs powered by GIPHY",
+    "giphy-terms": "View Terms"
   }
 }

@@ -90,9 +90,20 @@ export type ChatMessage = {
     id: string;
     uid: string;
     at: number;
-    variant: "text" | "system" | "file";
+    variant: "text" | "system" | "file" | "gif";
+    // a gif message carries its URL here too, so older clients still show a link
     text: string;
     fid?: string;
+    gif?: Gif;
+};
+
+/** A GIPHY GIF, shown straight from GIPHY's CDN. `title` is the alt text. */
+export type Gif = {
+    id: string;
+    url: string;
+    width: number;
+    height: number;
+    title: string;
 };
 
 export type FileInfo = {

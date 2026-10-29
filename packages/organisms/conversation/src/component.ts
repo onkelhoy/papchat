@@ -5,7 +5,7 @@ import "@papit/button";
 import "@papchat/message";
 import type { Message } from "@papchat/message";
 import "@papchat/composer";
-import type { Composer } from "@papchat/composer";
+import type { Composer, GifState } from "@papchat/composer";
 import "@papchat/file-card";
 import type { FileCard } from "@papchat/file-card";
 
@@ -37,11 +37,14 @@ const BOTTOM_THRESHOLD = 24;
  * @property {string[]} typing uids currently typing (own uid is ignored)
  * @property {string} heading optional header text (not `title`: that would add a native tooltip)
  * @property {string[]} recentEmoji recently used emoji, newest first, for the composer's picker (property only)
+ * @property {GifState | null} gifs GIF results for the composer's picker, null hides GIFs (property only)
  *
  * @fires send `CustomEvent<{ text: string }>` re-dispatched from the composer
  * @fires typing `CustomEvent<void>` re-dispatched from the composer
  * @fires files `CustomEvent<{ files: File[] }>` re-dispatched from the composer, or dropped on the element
  * @fires emoji `CustomEvent<{ emoji: string }>` from the composer: an emoji was inserted (bubbles, composed)
+ * @fires gif-search `CustomEvent<{ query: string }>` from the composer (bubbles, composed)
+ * @fires gif `CustomEvent<{ gif: Gif }>` from the composer: send this GIF (bubbles, composed)
  * @fires cancel `CustomEvent<{ fid }>` from a file card (bubbles, composed)
  *
  * @csspart header the heading
@@ -61,6 +64,7 @@ export class Conversation extends CustomElement {
     @property({ type: Array, attribute: false, rerender: true }) typing: string[] = [];
     @property({ type: String, rerender: true }) heading: string = "";
     @property({ type: Array, attribute: false, rerender: true }) recentEmoji: string[] = [];
+    @property({ type: Object, attribute: false, rerender: true }) gifs: GifState | null = null;
 
     // shown while there are messages below the viewport
     @property({ type: Boolean, attribute: false, rerender: true }) private unseen: boolean = false;
@@ -95,7 +99,11 @@ export class Conversation extends CustomElement {
     update() {
         super.update();
         this.syncMessages();
-        if (this.composer) this.composer.recent = this.recentEmoji;
+        if (this.composer)
+        {
+            this.composer.recent = this.recentEmoji;
+            this.composer.gifs = this.gifs;
+        }
         this.followBottom();
         return undefined;
     }

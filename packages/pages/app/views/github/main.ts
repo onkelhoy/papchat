@@ -65,8 +65,9 @@ import {
     setStatus,
     startLobby,
     switchNetwork,
+    GIPHY_KEY,
 } from "@papchat/core";
-import type { CaptureName, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
+import type { CaptureName, Gif, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
 
 // languages with a file in asset/translations
 const LANGUAGES = ["en", "sv"];
@@ -580,6 +581,50 @@ view.addEventListener("emoji", (e) =>
 {
     const { emoji } = (e as CustomEvent<{ emoji: string }>).detail;
     setPrefs({ recentEmoji: [emoji, ...prefs().recentEmoji.filter(other => other !== emoji)].slice(0, 24) });
+});
+
+// GIFs: the composer asks (gif-search), the page asks GIPHY, the composer gets `gifs` back.
+// No key → `gifs` stays null and the composer hides GIFs.
+const GIPHY = "https://api.giphy.com/v1/gifs";
+let gifRequest = 0;
+if (GIPHY_KEY) view.gifs = { items: [], loading: false };
+
+view.addEventListener("gif-search", async (e) =>
+{
+    if (!GIPHY_KEY) return;
+    const { query } = (e as CustomEvent<{ query: string }>).detail;
+    const request = ++gifRequest;
+    view.gifs = { items: view.gifs?.items ?? [], loading: true };
+
+    const params = new URLSearchParams({ api_key: GIPHY_KEY, limit: "24", rating: "pg-13", bundle: "messaging_non_clips" });
+    if (query) params.set("q", query);
+    let items: Gif[] = [];
+    try
+    {
+        const res = await fetch(`${GIPHY}/${query ? "search" : "trending"}?${params}`);
+        const json = await res.json() as { data?: { id: string; title?: string; images?: { fixed_width?: { url?: string; webp?: string; width?: string; height?: string } } }[] };
+        items = (json.data ?? []).flatMap(gif =>
+        {
+            const image = gif.images?.fixed_width;
+            const url = image?.webp || image?.url;
+            return url ? [{ id: gif.id, url, width: Number(image?.width) || 200, height: Number(image?.height) || 200, title: gif.title ?? "" }] : [];
+        });
+    }
+    catch (error)
+    {
+        console.warn("papchat: GIPHY request failed", error);
+    }
+    // a newer search started while this one ran
+    if (request !== gifRequest) return;
+    view.gifs = { items, loading: false };
+});
+
+view.addEventListener("gif", (e) =>
+{
+    const { gif } = (e as CustomEvent<{ gif: Gif }>).detail;
+    const stage = shownStage();
+    if (stage) stage.send("", gif);
+    else current()?.send("", gif);
 });
 
 // buzz: the header button or "/buzz"; one per 10 s, the wait is toasted

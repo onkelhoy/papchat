@@ -26,6 +26,9 @@
     "tab-emoji": "Emoji",
     "search": "Hitta något kul",
     "see-all": "Visa alla",
-    "suggestions": "Emojiförslag"
+    "suggestions": "Emojiförslag",
+    "tab-gifs": "GIF:ar",
+    "giphy": "GIF:ar från GIPHY",
+    "giphy-terms": "Villkor"
   }
 }
