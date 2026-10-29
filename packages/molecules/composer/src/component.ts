@@ -48,15 +48,13 @@ const LIST_LINE = /^(\s*)([-*]|\d{1,3}[.)]|>)\s+\S/;
 // ":smi" right before the cursor (at the start or after a space), for emoji autocomplete
 const EMOJI_TOKEN = /(?:^|\s):([a-z0-9_+-]{2,})$/i;
 const SUGGESTIONS = 6;
-// emoji in the "All" tab's row
-const ROW_SIZE = 16;
 // the popover keeps this far from the viewport edges
 const EDGE = 8;
 // GIF searches wait for a pause in typing
 const GIF_DEBOUNCE = 300;
 const GIPHY_TERMS = "https://support.giphy.com/hc/en-us/articles/360020027752-GIPHY-Terms-of-Service";
 
-type PickTab = "all" | "emoji" | "gifs";
+type PickTab = "emoji" | "gifs";
 
 /**
  * Message composer: a growing field with formatting, attach and send.
@@ -71,10 +69,10 @@ type PickTab = "all" | "emoji" | "gifs";
  * `pap-file-input` (multiple), opened by the attach button.
  *
  * The smiley button opens a popover (top layer, so no parent clips it) with tabs All / Emoji and a
- * search field: All shows one row of emoji (recently used first), Emoji the whole `pc-emoji-picker`.
+ * search field shared by the tabs Emoji (`pc-emoji-picker`) and GIFs (`pc-gif-picker`).
  * A pick goes in at the cursor and closes the popover; Escape closes it too. Typing `:smi` suggests
  * emoji above the field (arrows, Enter/Tab to pick, Escape to dismiss). With `gifs` set there's a
- * GIFs tab and a GIF row in All: the composer asks for results with `gif-search` (on open, then 300 ms
+ * GIFs tab: the composer asks for results with `gif-search` (on open, then 300 ms
  * after typing stops) and the host answers by setting `gifs`; it never talks to GIPHY itself.
  *
  * @element pc-composer
@@ -118,7 +116,7 @@ export class Composer extends CustomElement {
     @property({ type: Boolean, attribute: false, rerender: true }) private filled: boolean = false;
     // the emoji popover
     @property({ type: Boolean, attribute: false, rerender: true }) private picking: boolean = false;
-    @property({ type: String, attribute: false, rerender: true }) private pickTab: PickTab = "all";
+    @property({ type: String, attribute: false, rerender: true }) private pickTab: PickTab = "emoji";
     @property({ type: String, attribute: false, rerender: true }) private pickQuery: string = "";
     // `:emoji` autocomplete
     @property({ type: Array, attribute: false, rerender: true }) private suggestions: EmojiEntry[] = [];
@@ -449,7 +447,7 @@ export class Composer extends CustomElement {
         window.removeEventListener("resize", this.place);
         this.closedAt = performance.now();
         clearTimeout(this.gifTimer);
-        this.pickTab = "all";
+        this.pickTab = "emoji";
         this.pickQuery = "";
         if (this.refocus) this.field?.focus();
         this.refocus = false;
@@ -479,15 +477,10 @@ export class Composer extends CustomElement {
     private handleTabKey(e: KeyboardEvent) {
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
         e.preventDefault();
-        const tabs: PickTab[] = this.gifs ? ["all", "emoji", "gifs"] : ["all", "emoji"];
+        const tabs: PickTab[] = this.gifs ? ["emoji", "gifs"] : ["emoji"];
         const step = e.key === "ArrowRight" ? 1 : -1;
         this.pickTab = tabs[(tabs.indexOf(this.pickTab) + step + tabs.length) % tabs.length];
         requestAnimationFrame(() => this.shadowRoot?.querySelector<HTMLElement>(`[data-tab="${this.pickTab}"]`)?.focus());
-    }
-
-    @bind
-    private handleSeeAll(e: Event) {
-        this.pickTab = ((e.currentTarget as HTMLElement).dataset.tab as PickTab | undefined) ?? "emoji";
     }
 
     @bind
@@ -650,30 +643,15 @@ export class Composer extends CustomElement {
         // one root element (papit finding #20); each tab's content is its own single-root conditional (#10)
         return html`<div class="pick" role="dialog" aria-label="${t("emoji")}">
             <div class="tabs" role="tablist" aria-label="${t("emoji")}" @keydown="${this.handleTabKey}">
-                <button type="button" role="tab" data-tab="all" aria-selected="${String(this.pickTab === "all")}" aria-controls="pick-panel" tabindex="${this.pickTab === "all" ? "0" : "-1"}" @click="${this.handleTab}">${t("tab-all")}</button>
                 <button type="button" role="tab" data-tab="emoji" aria-selected="${String(this.pickTab === "emoji")}" aria-controls="pick-panel" tabindex="${this.pickTab === "emoji" ? "0" : "-1"}" @click="${this.handleTab}">${t("tab-emoji")}</button>
                 ${gifs ? html`<button type="button" role="tab" data-tab="gifs" aria-selected="${String(this.pickTab === "gifs")}" aria-controls="pick-panel" tabindex="${this.pickTab === "gifs" ? "0" : "-1"}" @click="${this.handleTab}">${t("tab-gifs")}</button>` : ""}
             </div>
             <input class="search" type="search" placeholder="${t("search")}" aria-label="${t("search")}" autocomplete="off" @input="${this.handleSearch}" />
             <div id="pick-panel" class="panel" role="tabpanel">
-                ${this.pickTab === "all" ? html`<section class="row-section">
-                    <header>
-                        <h3>${t("tab-emoji")}</h3>
-                        <button type="button" class="see-all" data-tab="emoji" @click="${this.handleSeeAll}">${t("see-all")} ›</button>
-                    </header>
-                    <pc-emoji-picker limit="${String(ROW_SIZE)}"></pc-emoji-picker>
-                </section>` : ""}
-                ${this.pickTab === "all" && gifs ? html`<section class="row-section">
-                    <header>
-                        <h3>${t("tab-gifs")}</h3>
-                        <button type="button" class="see-all" data-tab="gifs" @click="${this.handleSeeAll}">${t("see-all")} ›</button>
-                    </header>
-                    <pc-gif-picker limit="6"></pc-gif-picker>
-                </section>` : ""}
                 ${this.pickTab === "emoji" ? html`<pc-emoji-picker class="full" nosearch></pc-emoji-picker>` : ""}
                 ${this.pickTab === "gifs" && gifs ? html`<pc-gif-picker class="full"></pc-gif-picker>` : ""}
             </div>
-            ${gifs && this.pickTab !== "emoji" ? html`<footer class="giphy">${t("giphy")} · <a href="${GIPHY_TERMS}" target="_blank" rel="noopener noreferrer">${t("giphy-terms")}</a></footer>` : ""}
+            ${gifs && this.pickTab === "gifs" ? html`<footer class="giphy">${t("giphy")} · <a href="${GIPHY_TERMS}" target="_blank" rel="noopener noreferrer">${t("giphy-terms")}</a></footer>` : ""}
         </div>`;
     }
 
