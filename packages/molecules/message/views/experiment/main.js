@@ -27,6 +27,7 @@ for (const el of document.querySelectorAll("pc-message[data-demo]"))
         long: "Averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylongwordwithoutanyspaces and then more text to wrap around the bubble a few times over.",
         html: "<img src=x onerror=alert(1)> <b>not bold</b> &amp; <script>alert(2)</script>",
         system: "Anna joined",
+        format: "**Bold**, *italic*, __underline__, ~~strike~~ and `code`.\n> a quote\n- one\n- two\n1. first\n2. second\n```\nconst x = \"<b>\";\n```\n[docs](https://papit.dev) and [bad](javascript:alert(1))",
     };
     const key = d.split("-")[1];
     fill(el, msg(author.uid, texts[key], 30_000 * (key === "short" ? 10 : 1), key === "system" ? "system" : "text"), author, {

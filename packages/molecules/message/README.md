@@ -45,7 +45,7 @@ m.author = {
 };
 ```
 
-Text is plain text: `http(s)` URLs become `<a target="_blank" rel="noopener noreferrer">`, newlines are preserved, nothing is parsed as HTML.
+Text supports a small markdown subset: `**bold**`, `*italic*`, `__underline__`, `~~strike~~`, `` `code` ``, ``` fenced code ```, `> ` quotes, `- ` / `1. ` lists, `[label](https://…)` and bare `http(s)` URLs (links get `target="_blank" rel="noopener noreferrer"`, other schemes stay text). It is parsed into a tree (`parse` in `format.ts`) and built with elements and text nodes, so nothing is ever parsed as HTML. Anything unrecognised stays literal; newlines are preserved.
 
 ## API
 
@@ -57,7 +57,7 @@ Text is plain text: `http(s)` URLs become `<a target="_blank" rel="noopener nore
 | `grouped` | `grouped` | `boolean`            | `false`           | same author within 2 min: hides avatar, name and time (reflected)         |
 | `variant` | `variant` | `"text" \| "system"` | `message.variant` | `system` is a centred muted line; `file` is shown as text (reflected)     |
 
-No events. CSS: `--message-background`, `--message-color`, `--message-max-width`, `::part(bubble)`. Also exports `linkify(text)`. Computing `grouped` is the parent's job.
+No events. CSS: `--message-background`, `--message-color`, `--message-max-width`, `::part(bubble)`. Also exports the `Block` / `Inline` types of the parsed tree. Computing `grouped` is the parent's job.
 
 ## License
 

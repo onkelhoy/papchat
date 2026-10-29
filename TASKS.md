@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 68/78 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 69/78 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -537,9 +537,10 @@ Modelled on Teams (user screenshots 2026-10-29 20.41.26 / .45 / .52):
 - **Emoji/GIF popover** (smiley): tabs **All / Emoji / GIFs**, no Stickers. A search field "Find something fun" on top. "All" shows an Emoji row (recently used first) and a GIF row (trending), each with "See all ›" that switches tab. Footer "GIFs powered by GIPHY" + "View Terms" link (GIPHY requires the attribution).
 - Keyboard: Ctrl/Cmd+B/I/U, Enter sends, Shift+Enter new line, Escape closes the popover. Built so it can later move into a `@papit/rich-input` component.
 
-### [ ] T7.16a Message format + safe rendering · `opus` · needs —
+### [x] T7.16a Message format + safe rendering · `opus` · needs —
 - Messages carry `text` with a small markdown subset (`**b**`, `*i*`, `__u__`, `~~s~~`, `` `code` ``, fenced code, `> quote`, `-`/`1.` lists, `[label](url)`), so old clients still read plain text. `pc-message` renders it by **building DOM nodes from a parser** (never `innerHTML` of user text). Links: only `http(s):`, `rel="noopener noreferrer" target="_blank"`. Old plain messages render unchanged.
 - **files:** `molecules/message` (+ a small `format.ts` parser, shared later by the editor).
+- Done: `molecules/message/src/format.ts`: `parse(text)` → blocks (fenced ``` code, `> ` quotes up to 3 deep, `- `/`* ` and `1.`/`1)` lists, paragraphs keeping newlines) with inline `**`/`*`/`__`/`~~` (no space just inside a mark, so `2 * 3 * 4` stays text; unclosed marks stay literal), `` `code` `` (not parsed further), `[label](http(s)…)` and bare links (http(s) with a host only, via `new URL`; trailing punctuation outside). `render(text)` builds a DocumentFragment with createElement / text nodes only. `pc-message` fills its bubble in `update()` (rebuilt only when the text changes), for text and system variants, so the html-template swap bug (finding #10) can't bite. The old `linkify` / `MessagePart` exports are gone (nothing else used them); `Block` / `Inline` types are exported. Styles for p/ul/ol/blockquote/code/pre use currentColor mixes, so they work in both bubble colours. Demo has a formatting sample (own and other). Checked the parser once in a scratch script (nesting, unclosed marks, `javascript:` refused, punctuation, code); no committed tests. Build passes; not checked by eye.
 
 ### [ ] T7.16b Editor + toolbar · `sonnet` · needs T7.16a
 - `pc-composer` collapsed/expanded as above. Editor: start with a `textarea` where the toolbar wraps the selection in the markdown marks, plus a live preview above it in expanded mode. Move to `contenteditable` only if that feels wrong in use. Paste is plain text. Icons: add `format`, `bold`, `italic`, `underline`, `strike`, `list-bullet`, `list-number`, `quote`, `link`, `code`, `smiley`, `trash` to the spritesheet (`npm run icons` in the theme package).

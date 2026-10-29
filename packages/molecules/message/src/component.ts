@@ -6,14 +6,17 @@ import "@papchat/time";
 // local
 import sheet from "./style.css" with { type: "css" };
 import type { ChatMessage, Profile } from "@papchat/core";
-import type { MessagePart, MessageVariant } from "./types";
+import { render as renderText } from "./format";
+import type { MessageVariant } from "./types";
 
 /**
  * One chat message: avatar, author, time and a bubble with the text.
  *
- * The text is rendered as plain text with `http(s)` URLs turned into links. It is
- * split into text and `<a>` parts and rendered through `html` template parts, so
- * message text is never parsed as HTML. Newlines are preserved.
+ * The text supports a small markdown subset (see `format.ts`): **bold**, *italic*,
+ * __underline__, ~~strike~~, `code`, fenced code, > quotes, - and 1. lists,
+ * [label](https://…) and bare http(s) links. It is parsed into a tree and built with
+ * createElement and text nodes, so message text is never parsed as HTML. Plain text
+ * renders as before, newlines kept.
  * `mine` aligns the bubble right in the primary colour; `grouped` (same author
  * within 2 minutes) hides the avatar and name; the `system` variant is a centred
  * muted line ("Anna joined").
@@ -37,19 +40,29 @@ export class Message extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) grouped?: boolean;
     @property({ type: String, reflect: true, rerender: true }) variant?: MessageVariant;
 
+    // message text goes in as DOM nodes (elements and text, never HTML), rebuilt only when it changed
+    update() {
+        super.update();
+        const bubble = this.shadowRoot?.querySelector<HTMLElement>("[part='bubble']");
+        const text = this.message?.text ?? "";
+        if (bubble && bubble.dataset.text !== text)
+        {
+            bubble.replaceChildren(renderText(text));
+            bubble.dataset.text = text;
+        }
+        return undefined;
+    }
+
     render() {
         const message = this.message;
         if (!message) return html``;
 
         const variant = this.variant ?? (message.variant === "system" ? "system" : "text");
-        const parts = linkify(message.text ?? "").map(part => part.href
-            ? html`<a href="${part.href}" target="_blank" rel="noopener noreferrer">${part.text}</a>`
-            : part.text
-        );
 
+        // the bubble's content is built in update(), not through the template
         if (variant === "system")
         {
-            return html`<div part="bubble" class="system">${parts}</div>`;
+            return html`<div part="bubble" class="system"></div>`;
         }
 
         const name = this.author?.name || "";
@@ -61,37 +74,10 @@ export class Message extends CustomElement {
             </div>
             <div class="body">
                 ${showMeta ? html`<div class="meta">${this.mine ? "" : html`<span class="name">${name}</span>`}<pc-time at="${message.at}"></pc-time></div>` : ""}
-                <div part="bubble" class="bubble">${parts}</div>
+                <div part="bubble" class="bubble"></div>
             </div>
         `;
     }
-}
-
-const URL_PATTERN = /https?:\/\/[^\s<>]+/gi;
-const TRAILING = /[.,;:!?)\]}'"]+$/;
-
-// split text into plain and link parts; trailing punctuation stays outside the link
-export function linkify(text: string): MessagePart[] {
-    const parts: MessagePart[] = [];
-    let last = 0;
-
-    for (const match of text.matchAll(URL_PATTERN))
-    {
-        const start = match.index ?? 0;
-        let url = match[0];
-        const trailing = url.match(TRAILING)?.[0] ?? "";
-        if (trailing) url = url.slice(0, url.length - trailing.length);
-
-        // "http://" alone is not a link
-        if (!/^https?:\/\/.+/i.test(url)) continue;
-
-        if (start > last) parts.push({ text: text.slice(last, start) });
-        parts.push({ text: url, href: url });
-        last = start + url.length;
-    }
-
-    if (last < text.length) parts.push({ text: text.slice(last) });
-    return parts;
 }
 
 declare global {
