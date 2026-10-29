@@ -2,7 +2,7 @@ import { signal } from "@papit/signals";
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, RTC, signalUrl } from "./config";
-import { constraints, listDevices, type CaptureName } from "./devices";
+import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { peerOf, readMember, send as lobbySend } from "./lobby";
@@ -319,6 +319,7 @@ export class Room extends EventTarget {
                 return this.local.has(name);
             }
 
+            if (name === "screen") screenHint(source);
             const onEnded = () => this.stop(name);
             source.getTracks()[0]?.addEventListener("ended", onEnded);
             this.local.set(name, source);

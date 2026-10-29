@@ -60,7 +60,8 @@ export async function listDevices(): Promise<DeviceLists> {
 export function constraints(name: CaptureName): CaptureConstraints {
     const chosen = prefs().devices;
 
-    if (name === "screen") return { display: true, video: true, audio: false };
+    // screens change little: fewer frames leave bandwidth for sharp text (see `screenHint`)
+    if (name === "screen") return { display: true, video: { frameRate: { ideal: 15, max: 30 } }, audio: false };
 
     if (name === "mic")
     {
@@ -80,6 +81,11 @@ export function constraints(name: CaptureName): CaptureConstraints {
             height: { ideal: 720 },
         },
     };
+}
+
+/** Tells the encoder a screen capture is text and detail, not motion: it keeps resolution over frame rate. */
+export function screenHint(stream: MediaStream) {
+    for (const track of stream.getVideoTracks()) track.contentHint = "detail";
 }
 
 /** Plays `element` through the chosen speaker. No-op without `setSinkId`; never throws. */

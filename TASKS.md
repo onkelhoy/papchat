@@ -459,6 +459,7 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **do:** find which link breaks and fix it. Presenter can switch camera ↔ screen, or show both (screen big, camera small) when the tree allows two video streams.
 - **files:** `core/src/stage.ts`, stage UI in the page/`pc-room`.
 - **done when:** a presenter shares their screen and 2 viewers see it.
+- **Open, needs a repro (2026-10-29):** traced by reading and no break found: the presenter's screen button is wired (synchronous `toggle` → `toggleCapture` → `stage.start("screen")`), `getDisplayMedia` runs inside the gesture, `STAGE_PLAN` has `screen`, papit's multicast relays every name alike, and viewers get a pinned screen tile. On phones the button is hidden (no `getDisplayMedia`), which is expected. Done meanwhile: screen capture asks ~15 fps, and `screenHint()` sets `contentHint = "detail"` (rooms and stages). Next step: the user reproduces with `papchat.setLogging(true)` in the console (presenter and a viewer), noting browser, whether the picker opened, and whether the presenter's own screen tile showed. Then fix the link that breaks.
 
 ### [ ] T7.7 Sharp white edge on the stage when chat is open · `sonnet` · needs —
 - **symptom:** a light, hard 1-px edge around the call stage/room panel while the chat panel is open (screenshot 2026-10-29 21.04.06, right and bottom edges).

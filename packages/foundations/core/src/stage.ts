@@ -2,7 +2,7 @@ import { effect, signal } from "@papit/signals";
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, RTC, signalUrl } from "./config";
-import { constraints, listDevices, type CaptureName } from "./devices";
+import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { broadcast as lobbyBroadcast, lobbyClient, on, profileOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { lobbyStatus, me, members, setStages, stages, toast } from "./state";
@@ -124,6 +124,7 @@ export class Stage {
                 source.getTracks().forEach(t => t.stop());
                 return false;
             }
+            if (name === "screen") screenHint(source);
             source.getTracks()[0]?.addEventListener("ended", () => this.stop(name));
             this.local.set(name, source);
             await this.client.media.start(name, source.clone());
