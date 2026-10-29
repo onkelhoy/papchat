@@ -6,6 +6,20 @@
   "pc-composer": {
     "placeholder": "Skriv ett meddelande",
     "send": "Skicka",
-    "attach": "Bifoga filer"
+    "attach": "Bifoga filer",
+    "format": "Formatering",
+    "toolbar": "Formatering",
+    "bold": "Fet (Ctrl+B)",
+    "italic": "Kursiv (Ctrl+I)",
+    "underline": "Understruken (Ctrl+U)",
+    "strike": "Genomstruken",
+    "bullets": "Punktlista",
+    "numbers": "Numrerad lista",
+    "quote": "Citat",
+    "link": "Länk",
+    "code": "Kod",
+    "clear": "Rensa meddelandet",
+    "preview": "Förhandsvisning",
+    "link-text": "länktext"
   }
 }

@@ -4,8 +4,22 @@
     "language": "en"
   },
   "pc-composer": {
-    "placeholder": "Write a message",
+    "placeholder": "Type a message",
     "send": "Send",
-    "attach": "Attach files"
+    "attach": "Attach files",
+    "format": "Formatting",
+    "toolbar": "Formatting",
+    "bold": "Bold (Ctrl+B)",
+    "italic": "Italic (Ctrl+I)",
+    "underline": "Underline (Ctrl+U)",
+    "strike": "Strikethrough",
+    "bullets": "Bulleted list",
+    "numbers": "Numbered list",
+    "quote": "Quote",
+    "link": "Link",
+    "code": "Code",
+    "clear": "Clear message",
+    "preview": "Preview",
+    "link-text": "link text"
   }
 }

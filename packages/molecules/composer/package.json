@@ -60,7 +60,8 @@
     "@papit/input": "*",
     "@papit/file-input": "*",
     "@papit/button": "*",
-    "@papit/icon": "*"
+    "@papit/icon": "*",
+    "@papchat/message": "*"
   },
   "peerDependencies": {
     "react": "^19"
