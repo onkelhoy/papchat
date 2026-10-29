@@ -23,7 +23,7 @@ import type { ToggleControl, ToggleEvent } from "./types";
  * @property {boolean} mic microphone is on (reflected)
  * @property {boolean} camera camera is on (reflected)
  * @property {boolean} screen you are sharing your screen (reflected)
- * @property {boolean} chat chat panel is shown, `viewer` mode only (reflected)
+ * @property {boolean} chat chat panel is shown (reflected)
  * @property {boolean} viewer only show "Leave" and the chat toggle (reflected)
  * @property {boolean} canscreen the browser supports screen sharing; false hides the button (default true)
  *
@@ -103,6 +103,7 @@ export class CallControls extends CustomElement {
                 ${this.renderToggle("mic", this.mic, "mic", "mic-off", t("mic"), this.mic ? t("micOn") : t("micOff"))}
                 ${this.renderToggle("camera", this.camera, "camera", "camera-off", t("camera"), this.camera ? t("cameraOn") : t("cameraOff"))}
                 ${this.canscreen ? this.renderToggle("screen", this.screen, "screen", "screen-off", t("screen"), this.screen ? t("screenOn") : t("screenOff")) : ""}
+                ${this.renderToggle("chat", this.chat, "chat", "chat", t("chat"), this.chat ? t("chatOn") : t("chatOff"))}
                 <pap-button part="invite" size="icon" type="button" color="secondary" variant="outline" aria-label="${t("invite")}" popovertarget="tip-invite" @click="${this.handleInvite}">
                     <pap-icon name="/icons/spritesheet.svg#user-plus" aria-hidden="true"></pap-icon>
                 </pap-button>

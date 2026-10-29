@@ -71,7 +71,7 @@ export class Room extends CustomElement {
     @property({ type: String, rerender: true }) sinkid: string = "";
 
     @property({ type: Boolean, attribute: false, rerender: true }) private narrow: boolean = false;
-    // viewers only: chat panel toggled from the controls
+    // chat panel next to the stage, toggled from the controls
     @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
     @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[] };
@@ -223,8 +223,8 @@ export class Room extends CustomElement {
             `;
         }
 
-        // viewers get the stage alone until they open the chat
-        if (this.viewer && !this.showChat)
+        // a call shows the stage alone until the chat toggle opens the side panel (viewers and callers alike)
+        if (!this.showChat)
         {
             return this.renderStage();
         }
