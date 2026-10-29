@@ -40,10 +40,10 @@ export class CallStage extends CustomElement {
     @translate t = useTranslator("pc-call-stage");
 
     @property({ type: Array, attribute: false, rerender: true }) tiles: CallTile[] = [];
-    @property({ type: String }) sinkid: string = "";
+    @property({ type: String, rerender: true }) sinkid: string = "";
 
     // undefined: follow `tiles[].pinned`; "": nothing pinned; otherwise the pinned tile id
-    @property({ type: String, attribute: false }) private pinnedId?: string;
+    @property({ type: String, attribute: false, rerender: true }) private pinnedId?: string;
 
     private sinks = new WeakMap<HTMLAudioElement, string>();
 

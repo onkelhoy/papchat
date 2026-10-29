@@ -47,9 +47,9 @@ export class MemberList extends CustomElement {
 
     @property({ type: Array, attribute: false, rerender: true }) members: Profile[] = [];
     @property({ type: Object, attribute: false, rerender: true }) me?: Profile;
-    @property({ type: Array, attribute: false }) incall: string[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) incall: string[] = [];
     @property({ type: Array, attribute: false, rerender: true }) stages: StageSummary[] = [];
-    @property({ type: Boolean, attribute: "caninvite" }) canInvite: boolean = false;
+    @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
 
     @property({ type: String, attribute: false, rerender: true }) private query: string = "";
 

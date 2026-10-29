@@ -42,7 +42,7 @@ npm install @papchat/member-item
 </script>
 ```
 
-The row is a focusable `listitem` (put it in a `role="list"`, e.g. a `pap-group` for arrow keys). Enter or double-click = `chat`; right-click, Shift+F10 or the Menu key opens the ⋯ menu. The ⋯ button is only in the tab order while its row has focus. Icons come from `/icons/spritesheet.svg` (served by the app page).
+The row is a focusable `listitem` (put it in a `role="list"`, e.g. a `pap-group` for arrow keys). Enter or click = `chat`; right-click, Shift+F10 or the Menu key opens the ⋯ menu. The ⋯ button is only in the tab order while its row has focus. Icons come from `/icons/spritesheet.svg` (served by the app page).
 
 ## API
 
@@ -55,7 +55,7 @@ The row is a focusable `listitem` (put it in a `role="list"`, e.g. a `pap-group`
 
 | Event           | Detail                                                             | Description                                                                            |
 | --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `member-action` | `{ uid: string, action: "chat" \| "call" \| "video" \| "invite" }` | a menu choice, or `chat` on Enter / double-click (bubbles, composed; never for `self`) |
+| `member-action` | `{ uid: string, action: "chat" \| "call" \| "video" \| "invite" }` | a menu choice, or `chat` on Enter / click (bubbles, composed; never for `self`) |
 
 | `member-files`  | `{ uid: string, files: File[] }`                                   | files dropped on the row (bubbles, composed; never for `self`)                         |
 

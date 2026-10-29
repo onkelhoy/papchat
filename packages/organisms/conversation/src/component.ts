@@ -52,10 +52,10 @@ export class Conversation extends CustomElement {
     @translate t = useTranslator("pc-conversation");
 
     @property({ type: Array, attribute: false, rerender: true }) messages: ChatMessage[] = [];
-    @property({ type: Object, attribute: false }) profiles: Record<string, Profile> = {};
-    @property({ type: Array, attribute: false }) files: FileEntry[] = [];
-    @property({ type: String }) me: string = "";
-    @property({ type: Array, attribute: false }) typing: string[] = [];
+    @property({ type: Object, attribute: false, rerender: true }) profiles: Record<string, Profile> = {};
+    @property({ type: Array, attribute: false, rerender: true }) files: FileEntry[] = [];
+    @property({ type: String, rerender: true }) me: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) typing: string[] = [];
     @property({ type: String, rerender: true }) heading: string = "";
 
     // shown while there are messages below the viewport

@@ -57,18 +57,18 @@ export class Room extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) incall: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) viewer: boolean = false;
     @property({ type: String, rerender: true }) heading: string = "";
-    @property({ type: String }) me: string = "";
-    @property({ type: Array, attribute: false }) messages: ChatMessage[] = [];
-    @property({ type: Object, attribute: false }) profiles: Record<string, Profile> = {};
-    @property({ type: Array, attribute: false }) typing: string[] = [];
-    @property({ type: Array, attribute: false }) files: FileEntry[] = [];
-    @property({ type: Array, attribute: false }) participants: Profile[] = [];
-    @property({ type: Array, attribute: false }) tiles: CallTile[] = [];
-    @property({ type: Boolean }) mic: boolean = false;
-    @property({ type: Boolean }) camera: boolean = false;
-    @property({ type: Boolean }) screen: boolean = false;
-    @property({ type: Boolean }) canscreen: boolean = true;
-    @property({ type: String }) sinkid: string = "";
+    @property({ type: String, rerender: true }) me: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) messages: ChatMessage[] = [];
+    @property({ type: Object, attribute: false, rerender: true }) profiles: Record<string, Profile> = {};
+    @property({ type: Array, attribute: false, rerender: true }) typing: string[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) files: FileEntry[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) participants: Profile[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) tiles: CallTile[] = [];
+    @property({ type: Boolean, rerender: true }) mic: boolean = false;
+    @property({ type: Boolean, rerender: true }) camera: boolean = false;
+    @property({ type: Boolean, rerender: true }) screen: boolean = false;
+    @property({ type: Boolean, rerender: true }) canscreen: boolean = true;
+    @property({ type: String, rerender: true }) sinkid: string = "";
 
     @property({ type: Boolean, attribute: false, rerender: true }) private narrow: boolean = false;
     // viewers only: chat panel toggled from the controls

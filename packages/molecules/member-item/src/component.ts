@@ -22,7 +22,7 @@ import type { MemberAction, MemberActionEvent, MemberFilesEvent } from "./types"
  * "name, status[, You][, In a call]"; the visible text is hidden from AT so it
  * isn't read twice. The ⋯ button is only in the tab order while the row has focus.
  *
- * Keyboard and mouse: Enter or double-click on the row = `chat`; the context menu
+ * Keyboard and mouse: Enter or a click on the row = `chat`; the context menu
  * (right-click, Shift+F10, Menu key) opens the ⋯ menu. A `self` row has no actions.
  *
  * @element pc-member-item
@@ -74,7 +74,7 @@ export class MemberItem extends CustomElement {
         this.updateLabel();
 
         this.addEventListener("keydown", this.handleKeydown);
-        this.addEventListener("dblclick", this.handleDblclick);
+        this.addEventListener("click", this.handleClick);
         this.addEventListener("contextmenu", this.handleContextmenu);
         this.addEventListener("focusin", this.handleFocusin);
         this.addEventListener("focusout", this.handleFocusout);
@@ -88,7 +88,7 @@ export class MemberItem extends CustomElement {
         super.disconnectedCallback();
 
         this.removeEventListener("keydown", this.handleKeydown);
-        this.removeEventListener("dblclick", this.handleDblclick);
+        this.removeEventListener("click", this.handleClick);
         this.removeEventListener("contextmenu", this.handleContextmenu);
         this.removeEventListener("focusin", this.handleFocusin);
         this.removeEventListener("focusout", this.handleFocusout);
@@ -193,7 +193,7 @@ export class MemberItem extends CustomElement {
     }
 
     @bind
-    private handleDblclick(e: MouseEvent) {
+    private handleClick(e: MouseEvent) {
         if (this.fromControls(e)) return;
         this.dispatchAction("chat");
     }

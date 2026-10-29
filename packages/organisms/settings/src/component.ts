@@ -61,13 +61,13 @@ export class Settings extends CustomElement {
     @property({ type: Boolean, rerender: true }) open: boolean = false;
     @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
     @property({ type: Object, attribute: false, rerender: true }) prefs?: Prefs;
-    @property({ type: Array, attribute: false }) tones: Tone[] = [];
-    @property({ type: Object, attribute: false }) devices: DeviceLists = { audioinput: [], videoinput: [], audiooutput: [] };
-    @property({ type: String }) language: string = "en";
-    @property({ type: String }) playing: string = "";
-    @property({ type: Object, attribute: false }) camerastream?: MediaStream;
-    @property({ type: Object, attribute: false }) micstream?: MediaStream;
-    @property({ type: Boolean, attribute: false }) sinkSupported: boolean = true;
+    @property({ type: Array, attribute: false, rerender: true }) tones: Tone[] = [];
+    @property({ type: Object, attribute: false, rerender: true }) devices: DeviceLists = { audioinput: [], videoinput: [], audiooutput: [] };
+    @property({ type: String, rerender: true }) language: string = "en";
+    @property({ type: String, rerender: true }) playing: string = "";
+    @property({ type: Object, attribute: false, rerender: true }) camerastream?: MediaStream;
+    @property({ type: Object, attribute: false, rerender: true }) micstream?: MediaStream;
+    @property({ type: Boolean, attribute: false, rerender: true }) sinkSupported: boolean = true;
     @property({ type: Array, attribute: false, rerender: true }) shortcuts: Shortcut[] = [];
 
     @query("pc-ringtone-picker") private ringtones?: Synced;
