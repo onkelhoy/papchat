@@ -101,6 +101,28 @@ h3 {
     font-size: var(--emoji-size);
 }
 
+.search {
+    flex: none;
+    box-sizing: border-box;
+    inline-size: 100%;
+    margin-block-end: var(--space-2, 0.5rem);
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.2), oklch(100% 0 0 / 0.25));
+    border-radius: var(--radius-small, 0.5rem);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+}
+
+.search::placeholder {
+    color: var(--text-secondary);
+}
+
+.search:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: -1px;
+}
+
 .status {
     margin: 0;
     padding: var(--space-3, 0.75rem) 0;

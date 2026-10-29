@@ -58,6 +58,7 @@ Keyboard: the grid is one tab stop; arrow keys move, Home/End jump to the ends, 
 | `recent` | `recent`  | `string[]` | `[]`                 | Recently used emoji, newest first, shown as their own group (JSON attribute) |
 | `limit`  | `limit`   | `number`   | `0`                  | 0 = everything with the category bar; > 0 = one flat row (recent first)    |
 | `src`    | `src`     | `string`   | `/emoji/emoji.json`  | Where the data is fetched from                                              |
+| `nosearch` | `nosearch` | `boolean` | `false`            | Hide the built-in search field (the host has its own and sets `query`)     |
 
 ### Events
 

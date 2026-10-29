@@ -42,6 +42,7 @@ type Section = { id: string; label: string; emojis: EmojiEntry[] };
  * @property {string[]} recent recently used emoji, newest first (shown as their own group)
  * @property {number} limit 0 = everything with the category bar; > 0 = one flat row of that many (recent first)
  * @property {string} src where the data lives (default `/emoji/emoji.json`)
+ * @property {boolean} nosearch hide the built-in search field (when the host has its own and sets `query`)
  *
  * @fires emoji-pick `CustomEvent<{ emoji: string, name: string }>` an emoji was chosen (bubbles, composed)
  *
@@ -57,6 +58,7 @@ export class EmojiPicker extends CustomElement {
     @property({ type: Array, rerender: true }) recent: string[] = [];
     @property({ type: Number, rerender: true }) limit: number = 0;
     @property({ type: String }) src: string = EMOJI_SRC;
+    @property({ type: Boolean, rerender: true }) nosearch: boolean = false;
 
     @property({ type: String, attribute: false, rerender: true }) private state: "loading" | "ready" | "error" = "loading";
     // the group at the top of the scrolled list, highlighted in the bar
@@ -286,6 +288,11 @@ export class EmojiPicker extends CustomElement {
     }
 
     @bind
+    private handleSearch(e: Event) {
+        this.query = (e.target as HTMLInputElement).value;
+    }
+
+    @bind
     private handleRetry() {
         this.load();
     }
@@ -309,6 +316,7 @@ export class EmojiPicker extends CustomElement {
         const ready = this.state === "ready";
 
         return html`
+            ${this.nosearch || this.limit > 0 ? "" : html`<input part="search" class="search" type="search" placeholder="${this.t("search")}" aria-label="${this.t("search")}" autocomplete="off" @input="${this.handleSearch}" />`}
             <p class="status" role="status" hidden="${this.state === "loading" ? "" : "hidden"}">${this.t("loading")}</p>
             ${this.state === "error" ? html`<p class="status">${this.t("error")} <button type="button" class="retry" @click="${this.handleRetry}">${this.t("retry")}</button></p>` : ""}
             <div part="body" class="${flat ? "body flat" : "body"}" @click="${this.handleClick}" @keydown="${this.handleKeydown}" @scroll="${this.handleScroll}"></div>

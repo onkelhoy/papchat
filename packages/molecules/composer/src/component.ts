@@ -607,7 +607,7 @@ export class Composer extends CustomElement {
                     </header>
                     <pc-emoji-picker limit="${String(ROW_SIZE)}" query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>
                 </section>` : ""}
-                ${this.pickTab === "emoji" ? html`<pc-emoji-picker class="full" query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>` : ""}
+                ${this.pickTab === "emoji" ? html`<pc-emoji-picker class="full" nosearch query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>` : ""}
             </div>
         </div>`;
     }
