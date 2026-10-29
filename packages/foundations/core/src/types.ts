@@ -22,6 +22,12 @@ export type Prefs = {
     sidebarOpen: boolean;
 };
 
+/** A private network: its own lobby, found by name and locked with the password. `null` = the public papchat lobby. */
+export type Network = {
+    name: string;
+    password: string;
+};
+
 export type Debug = {
     signal?: string;
     log?: boolean;

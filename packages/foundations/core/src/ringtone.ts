@@ -35,7 +35,7 @@ const PATTERNS: Record<Sound, { cycle: number; bursts: Burst[] }> = {
 
 const FILES: Record<Exclude<Sound, "ring">, string> = {
     ringback: "/audio/ringback.mp3",
-    ping: "/audio/message.mp3",
+    ping: "/audio/sound/message.wav",
 };
 
 // 44 byte wav with no samples worth hearing: a click that lets later sounds play

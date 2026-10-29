@@ -191,9 +191,8 @@ export class Room extends CustomElement {
                     <pap-tab value="people">${this.t("people")}</pap-tab>
                     <pap-tabpanel value="chat">${this.renderConversation()}</pap-tabpanel>
                     <pap-tabpanel value="files">
-                        ${this.files.length === 0
-                            ? html`<div class="empty">${this.t("no-files")}</div>`
-                            : html`<div class="files">${this.files.map(file => html`<pc-file-card key="${file.fid}"></pc-file-card>`)}</div>`}
+                        ${this.files.length === 0 ? html`<div class="empty">${this.t("no-files")}</div>` : ""}
+                        ${this.files.length === 0 ? "" : html`<div class="files">${this.files.map(file => html`<pc-file-card key="${file.fid}"></pc-file-card>`)}</div>`}
                     </pap-tabpanel>
                     <pap-tabpanel value="people">
                         <div class="people">
@@ -233,7 +232,8 @@ export class Room extends CustomElement {
         return html`
             <pap-splitter split="${this.narrow ? "horizontal" : "vertical"}" label="${this.t("label")}" min="30" max="80">
                 ${this.renderStage()}
-                ${this.viewer ? html`<div class="side" slot="secondary">${this.renderConversation()}</div>` : this.renderTabs()}
+                ${this.viewer ? html`<div class="side" slot="secondary">${this.renderConversation()}</div>` : ""}
+                ${this.viewer ? "" : this.renderTabs()}
             </pap-splitter>
         `;
     }

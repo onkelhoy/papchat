@@ -29,6 +29,14 @@
     "theme": "Tema",
     "language": "Språk",
     "notify": "Visa notiser för meddelanden och samtal",
-    "notify-hint": "Webbläsaren frågar om tillåtelse."
+    "notify-hint": "Webbläsaren frågar om tillåtelse.",
+    "network": "Nätverk",
+    "network-public": "Du är på det publika papchat-nätverket.",
+    "network-private": "Du är på det privata nätverket \"{name}\".",
+    "private": "Privat nätverk",
+    "network-name": "Nätverksnamn",
+    "password": "Lösenord",
+    "switch-network": "Byt nätverk",
+    "switch-hint": "Bytet laddar om sidan och lämnar dina chattar och samtal."
   }
 }

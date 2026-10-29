@@ -78,7 +78,7 @@ export class FileCard extends CustomElement {
             case "image": return html`<img part="preview" src="${url}" alt="${name}" loading="lazy" />`;
             case "video": return html`<video part="preview" src="${url}" controls preload="metadata" aria-label="${name}"></video>`;
             case "audio": return html`<audio part="preview" src="${url}" controls preload="metadata" aria-label="${name}"></audio>`;
-            default: return html``;
+            default: return "";
         }
     }
 
@@ -101,21 +101,21 @@ export class FileCard extends CustomElement {
                         <span class="name" title="${name}">${name}</span>
                         <span class="meta">
                             <span>${formatSize(file.size, translator.locale() ?? undefined)}</span>
-                            ${status ? html`<span class="status" data-state="${file.state}">${status}</span>` : html``}
+                            ${status ? html`<span class="status" data-state="${file.state}">${status}</span>` : ""}
                         </span>
                     </div>
                     ${this.inflight ? html`
                         <pap-button size="small" variant="outline" color="secondary" type="button" @click="${this.handleCancel}">${t("cancel")}</pap-button>
-                    ` : html``}
+                    ` : ""}
                     ${done ? html`
                         <a class="download" href="${url}" download="${name}" aria-label="${`${t("download")}: ${name}`}">
                             <pap-icon name="/icons/spritesheet.svg#download" aria-hidden="true"></pap-icon>
                             <span>${t("download")}</span>
                         </a>
-                    ` : html``}
+                    ` : ""}
                 </div>
-                ${this.inflight ? html`<pc-progress label="${name}" value="${progress}"></pc-progress>` : html``}
-                ${done ? this.renderPreview(url as string, name) : html``}
+                ${this.inflight ? html`<pc-progress label="${name}" value="${progress}"></pc-progress>` : ""}
+                ${done ? this.renderPreview(url as string, name) : ""}
             </div>
         `;
     }

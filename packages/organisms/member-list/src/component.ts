@@ -119,7 +119,8 @@ export class MemberList extends CustomElement {
                         </div>
                     </pap-accordion-panel>
                 </pap-accordion>
-            ` : html`<slot name="live"></slot>`}
+            ` : ""}
+            ${stages.length ? "" : html`<slot name="live"></slot>`}
             <h2 class="heading">${this.t("online", { count: others + (this.me ? 1 : 0) })}</h2>
             <pap-input
                 part="search"

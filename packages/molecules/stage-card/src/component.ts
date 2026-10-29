@@ -59,9 +59,8 @@ export class StageCard extends CustomElement {
                 </span>
                 <span class="meta">${meta}</span>
             </span>
-            ${stage.mine
-                ? html`<span class="mine">${this.t("mine")}</span>`
-                : html`<pap-button class="action" part="watch" size="small" variant="clear" aria-label="${this.t("label", { title: stage.title, name, count: String(viewers) })}" @click="${this.handleWatch}">${this.t("watch")}</pap-button>`}
+            ${stage.mine ? html`<span class="mine">${this.t("mine")}</span>` : ""}
+            ${stage.mine ? "" : html`<pap-button class="action" part="watch" size="small" variant="clear" aria-label="${this.t("label", { title: stage.title, name, count: String(viewers) })}" @click="${this.handleWatch}">${this.t("watch")}</pap-button>`}
         `;
     }
 }

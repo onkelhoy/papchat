@@ -176,7 +176,8 @@ export class VideoTile extends CustomElement {
         return html`
             ${hasVideo ? html`
                 <pc-video part="video" fit="${this.screen ? "contain" : "cover"}" muted="${this.self ? "true" : ""}" mirror="${this.self && !this.screen ? "true" : ""}"></pc-video>
-            ` : html`
+            ` : ""}
+            ${hasVideo ? "" : html`
                 <div class="placeholder">
                     <pc-avatar part="avatar" size="l" name="${name}" uid="${profile?.uid ?? ""}" color="${profile?.color ?? ""}"></pc-avatar>
                 </div>

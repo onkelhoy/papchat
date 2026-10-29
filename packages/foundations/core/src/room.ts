@@ -912,12 +912,14 @@ export class Room extends EventTarget {
 
         this.stopTyping(uid);
         this.push({ id, uid, at, variant: "text", text });
-        if (uid !== me()?.uid && activeRoom() !== this.id)
+        if (uid === me()?.uid) return;
+        if (activeRoom() !== this.id)
         {
             this.setUnread(n => n + 1);
             this.sync();
-            ping();
         }
+        // the open chat in a background tab counts as unseen too
+        if (activeRoom() !== this.id || document.hidden) ping();
     };
 
     private handleTyping = (_payload: unknown, from: RoomFrom) => {

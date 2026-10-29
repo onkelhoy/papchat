@@ -163,7 +163,8 @@ export class AppShell extends CustomElement {
                     </div>
                     <slot name="sidebar"></slot>
                 </pap-drawer>
-            ` : html`
+            ` : ""}
+            ${this.mobile ? "" : html`
                 <pap-sidebar open="${open}">
                     <slot name="brand" slot="header"></slot>
                     <slot name="sidebar"></slot>

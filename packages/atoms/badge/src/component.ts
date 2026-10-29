@@ -47,7 +47,8 @@ export class Badge extends CustomElement {
         const text = this.hasCount() ? ((this.count as number) > 99 ? "99+" : String(Math.floor(this.count as number))) : "";
         return html`
             ${this.variant === "live" ? html`<span part="dot" aria-hidden="true"></span>` : ""}
-            ${this.hasCount() ? html`<span>${text}</span>` : html`<slot></slot>`}
+            ${this.hasCount() ? html`<span>${text}</span>` : ""}
+            ${this.hasCount() ? "" : html`<slot></slot>`}
         `;
     }
 }

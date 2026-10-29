@@ -54,10 +54,13 @@ import {
     log,
     me,
     members,
+    network,
     prefs,
+    setNetwork,
     setPrefs,
     setStatus,
     startLobby,
+    switchNetwork,
 } from "@papchat/core";
 import type { CaptureName, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
 
@@ -353,6 +356,8 @@ effect(() =>
 // settings dialog
 effect(() => { settings.profile = me() ?? undefined; });
 effect(() => { settings.prefs = prefs(); });
+effect(() => { settings.network = network()?.name ?? ""; });
+effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
 effect(() => { settings.devices = devices(); });
 effect(() => { settings.playing = ringtone.previewing(); });
@@ -413,6 +418,7 @@ settings.addEventListener("prefs-change", (e) =>
     setPrefs(partial);
     if (partial.devices) restartCaptures(before, prefs().devices);
 });
+settings.addEventListener("network-change", (e) => switchNetwork((e as CustomEvent<{ network: { name: string; password: string } | null }>).detail.network));
 settings.addEventListener("language-change", (e) =>
 {
     const { value } = (e as CustomEvent<{ value: string }>).detail;
@@ -625,8 +631,9 @@ onboarding.addEventListener("language-change", (e) =>
 });
 onboarding.addEventListener("submit", (e) =>
 {
-    const { name, color, language } = (e as unknown as CustomEvent<{ name: string; color: string; language: string }>).detail;
+    const { name, color, language, network: net } = (e as unknown as CustomEvent<{ name: string; color: string; language: string; network: { name: string; password: string } | null }>).detail;
     setPrefs({ language });
+    setNetwork(net);
     createProfile(name, color);
     onboarding.open = false;
     startLobby();

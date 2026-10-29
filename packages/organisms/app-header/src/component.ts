@@ -29,6 +29,7 @@ export const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
  *
  * @property {Profile} me the signed-in profile (avatar and status menu are hidden without it)
  * @property {LobbyStatus} status lobby connection state; `idle` is shown as `connecting`
+ * @property {string} network name of the private network in use, shown next to the connection state; "" = public
  * @property {string} language language code for the language picker (default "en")
  * @property {boolean} live you are presenting: the button reads "End broadcast" and fires `end-live` (reflected)
  *
@@ -48,6 +49,7 @@ export class AppHeader extends CustomElement {
     @property({ type: Object, attribute: false, rerender: true }) me?: Profile | null;
     @property({ type: String, rerender: true }) status: LobbyStatus = "connecting";
     @property({ type: String, rerender: true }) language: string = "en";
+    @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Boolean, reflect: true, rerender: true }) live: boolean = false;
 
     // the "Go live" title dialog
@@ -117,6 +119,7 @@ export class AppHeader extends CustomElement {
         return html`
             <div part="bar" class="bar">
                 <pc-connection-status status="${this.connection}"></pc-connection-status>
+                ${this.network ? html`<span class="network" title="${this.t("network", { name: this.network })}">${this.network}</span>` : ""}
                 <span class="spacer"></span>
 
                 <pap-button class="live" size="small" variant="${this.live ? "filled" : "clear"}" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">

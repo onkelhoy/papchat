@@ -61,6 +61,7 @@
     "@papit/input": "*",
     "@papit/radio": "*",
     "@papit/button": "*",
+    "@papit/switch": "*",
     "@papchat/avatar": "*",
     "@papchat/language-picker": "*"
   },

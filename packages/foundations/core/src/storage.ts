@@ -1,10 +1,11 @@
-import type { Debug, Prefs, Profile, Session } from "./types";
+import type { Debug, Network, Prefs, Profile, Session } from "./types";
 
 const KEYS = {
     profile: "papchat:profile",
     prefs: "papchat:prefs",
     debug: "papchat:debug",
     session: "papchat:session",
+    network: "papchat:network",
 } as const;
 
 export const DEFAULT_PREFS: Prefs = {
@@ -86,6 +87,17 @@ export const storage = {
         },
         set(value: Prefs) {
             write(local, KEYS.prefs, value);
+        },
+    },
+    // null = the public lobby
+    network: {
+        get(): Network | null {
+            const value = read(local, KEYS.network);
+            if (!isObject(value) || typeof value.name !== "string" || !value.name.trim()) return null;
+            return { name: value.name.trim(), password: typeof value.password === "string" ? value.password : "" };
+        },
+        set(value: Network | null) {
+            write(local, KEYS.network, value ?? undefined);
         },
     },
     debug: {

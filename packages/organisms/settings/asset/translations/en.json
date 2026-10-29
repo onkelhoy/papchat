@@ -29,6 +29,14 @@
     "theme": "Theme",
     "language": "Language",
     "notify": "Show notifications for messages and calls",
-    "notify-hint": "Your browser will ask for permission."
+    "notify-hint": "Your browser will ask for permission.",
+    "network": "Network",
+    "network-public": "You're on the public papchat network.",
+    "network-private": "You're on the private network \"{name}\".",
+    "private": "Private network",
+    "network-name": "Network name",
+    "password": "Password",
+    "switch-network": "Switch network",
+    "switch-hint": "Switching reloads the page and leaves your current chats and calls."
   }
 }

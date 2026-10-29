@@ -105,3 +105,15 @@ pap-button[size="icon"] {
     block-size: var(--space-9, 2.25rem);
     border-radius: 50%;
 }
+
+/* private network name, a small tag next to the connection state */
+.network {
+    padding: 0 var(--space-2, 0.5rem);
+    border-radius: var(--radius-large, 999px);
+    background: var(--secondary);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-inline-size: 10rem;
+}

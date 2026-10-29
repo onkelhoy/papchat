@@ -2,10 +2,11 @@ import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
 import { log } from "./log";
-import { me, setLobbyStatus, setMembers, toast } from "./state";
+import { me, network, setLobbyStatus, setMembers, toast } from "./state";
 import type { Profile, Status } from "./types";
 
-// The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in. Find the canonical
+// The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in. A private network
+// (`network()`) is the same thing under its own name and password, so only its members meet. Find the canonical
 // lobby or create it, converge when two people create at once, rebuild after a socket reconnect,
 // keep `members` / `lobbyStatus` up to date and route app messages by uid.
 
@@ -26,6 +27,8 @@ const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const RETRY_MIN_MS = 3_000;
 const RETRY_MAX_MS = 30_000;
 const UNREACHABLE_QUIET_MS = 3_000;
+
+class WrongPassword extends Error { }
 
 // a boot belongs to one epoch; stop/reconnect bumps it so stale async work bails out
 class Cancelled extends Error { }
@@ -252,11 +255,13 @@ async function boot(current: number): Promise<boolean> {
             try
             {
                 log("lobby: joining", target.id, target.meta);
-                await serverCall(current, () => c.join(target.id));
+                await join(current, c, target.id);
             }
             catch (error)
             {
                 alive(current);
+                // the network exists but isn't ours to enter: creating a second one would split it
+                if (error instanceof WrongPassword) throw error;
                 log("lobby: join failed", error);
             }
         }
@@ -264,10 +269,12 @@ async function boot(current: number): Promise<boolean> {
         // step 3: none (or joining keeps failing): we host it
         if (!c.network)
         {
-            log("lobby: creating");
+            const net = network();
+            log("lobby: creating", net?.name ?? LOBBY_NAME);
             await serverCall(current, () => c.create({
-                name: LOBBY_NAME,
-                meta: { app: APP, kind: "lobby", v: 1, created: Date.now() },
+                name: net?.name ?? LOBBY_NAME,
+                ...(net?.password ? { password: net.password } : {}),
+                meta: { app: APP, kind: "lobby", v: 1, created: Date.now(), ...(net ? { network: net.name } : {}) },
             }));
         }
         alive(current);
@@ -285,6 +292,17 @@ async function boot(current: number): Promise<boolean> {
     catch (error)
     {
         if (error instanceof Cancelled) return false;
+        if (error instanceof WrongPassword)
+        {
+            // retrying can't help: stay out until the user picks another password in the settings
+            log("lobby: wrong password for", network()?.name);
+            booting = false;
+            running = false;
+            stopClient();
+            setLobbyStatus("closed");
+            toast("error", `Wrong password for the network "${network()?.name ?? ""}". Change it in Settings → Profile.`);
+            return false;
+        }
         log("lobby: boot failed, retrying", error);
         booting = false;
         syncStatus();
@@ -328,7 +346,7 @@ async function raceGuard(current: number) {
 
         try
         {
-            await serverCall(current, () => c.join(best.id));
+            await join(current, c, best.id);
             alive(current);
             booting = false;
             syncStatus();
@@ -360,9 +378,24 @@ async function raceGuard(current: number) {
 async function findLobbies(current: number, c: Client): Promise<NetworkInfo[]> {
     const all = await serverCall(current, () => c.list());
     alive(current);
+    const name = network()?.name;
     return all
-        .filter(n => n.meta?.app === APP && n.meta?.kind === "lobby")
+        // the public lobby has no `network`, a private one carries its name
+        .filter(n => n.meta?.app === APP && n.meta?.kind === "lobby" && n.meta?.network === name)
         .sort(compare);
+}
+
+async function join(current: number, c: Client, id: string) {
+    const password = network()?.password || undefined;
+    try
+    {
+        await serverCall(current, () => c.join(id, password));
+    }
+    catch (error)
+    {
+        if (/wrong password|forbidden/i.test(String((error as Error)?.message ?? error))) throw new WrongPassword();
+        throw error;
+    }
 }
 
 // canonical = smallest meta.created, then smallest id
