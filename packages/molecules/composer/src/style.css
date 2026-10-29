@@ -33,10 +33,11 @@ textarea::placeholder {
     color: var(--text-secondary);
 }
 
+/* the same calm focus as the inputs: border and a soft ring, no hard outline */
 textarea:focus-visible {
-    outline: 2px solid var(--focus-color);
-    outline-offset: 1px;
-    border-color: var(--focus-color);
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 25%, transparent);
 }
 
 textarea:disabled {

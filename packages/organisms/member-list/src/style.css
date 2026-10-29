@@ -57,3 +57,17 @@ pap-group {
 :host([compact]) .empty {
     display: none;
 }
+
+/* pap-input: a quiet frame across the full box; focus turns the border --primary with a soft ring
+   (its own focus style is a system-blue outline) */
+pap-input::part(wrapper) {
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.15), oklch(100% 0 0 / 0.15));
+    border-radius: var(--radius-medium, 0.5rem);
+}
+
+pap-input:focus-within::part(wrapper) {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 25%, transparent);
+}

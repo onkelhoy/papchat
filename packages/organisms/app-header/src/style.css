@@ -54,8 +54,33 @@ pap-menuitem[aria-checked="true"] {
     font-weight: 600;
 }
 
+.dialog-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+pap-dialog::part(header) {
+    padding-block-end: var(--space-3, 0.75rem);
+}
+
 .ask {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
     inline-size: min(24rem, 80vw);
+    padding-block-end: var(--space-2, 0.5rem);
+}
+
+.ask label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* pap-input is inline-block: full width here */
+.ask pap-input {
+    display: block;
+    inline-size: 100%;
 }
 
 .footer {
@@ -141,4 +166,18 @@ pap-theme-picker {
     font-weight: 700;
     line-height: 0.75rem;
     text-align: center;
+}
+
+/* pap-input: a quiet frame across the full box; focus turns the border --primary with a soft ring
+   (its own focus style is a system-blue outline) */
+pap-input::part(wrapper) {
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.15), oklch(100% 0 0 / 0.15));
+    border-radius: var(--radius-medium, 0.5rem);
+}
+
+pap-input:focus-within::part(wrapper) {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 25%, transparent);
 }

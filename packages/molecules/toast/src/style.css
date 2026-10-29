@@ -9,8 +9,7 @@
     max-inline-size: var(--toast-max-width, 24rem);
     padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
     border-radius: var(--radius-medium);
-    border: 1px solid color-mix(in oklch, var(--_accent) 40%, transparent);
-    border-inline-start: 4px solid var(--_accent);
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12));
     background-color: var(--toast-background, var(--background-light));
     color: var(--text);
     box-shadow: 0 4px 16px oklch(0% 0 0 / 0.25);
@@ -46,11 +45,17 @@
     line-height: 1;
 }
 
+/* the text keeps a readable width; on a narrow screen the buttons move under it instead of squeezing it */
+:host {
+    flex-wrap: wrap;
+}
+
 [part="message"] {
-    flex: 1;
+    flex: 1 1 10rem;
     min-inline-size: 0;
     margin: 0;
-    overflow-wrap: anywhere;
+    /* break between words; only a very long word (a link) may break inside */
+    overflow-wrap: break-word;
 }
 
 [part="action"],

@@ -19,6 +19,7 @@
     "network": "Privat nätverk: {name}",
     "theme-light": "Ljust tema",
     "theme-dark": "Mörkt tema",
-    "theme-system": "Automatiskt tema ({mode})"
+    "theme-system": "Automatiskt tema ({mode})",
+    "title-example": "t.ex. Semesterbilder"
   }
 }

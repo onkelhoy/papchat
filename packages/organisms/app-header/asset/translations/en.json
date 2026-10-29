@@ -19,6 +19,7 @@
     "network": "Private network: {name}",
     "theme-light": "Light theme",
     "theme-dark": "Dark theme",
-    "theme-system": "Automatic theme ({mode})"
+    "theme-system": "Automatic theme ({mode})",
+    "title-example": "e.g. Holiday photos"
   }
 }

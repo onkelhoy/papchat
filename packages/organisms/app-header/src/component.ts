@@ -195,17 +195,19 @@ export class AppHeader extends CustomElement {
             <pap-dialog
                 part="dialog"
                 open="${this.asking && "true"}"
-                header="${this.t("dialog-title")}"
                 close-outside-click="true"
                 @close="${this.handleDialogClose}"
             >
+                <h2 slot="header" class="dialog-title">${this.t("dialog-title")}</h2>
                 <form class="ask" @submit="${this.handleStart}">
+                    <label for="live-title">${this.t("title-label")}</label>
                     <pap-input
+                        id="live-title"
                         name="title"
                         autocomplete="off"
                         maxlength="80"
                         aria-label="${this.t("title-label")}"
-                        placeholder="${this.t("title-label")}"
+                        placeholder="${this.t("title-example")}"
                         value="${this.liveTitle}"
                         @input="${this.handleTitle}"
                         @change="${this.handleTitle}"

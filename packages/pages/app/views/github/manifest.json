@@ -1,0 +1,13 @@
+{
+    "name": "papchat",
+    "short_name": "papchat",
+    "description": "Peer-to-peer chat, calls and screen sharing in the browser.",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#efa527",
+    "icons": [
+        { "src": "logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    ]
+}
