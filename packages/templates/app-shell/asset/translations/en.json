@@ -5,6 +5,7 @@
   },
   "pc-app-shell": {
     "menu": "Open menu",
-    "sidebar": "Sidebar"
+    "sidebar": "Sidebar",
+    "close": "Close menu"
   }
 }

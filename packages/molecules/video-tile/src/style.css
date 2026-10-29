@@ -129,3 +129,11 @@ pap-button[size="icon"] {
     block-size: var(--space-9, 2.25rem);
     border-radius: 50%;
 }
+
+/* fullscreen: fill the screen instead of keeping the tile's size and rounding */
+:host(:fullscreen) {
+    inline-size: 100vw;
+    block-size: 100dvh;
+    border-radius: 0;
+    background: black;
+}

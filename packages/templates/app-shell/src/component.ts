@@ -30,6 +30,9 @@ const MOBILE = "(max-width: 799.98px)";
  *
  * @property {boolean} sidebaropen whether the sidebar (desktop) or drawer (mobile) is open (reflected)
  *
+ * On mobile a `member-action` or `select` event from the sidebar content (a chat or room was picked)
+ * closes the drawer.
+ *
  * @fires sidebar-toggle {SidebarToggleDetail} sidebaropen changed, `detail.open` is the new value
  *
  * @slot brand   logo/name, in the sidebar's header (top of the drawer on mobile)
@@ -39,6 +42,7 @@ const MOBILE = "(max-width: 799.98px)";
  * @slot overlay layer above everything, e.g. incoming calls (pointer events pass through the empty area)
  * @slot toasts  layer above the overlay, e.g. `pc-toaster`
  * @csspart menu the menu button shown on mobile
+ * @csspart close the drawer's close button (mobile)
  */
 export class AppShell extends CustomElement {
     static sheet = sheet;
@@ -68,6 +72,8 @@ export class AppShell extends CustomElement {
         // wide screens start with the sidebar open, phones with the drawer closed
         this.sidebaropen = !this.mobile;
         this.media.addEventListener("change", this.handlemedia);
+        this.addEventListener("member-action", this.handlepick);
+        this.addEventListener("select", this.handlepick);
 
         super.connectedCallback();
     }
@@ -76,6 +82,8 @@ export class AppShell extends CustomElement {
         super.disconnectedCallback();
 
         this.media?.removeEventListener("change", this.handlemedia);
+        this.removeEventListener("member-action", this.handlepick);
+        this.removeEventListener("select", this.handlepick);
         this.observer?.disconnect();
         this.observer = undefined;
     }
@@ -90,6 +98,18 @@ export class AppShell extends CustomElement {
     @bind
     private handlemenu() {
         this.sidebaropen = true;
+    }
+
+    @bind
+    private handleclosedrawer() {
+        this.sidebaropen = false;
+    }
+
+    // on phones the drawer covers the page: picking a chat or room from it closes it
+    @bind
+    private handlepick(e: Event) {
+        // a native `select` (text selected in an input) bubbles too; only our CustomEvents count
+        if (this.mobile && e instanceof CustomEvent) this.sidebaropen = false;
     }
 
     // the drawer closes itself (Escape, backdrop click) and fires open/close
@@ -135,7 +155,12 @@ export class AppShell extends CustomElement {
             </header>
             ${this.mobile ? html`
                 <pap-drawer static placement="left" label="${this.t("sidebar")}" open="${open}" @open="${this.handledraweropen}" @close="${this.handledrawerclose}">
-                    <slot name="brand"></slot>
+                    <div class="drawer-header">
+                        <slot name="brand"></slot>
+                        <pap-button part="close" size="icon" variant="clear" aria-label="${this.t("close")}" @click="${this.handleclosedrawer}">
+                            <pap-icon name="/icons/spritesheet.svg#x" aria-hidden="true"></pap-icon>
+                        </pap-button>
+                    </div>
                     <slot name="sidebar"></slot>
                 </pap-drawer>
             ` : html`

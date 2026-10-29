@@ -114,7 +114,7 @@ export class Composer extends CustomElement {
             <pap-file-input multiple tabindex="-1" aria-hidden="true" @change="${this.handlePicked}"></pap-file-input>
             <textarea
                 part="field"
-                rows="2"
+                rows="4"
                 placeholder="${this.placeholder ?? this.t("placeholder")}"
                 aria-label="${this.placeholder ?? this.t("placeholder")}"
                 disabled="${off}"

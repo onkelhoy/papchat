@@ -80,6 +80,14 @@ export class VideoTile extends CustomElement {
         super.disconnectedCallback();
     }
 
+    // the pc-video / pc-level-meter can be re-created by a render (avatar ↔ video): hand them the streams again
+    update() {
+        super.update();
+        this.syncVideo();
+        this.syncAudio();
+        return undefined;
+    }
+
     // follow track changes of the current video stream (camera switched off/on on a live stream)
     private watch(_: "video") {
         this.unwatch();
@@ -139,10 +147,20 @@ export class VideoTile extends CustomElement {
         {
             document.exitFullscreen().catch(() => { });
         }
+        else if (this.requestFullscreen)
+        {
+            this.requestFullscreen().catch(() => this.nativeFullscreen());
+        }
         else
         {
-            this.requestFullscreen?.()?.catch(() => { });
+            this.nativeFullscreen();
         }
+    }
+
+    // iPhone Safari only lets a <video> go fullscreen (its own player)
+    private nativeFullscreen() {
+        const video = this.root.querySelector("pc-video")?.shadowRoot?.querySelector("video") as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null | undefined;
+        video?.webkitEnterFullscreen?.();
     }
 
     @bind
@@ -157,7 +175,7 @@ export class VideoTile extends CustomElement {
 
         return html`
             ${hasVideo ? html`
-                <pc-video part="video" fit="${this.screen ? "contain" : "cover"}" ?muted="${this.self}" ?mirror="${this.self && !this.screen}"></pc-video>
+                <pc-video part="video" fit="${this.screen ? "contain" : "cover"}" muted="${this.self ? "true" : ""}" mirror="${this.self && !this.screen ? "true" : ""}"></pc-video>
             ` : html`
                 <div class="placeholder">
                     <pc-avatar part="avatar" size="l" name="${name}" uid="${profile?.uid ?? ""}" color="${profile?.color ?? ""}"></pc-avatar>

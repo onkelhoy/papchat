@@ -861,6 +861,8 @@ export class Room extends EventTarget {
                     this.leaving.delete(uid);
                     if (this.closed || this.present.has(uid)) return;
                     this.system(`${profile.name} left`, uid);
+                    // a call room with nobody else left is over: close it instead of leaving you alone in it
+                    if ((this.kind === "call" || this.kind === "video") && this.present.size === 0 && this.leaving.size === 0) this.leave();
                 }, LIMITS.leaveGraceMs));
                 this.stopTyping(uid);
             }

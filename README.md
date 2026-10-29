@@ -144,4 +144,4 @@ None of these block papchat; they are candidates for upstream issues.
 
 ## License
 
-MIT
+[@Papit License 1.0](LICENSE): free to use, modify and build on, with credit, but the software itself may not be sold or resold.

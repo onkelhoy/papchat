@@ -5,6 +5,7 @@
   },
   "pc-app-shell": {
     "menu": "Öppna menyn",
-    "sidebar": "Sidopanel"
+    "sidebar": "Sidopanel",
+    "close": "Stäng menyn"
   }
 }

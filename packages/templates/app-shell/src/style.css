@@ -88,3 +88,10 @@ pap-button[size="icon"] {
     block-size: var(--space-9, 2.25rem);
     border-radius: 50%;
 }
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+}

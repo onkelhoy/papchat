@@ -40,7 +40,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "license": "MIT",
+  "license": "LicenseRef-Papit-1.0",
   "homepage": "https://github.com/onkelhoy/papchat/tree/main/packages/molecules/file-card",
   "bugs": {
     "url": "https://github.com/onkelhoy/papchat/issues"
