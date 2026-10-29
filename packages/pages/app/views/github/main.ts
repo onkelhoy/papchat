@@ -112,7 +112,6 @@ async function changeLanguage(code: string) {
 
     await translator.change(code);
     document.documentElement.lang = code;
-    header.language = code;
     settings.language = code;
     onboarding.language = code;
     empty.textContent = t("empty");
@@ -605,12 +604,6 @@ toaster.addEventListener("action", (e) =>
 toaster.addEventListener("dismiss", (e) => dismissToast((e as CustomEvent<{ id: string }>).detail.id));
 
 header.addEventListener("status-change", (e) => setStatus((e as CustomEvent<{ status: Status }>).detail.status));
-header.addEventListener("language-change", (e) =>
-{
-    const { value } = (e as CustomEvent<{ value: string }>).detail;
-    setPrefs({ language: value });
-    changeLanguage(value);
-});
 header.addEventListener("open-settings", openSettings);
 // going live: the stage opens in presenter mode with mic and camera (each toasts on failure)
 header.addEventListener("go-live", async (e) =>

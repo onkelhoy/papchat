@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 59/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 60/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -478,10 +478,11 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **files:** `templates/app-shell`, `organisms/room-list`, `organisms/member-list`, `molecules/member-item` (each gets a `compact` attribute).
 - Done: `compact` (reflected) on `pc-room-list`, `pc-member-list` (passes it to its items) and `pc-member-item`. Room rows show one centred avatar (a name-initial avatar when nobody else is in the room, in both modes), the title as a native tooltip, the unread badge top-right and the phone icon bottom-right; ⋯ and the Live badge are hidden. The member list hides the heading, search, Live section and empty text. Member rows show the avatar with presence and a tooltip (name, status); the ⋯ menu still opens on right-click. App-shell narrows the collapsed rail's gutter to `--space-2` (`::part(nav|header)`). The page sets `compact = !shell.sidebaropen` on load and on `sidebar-toggle`. READMEs updated. Typecheck + build pass; not checked by eye, and the demo pages have no compact example yet.
 
-### [ ] T7.10 Header cleanup · `sonnet` · needs —
+### [x] T7.10 Header cleanup · `sonnet` · needs —
 - **do:** remove the language flag from the header and put a language select in the settings dialog (General tab). Header keeps: connection status, network name, Go live, theme toggle, avatar. Make the theme toggle a single icon button that cycles light → dark → system, showing the sun/moon of what's **currently applied** (system shows the resolved one, with a small "auto" marker). Tooltip says the mode.
 - **files:** `organisms/app-header`, `organisms/settings`, page.
 - **papit:** write the "system mode should show the applied light/dark icon" request in `PAPCHAT-FINDINGS.md` (T7.12).
+- Done: the header's language picker, `language` property and `language-change` event are gone (settings already had a language select; the page no longer wires the header for it). The theme is one icon button: it cycles light → dark → system, shows the sun or moon of the theme in effect (system resolves via `prefers-color-scheme`, live) with a small "A" mark, and has a tooltip and aria-label ("Automatic theme (Dark theme)"). A hidden `pap-theme-picker storage="local"` still applies and stores the choice, so the settings picker stays in sync through the `data-theme` it observes. en + sv strings. `@papchat/language-picker` stays in the header's `package.json` (removing it would desync the lockfile without `npm install`). Build + typecheck pass; not checked by eye.
 
 ### [ ] T7.11 Onboarding without the network picker · `sonnet` · needs —
 - **why:** onboarding's dialog has "Continue" and the network picker has its own "Join" buttons. Two primary actions confused a first-time user.

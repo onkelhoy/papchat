@@ -16,6 +16,9 @@
     "busy": "Busy",
     "away": "Away",
     "dnd": "Do not disturb",
-    "network": "Private network: {name}"
+    "network": "Private network: {name}",
+    "theme-light": "Light theme",
+    "theme-dark": "Dark theme",
+    "theme-system": "Automatic theme ({mode})"
   }
 }

@@ -117,3 +117,28 @@ pap-button[size="icon"] {
     text-overflow: ellipsis;
     max-inline-size: 10rem;
 }
+
+/* the picker only applies and remembers the theme; the button above is what people use */
+pap-theme-picker {
+    display: none;
+}
+
+.theme {
+    position: relative;
+}
+
+/* "system": the icon shows the theme in effect, this small mark says it follows the system */
+.auto {
+    position: absolute;
+    inset-block-end: 0.125rem;
+    inset-inline-end: 0.125rem;
+    min-inline-size: 0.75rem;
+    block-size: 0.75rem;
+    border-radius: var(--radius-full, 999px);
+    background-color: var(--primary);
+    color: var(--primary-contrast);
+    font-size: 0.5rem;
+    font-weight: 700;
+    line-height: 0.75rem;
+    text-align: center;
+}

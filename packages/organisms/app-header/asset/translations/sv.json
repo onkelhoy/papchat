@@ -16,6 +16,9 @@
     "busy": "Upptagen",
     "away": "Borta",
     "dnd": "Stör ej",
-    "network": "Privat nätverk: {name}"
+    "network": "Privat nätverk: {name}",
+    "theme-light": "Ljust tema",
+    "theme-dark": "Mörkt tema",
+    "theme-system": "Automatiskt tema ({mode})"
   }
 }
