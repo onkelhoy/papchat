@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 57/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 58/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -461,10 +461,11 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **done when:** a presenter shares their screen and 2 viewers see it.
 - **Open, needs a repro (2026-10-29):** traced by reading and no break found: the presenter's screen button is wired (synchronous `toggle` → `toggleCapture` → `stage.start("screen")`), `getDisplayMedia` runs inside the gesture, `STAGE_PLAN` has `screen`, papit's multicast relays every name alike, and viewers get a pinned screen tile. On phones the button is hidden (no `getDisplayMedia`), which is expected. Done meanwhile: screen capture asks ~15 fps, and `screenHint()` sets `contentHint = "detail"` (rooms and stages). Next step: the user reproduces with `papchat.setLogging(true)` in the console (presenter and a viewer), noting browser, whether the picker opened, and whether the presenter's own screen tile showed. Then fix the link that breaks.
 
-### [ ] T7.7 Sharp white edge on the stage when chat is open · `sonnet` · needs —
+### [x] T7.7 Sharp white edge on the stage when chat is open · `sonnet` · needs —
 - **symptom:** a light, hard 1-px edge around the call stage/room panel while the chat panel is open (screenshot 2026-10-29 21.04.06, right and bottom edges).
 - **do:** find the border (likely the splitter or `pc-room`'s panel container using a light token or `outline`), use the theme's subtle border token and the same radius as the rest. Check light and dark.
 - **files:** `organisms/room` or `organisms/call-stage` `style.css`.
+- Done: the edge was `pap-splitter`'s own host border (`--background-inverse` at 70%, near-white in dark mode). The splitter is only used when the chat panel is open in a call. `pc-room` sets `border: none` on it and draws a 1 px subtle divider on `::part(separator)` (same colour as the header border). Papit note added to the findings. Build passes; not checked by eye.
 
 ### [ ] T7.8 Phase A live check · `opus` · needs T7.1-T7.7
 - Re-run the scenarios above on 2 desktops + 1 phone. Write anything still broken under Notes.

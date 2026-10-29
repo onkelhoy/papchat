@@ -37,6 +37,16 @@ pap-splitter {
     flex: 1;
     min-height: 0;
     min-width: 0;
+    /* the splitter's own frame is a hard, near-white line in dark mode: drop it, keep a quiet divider */
+    border: none;
+}
+
+pap-splitter::part(separator) {
+    background: linear-gradient(light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12)), light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12))) center / 1px 100% no-repeat;
+}
+
+pap-splitter[split="horizontal"]::part(separator) {
+    background-size: 100% 1px;
 }
 
 .stage,
