@@ -11,6 +11,10 @@
     line-height: 1.4;
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 [part="dot"] {
     --presence-size: 0.625rem;
 }

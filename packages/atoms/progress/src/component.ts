@@ -28,7 +28,7 @@ export class Progress extends CustomElement {
 
     @translate t = useTranslator("pc-progress");
 
-    @property({ type: Number, after: function (this: Progress) { this.updateAria(); } }) value?: number;
+    @property({ type: Number, after: function (this: Progress) { this.updateAria(); }, rerender: true }) value?: number;
     @property({ type: String, after: function (this: Progress) { this.updateAria(); } }) label?: string;
 
     connectedCallback(): void {

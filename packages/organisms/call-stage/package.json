@@ -74,7 +74,8 @@
     "@papit/theme": "*",
     "@papit/translator": "*",
     "@papit/codeblock": "*",
-    "@papchat/core": "*"
+    "@papchat/core": "*",
+    "@papchat/theme": "*"
   },
   "browserslist": [
     "defaults",

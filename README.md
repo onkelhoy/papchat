@@ -88,8 +88,7 @@ Node 20 or newer.
 
 ```bash
 npm install
-npm run signal   # terminal 1: local signal server on :3000
-npm start        # terminal 2: dev server; on localhost the app picks ws://localhost:3000
+npm start        # dev server; the app uses the deployed signal server on Render
 ```
 
 Open it in two or three tabs or browser profiles to see presence, chat and calls. For a real cross-network test, use a phone on the deployed page.
@@ -98,7 +97,7 @@ Open it in two or three tabs or browser profiles to see presence, chat and calls
 | --- | --- |
 | `npm run build` | build every package |
 | `npm start` | dev server for the app and the component demo pages |
-| `npm run signal` | local signal server on port 3000 |
+| `npm run signal` | local signal server on port 3001 (use it with `?signal=ws://localhost:3001`) |
 | `npm run pages` | build, then produce the static site in `packages/pages/app/dist` with `--base /papchat/` |
 
 The signal server can be overridden with `?signal=<url>` on the page URL (remembered in `papchat:debug`).

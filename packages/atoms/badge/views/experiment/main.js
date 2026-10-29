@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/badge';
 
 const created = document.getElementById("created");

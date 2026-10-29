@@ -20,7 +20,6 @@ import type { IncomingCall as IncomingCard } from "@papchat/incoming-call";
 import type { InvitePicker } from "@papchat/invite-picker";
 import type { Settings } from "@papchat/settings";
 import type { Toaster } from "@papchat/toaster";
-import type { AppShell } from "@papchat/app-shell";
 
 import {
     PALETTE,
@@ -65,7 +64,6 @@ import type { CaptureName, Prefs, Profile, Room, RoomSummary, Stage, Status } fr
 // languages with a file in asset/translations
 const LANGUAGES = ["en", "sv"];
 
-const shell = document.querySelector<AppShell>("pc-app-shell")!;
 const header = document.querySelector<AppHeader>("pc-app-header")!;
 const list = document.querySelector<MemberList>("pc-member-list")!;
 const onboarding = document.querySelector<Onboarding>("pc-onboarding")!;
@@ -116,7 +114,6 @@ async function boot() {
     for (const id of LANGUAGES) translator.add({ id, url: `/translations/${id}.json` });
     await changeLanguage(pickLanguage());
 
-    shell.sidebaropen = prefs().sidebarOpen;
     settings.sinkSupported = sinkSupported;
     startNotify();
     void ringtone.loadTones();
@@ -602,8 +599,6 @@ list.addEventListener("watch", async (e) =>
     const stage = await watch((e as CustomEvent<{ id: string }>).detail.id);
     if (stage) showStage();
 });
-
-shell.addEventListener("sidebar-toggle", (e) => setPrefs({ sidebarOpen: (e as CustomEvent<{ open: boolean }>).detail.open }));
 
 // from the sidebar and from the room's People tab (both bubble to document)
 document.addEventListener("member-action", (e) =>

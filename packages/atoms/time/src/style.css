@@ -4,6 +4,10 @@
     font-size: var(--time-size, inherit);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 time {
     white-space: nowrap;
 }

@@ -1,5 +1,5 @@
+import "@papit/codeblock";
 import '@papchat/video';
-import '@papchat/theme';
 import { translator } from '@papit/translator';
 
 translator.add({ id: "en", url: "/translations/en.json" });

@@ -31,11 +31,11 @@ import type { MessagePart, MessageVariant } from "./types";
 export class Message extends CustomElement {
     static sheet = sheet;
 
-    @property({ type: Object }) message?: ChatMessage;
-    @property({ type: Object }) author?: Profile;
-    @property({ type: Boolean, reflect: true }) mine?: boolean;
-    @property({ type: Boolean, reflect: true }) grouped?: boolean;
-    @property({ type: String, reflect: true }) variant?: MessageVariant;
+    @property({ type: Object, rerender: true }) message?: ChatMessage;
+    @property({ type: Object, rerender: true }) author?: Profile;
+    @property({ type: Boolean, reflect: true, rerender: true }) mine?: boolean;
+    @property({ type: Boolean, reflect: true, rerender: true }) grouped?: boolean;
+    @property({ type: String, reflect: true, rerender: true }) variant?: MessageVariant;
 
     render() {
         const message = this.message;

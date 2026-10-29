@@ -29,10 +29,10 @@ export class DevicePicker extends CustomElement {
 
     @translate t = useTranslator("pc-device-picker");
 
-    @property({ type: String, reflect: true }) kind: DeviceKind = "audioinput";
-    @property({ type: Array, attribute: false }) devices: Device[] = [];
-    @property({ type: String }) value: string = "";
-    @property({ type: Boolean, attribute: false }) supported: boolean = true;
+    @property({ type: String, reflect: true, rerender: true }) kind: DeviceKind = "audioinput";
+    @property({ type: Array, attribute: false, rerender: true }) devices: Device[] = [];
+    @property({ type: String, rerender: true }) value: string = "";
+    @property({ type: Boolean, attribute: false, rerender: true }) supported: boolean = true;
 
     @query("pap-menu") private menu!: Menu;
 

@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/composer';
 import { translator } from '@papit/translator';
 

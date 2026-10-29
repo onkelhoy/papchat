@@ -1,6 +1,5 @@
 // core
 import { translator } from '@papit/translator';
-import "@papchat/theme";
 import "@papit/codeblock";
 
 // component

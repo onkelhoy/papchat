@@ -33,16 +33,17 @@ export class InvitePicker extends CustomElement {
 
     @property({
         type: Boolean,
+        rerender: true,
         after(this: InvitePicker) {
             // every opening starts from a clean slate
             this.selected = new Set();
             this.query = "";
         }
     }) open: boolean = false;
-    @property({ type: Array, attribute: false }) members: Profile[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) members: Profile[] = [];
 
-    @property({ type: String, attribute: false }) private query: string = "";
-    @property({ attribute: false }) private selected: Set<string> = new Set();
+    @property({ type: String, attribute: false, rerender: true }) private query: string = "";
+    @property({ attribute: false, rerender: true }) private selected: Set<string> = new Set();
 
     private get filtered(): Profile[] {
         const q = this.query.trim().toLowerCase();

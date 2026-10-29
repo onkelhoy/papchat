@@ -51,17 +51,17 @@ export class Conversation extends CustomElement {
 
     @translate t = useTranslator("pc-conversation");
 
-    @property({ type: Array, attribute: false }) messages: ChatMessage[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) messages: ChatMessage[] = [];
     @property({ type: Object, attribute: false }) profiles: Record<string, Profile> = {};
     @property({ type: Array, attribute: false }) files: FileEntry[] = [];
     @property({ type: String }) me: string = "";
     @property({ type: Array, attribute: false }) typing: string[] = [];
-    @property({ type: String }) heading: string = "";
+    @property({ type: String, rerender: true }) heading: string = "";
 
     // shown while there are messages below the viewport
-    @property({ type: Boolean, attribute: false }) private unseen: boolean = false;
+    @property({ type: Boolean, attribute: false, rerender: true }) private unseen: boolean = false;
     // true while files are dragged over the element
-    @property({ type: Boolean, attribute: false }) private dropping: boolean = false;
+    @property({ type: Boolean, attribute: false, rerender: true }) private dropping: boolean = false;
 
     @query(".list") private list!: HTMLElement;
 
@@ -262,7 +262,7 @@ export class Conversation extends CustomElement {
                         ? html`<pc-file-card key="${message.id}"></pc-file-card>`
                         : html`<pc-message key="${message.id}"></pc-message>`)}
                 </div>
-                ${this.unseen ? html`<pap-button class="new" size="s" color="primary" type="button" @click="${this.handleNew}">${this.t("new-messages")} ↓</pap-button>` : ""}
+                ${this.unseen ? html`<pap-button class="new" size="small" color="primary" type="button" @click="${this.handleNew}">${this.t("new-messages")} ↓</pap-button>` : ""}
             </div>
             <div class="typing" role="status" aria-live="polite">${typing}</div>
             <pc-composer

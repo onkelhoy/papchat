@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/ringtone-picker';
 import { translator } from '@papit/translator';
 
@@ -38,11 +39,6 @@ main.volume = 0.6;
 const single = document.getElementById("single");
 single.tones = tones.slice(0, 1);
 single.volume = 1;
-
-const dark = document.getElementById("dark");
-dark.tones = tones;
-dark.value = "marimba";
-dark.volume = 0.8;
 
 const created = document.createElement("pc-ringtone-picker");
 created.tones = tones;

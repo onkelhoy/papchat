@@ -14,53 +14,56 @@
 
     <section>
         <h2>Default (all off) and interactive</h2>
-        <div class="row">
-            <pc-call-controls id="main"></pc-call-controls>
-            <pre id="log">events show here</pre>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-controls id="main"></pc-call-controls>
+                <pre id="log">events show here</pre>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Mic and camera on</h2>
-        <div class="row">
-            <pc-call-controls mic camera></pc-call-controls>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-controls mic camera></pc-call-controls>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Sharing screen</h2>
-        <div class="row">
-            <pc-call-controls mic camera screen></pc-call-controls>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-controls mic camera screen></pc-call-controls>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>No screen sharing support (canscreen="false")</h2>
-        <div class="row">
-            <pc-call-controls mic canscreen="false"></pc-call-controls>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-controls mic canscreen="false"></pc-call-controls>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Viewer</h2>
-        <div class="row">
-            <pc-call-controls viewer></pc-call-controls>
-            <pc-call-controls viewer chat></pc-call-controls>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-controls viewer></pc-call-controls>
+                <pc-call-controls viewer chat></pc-call-controls>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement</h2>
-        <div class="row" id="created"></div>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="row">
-            <pc-call-controls></pc-call-controls>
-            <pc-call-controls mic camera screen></pc-call-controls>
-            <pc-call-controls viewer chat></pc-call-controls>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row" id="created"></div>
+        </pap-codeblock>
     </section>
 </body>
 

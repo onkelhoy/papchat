@@ -53,14 +53,14 @@ export class Onboarding extends CustomElement {
 
     @translate t = useTranslator("pc-onboarding");
 
-    @property({ type: Boolean }) open: boolean = false;
-    @property({ type: String }) name: string = "";
-    @property({ type: String }) color: string = "";
-    @property({ type: String }) language: string = "en";
-    @property({ type: Array, attribute: false }) colors: string[] = DEFAULT_COLORS;
+    @property({ type: Boolean, rerender: true }) open: boolean = false;
+    @property({ type: String, rerender: true }) name: string = "";
+    @property({ type: String, rerender: true }) color: string = "";
+    @property({ type: String, rerender: true }) language: string = "en";
+    @property({ type: Array, attribute: false, rerender: true }) colors: string[] = DEFAULT_COLORS;
 
     // errors only show after a first attempt, not while the field is still empty
-    @property({ type: Boolean, attribute: false }) private attempted: boolean = false;
+    @property({ type: Boolean, attribute: false, rerender: true }) private attempted: boolean = false;
 
     @query("pap-dialog") private dialog!: Dialog;
 

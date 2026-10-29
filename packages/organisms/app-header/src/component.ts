@@ -45,19 +45,19 @@ export class AppHeader extends CustomElement {
 
     @translate t = useTranslator("pc-app-header");
 
-    @property({ type: Object, attribute: false }) me?: Profile | null;
-    @property({ type: String }) status: LobbyStatus = "connecting";
-    @property({ type: String }) language: string = "en";
-    @property({ type: Boolean, reflect: true }) live: boolean = false;
+    @property({ type: Object, attribute: false, rerender: true }) me?: Profile | null;
+    @property({ type: String, rerender: true }) status: LobbyStatus = "connecting";
+    @property({ type: String, rerender: true }) language: string = "en";
+    @property({ type: Boolean, reflect: true, rerender: true }) live: boolean = false;
 
     // the "Go live" title dialog
-    @property({ type: Boolean, attribute: false }) private asking: boolean = false;
-    @property({ type: String, attribute: false }) private liveTitle: string = "";
+    @property({ type: Boolean, attribute: false, rerender: true }) private asking: boolean = false;
+    @property({ type: String, attribute: false, rerender: true }) private liveTitle: string = "";
 
     @query("pap-menu.status") private statusMenu!: Menu;
 
     private get connection() {
-        return this.status === "idle" ? "connecting" : this.status;
+        return this.status === "idle" || this.status === "waking" ? "connecting" : this.status;
     }
 
     private handleStatus(status: Status) {
@@ -116,11 +116,10 @@ export class AppHeader extends CustomElement {
 
         return html`
             <div part="bar" class="bar">
-                <span class="logo">papchat</span>
                 <pc-connection-status status="${this.connection}"></pc-connection-status>
                 <span class="spacer"></span>
 
-                <pap-button class="live" size="small" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">
+                <pap-button class="live" size="small" variant="${this.live ? "filled" : "clear"}" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">
                     <pap-icon name="/icons/spritesheet.svg#broadcast" aria-hidden="true"></pap-icon>
                     <span class="label">${this.live ? this.t("end") : this.t("golive")}</span>
                 </pap-button>

@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/stage-card';
 import { translator } from '@papit/translator';
 
@@ -37,5 +38,3 @@ setInterval(() =>
     live.stage = { ...live.stage, viewers: n };
 }, 2000);
 
-card("dark", stage("s1", "Friday demo", "Anna Berg", 12));
-card("dark", stage("s2", "My own broadcast", "Henry Pap", 3, true));

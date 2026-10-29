@@ -29,7 +29,7 @@ export class StageCard extends CustomElement {
 
     @translate t = useTranslator("pc-stage-card");
 
-    @property({ type: Object }) stage?: StageSummary;
+    @property({ type: Object, rerender: true }) stage?: StageSummary;
 
     @bind private handleWatch() {
         const stage = this.stage;
@@ -61,7 +61,7 @@ export class StageCard extends CustomElement {
             </span>
             ${stage.mine
                 ? html`<span class="mine">${this.t("mine")}</span>`
-                : html`<pap-button class="action" part="watch" size="small" aria-label="${this.t("label", { title: stage.title, name, count: String(viewers) })}" @click="${this.handleWatch}">${this.t("watch")}</pap-button>`}
+                : html`<pap-button class="action" part="watch" size="small" variant="clear" aria-label="${this.t("label", { title: stage.title, name, count: String(viewers) })}" @click="${this.handleWatch}">${this.t("watch")}</pap-button>`}
         `;
     }
 }

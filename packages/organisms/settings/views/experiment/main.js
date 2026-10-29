@@ -1,5 +1,5 @@
+import "@papit/codeblock";
 import '@papchat/settings';
-import '@papchat/theme';
 import { translator } from '@papit/translator';
 
 translator.add({ id: "en", url: "/translations/en.json" });
@@ -53,14 +53,11 @@ function setup(el)
 }
 
 const light = document.getElementById("light");
-const dark = document.getElementById("dark");
 setup(light);
-setup(dark);
 
 const created = document.createElement("pc-settings");
 setup(created);
 document.body.append(created);
 
 document.getElementById("open-light").onclick = () => { light.open = true; };
-document.getElementById("open-dark").onclick = () => { dark.open = true; };
 document.getElementById("open-created").onclick = () => { created.open = true; };

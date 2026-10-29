@@ -32,6 +32,7 @@ const MOBILE = "(max-width: 799.98px)";
  *
  * @fires sidebar-toggle {SidebarToggleDetail} sidebaropen changed, `detail.open` is the new value
  *
+ * @slot brand   logo/name, in the sidebar's header (top of the drawer on mobile)
  * @slot header  top bar content
  * @slot sidebar sidebar / drawer content, e.g. room list and member list
  * @slot main    fills the remaining area
@@ -64,6 +65,8 @@ export class AppShell extends CustomElement {
         // set before the first render so the right container is built straight away
         this.media = window.matchMedia(MOBILE);
         this.mobile = this.media.matches;
+        // wide screens start with the sidebar open, phones with the drawer closed
+        this.sidebaropen = !this.mobile;
         this.media.addEventListener("change", this.handlemedia);
 
         super.connectedCallback();
@@ -80,6 +83,8 @@ export class AppShell extends CustomElement {
     // event handlers
     private handlemedia = (e: MediaQueryListEvent) => {
         this.mobile = e.matches;
+        // a drawer left open would cover the page after shrinking, a closed sidebar hides navigation after growing
+        this.sidebaropen = !e.matches;
     }
 
     @bind
@@ -130,10 +135,12 @@ export class AppShell extends CustomElement {
             </header>
             ${this.mobile ? html`
                 <pap-drawer static placement="left" label="${this.t("sidebar")}" open="${open}" @open="${this.handledraweropen}" @close="${this.handledrawerclose}">
+                    <slot name="brand"></slot>
                     <slot name="sidebar"></slot>
                 </pap-drawer>
             ` : html`
                 <pap-sidebar open="${open}">
+                    <slot name="brand" slot="header"></slot>
                     <slot name="sidebar"></slot>
                 </pap-sidebar>
             `}

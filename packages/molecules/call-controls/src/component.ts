@@ -39,13 +39,13 @@ export class CallControls extends CustomElement {
 
     @translate t = useTranslator("pc-call-controls");
 
-    @property({ type: Boolean, reflect: true }) mic: boolean = false;
-    @property({ type: Boolean, reflect: true }) camera: boolean = false;
-    @property({ type: Boolean, reflect: true }) screen: boolean = false;
-    @property({ type: Boolean, reflect: true }) chat: boolean = false;
-    @property({ type: Boolean, reflect: true }) viewer: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) mic: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) camera: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) screen: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) chat: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) viewer: boolean = false;
     // default true: a boolean attribute can't be "on" by default, so `canscreen="false"` turns it off
-    @property({ type: Boolean, reflect: true }) canscreen: boolean = true;
+    @property({ type: Boolean, reflect: true, rerender: true }) canscreen: boolean = true;
 
     @bind
     private handleToggle(e: Event) {
@@ -75,10 +75,10 @@ export class CallControls extends CustomElement {
         const color = highlightOn ? "primary" : "error";
 
         return html`
-            <pap-button data-control="${control}" part="${control}" size="icon" type="button" color="${filled ? color : "secondary"}" variant="${filled ? "filled" : "outline"}" aria-label="${label}" aria-pressed="${on ? "true" : "false"}" popovertarget="tip-${control}" @click="${this.handleToggle}">
-                <pap-icon name="/icons/spritesheet.svg#${on ? icon : offIcon}" aria-hidden="true"></pap-icon>
+            <pap-button data-control="${control}" part="${control}" size="icon" type="button" color="${filled ? color : "secondary"}" variant="${filled ? "filled" : "outline"}" aria-label="${label}" aria-pressed="${on ? "true" : "false"}" popovertarget="${`tip-${control}`}" @click="${this.handleToggle}">
+                <pap-icon name="${`/icons/spritesheet.svg#${on ? icon : offIcon}`}" aria-hidden="true"></pap-icon>
             </pap-button>
-            <pap-tooltip id="tip-${control}" placement="top" instant>${tip}</pap-tooltip>
+            <pap-tooltip id="${`tip-${control}`}" placement="top" instant>${tip}</pap-tooltip>
         `;
     }
 

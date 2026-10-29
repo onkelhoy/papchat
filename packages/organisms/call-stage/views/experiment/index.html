@@ -15,48 +15,51 @@
     <section>
         <h2>Audio</h2>
         <p>Remote tiles get a tone stream, played by the stage. Start it to hear it (needs a click).</p>
-        <button id="tone" type="button">Start tone</button>
+        <pap-codeblock display="both">
+            <button id="tone" type="button">Start tone</button>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>1 / 2 / 3 / 5 tiles</h2>
-        <div class="row">
-            <pc-call-stage class="demo" data-count="1"></pc-call-stage>
-            <pc-call-stage class="demo" data-count="2"></pc-call-stage>
-            <pc-call-stage class="demo" data-count="3"></pc-call-stage>
-            <pc-call-stage class="demo" data-count="5"></pc-call-stage>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-stage class="demo" data-count="1"></pc-call-stage>
+                <pc-call-stage class="demo" data-count="2"></pc-call-stage>
+                <pc-call-stage class="demo" data-count="3"></pc-call-stage>
+                <pc-call-stage class="demo" data-count="5"></pc-call-stage>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>1:1 with self overlay / screen share / pinned (click Pin)</h2>
-        <div class="row">
-            <pc-call-stage class="demo" data-count="2" data-self></pc-call-stage>
-            <pc-call-stage class="demo" data-count="3" data-screen></pc-call-stage>
-            <pc-call-stage class="demo" data-count="4" data-pinned></pc-call-stage>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-stage class="demo" data-count="2" data-self></pc-call-stage>
+                <pc-call-stage class="demo" data-count="3" data-screen></pc-call-stage>
+                <pc-call-stage class="demo" data-count="4" data-pinned></pc-call-stage>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Narrow / empty</h2>
-        <div class="row">
-            <pc-call-stage class="demo narrow" data-count="4"></pc-call-stage>
-            <pc-call-stage class="demo narrow" data-count="3" data-screen></pc-call-stage>
-            <pc-call-stage class="demo narrow" data-count="0"></pc-call-stage>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-call-stage class="demo narrow" data-count="4"></pc-call-stage>
+                <pc-call-stage class="demo narrow" data-count="3" data-screen></pc-call-stage>
+                <pc-call-stage class="demo narrow" data-count="0"></pc-call-stage>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement</h2>
-        <div class="row" id="created"></div>
-        <p id="log">events: none</p>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="row">
-            <pc-call-stage class="demo" data-count="3" data-self></pc-call-stage>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row" id="created"></div>
+            <p id="log">events: none</p>
+        </pap-codeblock>
     </section>
 </body>
 

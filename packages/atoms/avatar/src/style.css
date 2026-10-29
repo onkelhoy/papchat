@@ -8,6 +8,10 @@
     block-size: var(--_size);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 :host([size="s"]) {
     --_size: var(--avatar-size-s, 1.75rem);
 }

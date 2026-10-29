@@ -1,5 +1,5 @@
+import "@papit/codeblock";
 import { translator } from '@papit/translator';
-import "@papchat/theme";
 import '@papchat/conversation';
 
 translator.add({ id: "en", url: "/translations/en.json" });
@@ -47,9 +47,6 @@ function setup(el, { typing = [], heading } = {}) {
 
 const live = document.getElementById("live");
 setup(live, { heading: "Anna Berg" });
-
-const dark = document.getElementById("dark");
-setup(dark, { typing: [anna.uid, bob.uid, "u-x"] });
 
 const log = document.getElementById("log");
 for (const type of ["send", "typing", "files", "cancel"])

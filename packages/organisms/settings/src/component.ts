@@ -58,9 +58,9 @@ export class Settings extends CustomElement {
 
     @translate t = useTranslator("pc-settings");
 
-    @property({ type: Boolean }) open: boolean = false;
-    @property({ type: Object, attribute: false }) profile?: Profile;
-    @property({ type: Object, attribute: false }) prefs?: Prefs;
+    @property({ type: Boolean, rerender: true }) open: boolean = false;
+    @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
+    @property({ type: Object, attribute: false, rerender: true }) prefs?: Prefs;
     @property({ type: Array, attribute: false }) tones: Tone[] = [];
     @property({ type: Object, attribute: false }) devices: DeviceLists = { audioinput: [], videoinput: [], audiooutput: [] };
     @property({ type: String }) language: string = "en";
@@ -68,7 +68,7 @@ export class Settings extends CustomElement {
     @property({ type: Object, attribute: false }) camerastream?: MediaStream;
     @property({ type: Object, attribute: false }) micstream?: MediaStream;
     @property({ type: Boolean, attribute: false }) sinkSupported: boolean = true;
-    @property({ type: Array, attribute: false }) shortcuts: Shortcut[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) shortcuts: Shortcut[] = [];
 
     @query("pc-ringtone-picker") private ringtones?: Synced;
     @query("pc-language-picker") private languages?: Synced;
@@ -135,12 +135,6 @@ export class Settings extends CustomElement {
     }
 
     @bind
-    private handleClose() {
-        this.open = false;
-        this.emit("close");
-    }
-
-    @bind
     private handleName(e: Event) {
         const name = String((e.currentTarget as HTMLInputElement).value ?? "").trim();
         if (!name || name === this.profile?.name) return;
@@ -154,7 +148,9 @@ export class Settings extends CustomElement {
     }
 
     @bind
-    private handleStatus(status: Status) {
+    private handleStatus(status: Status, e: Event) {
+        // the radio being unchecked fires change too, only the newly checked one counts
+        if (!(e.currentTarget as HTMLInputElement).checked) return;
         if (status !== this.profile?.status) this.emit<ProfileChangeEvent>("profile-change", { partial: { status } });
     }
 
@@ -230,7 +226,7 @@ export class Settings extends CustomElement {
                 @close="${this.handleDialogClose}"
             >
                 <div class="body">
-                    <pap-tabs value="profile" aria-label="${this.t("tabs")}">
+                    <pap-tabs value="profile">
                         <pap-tab value="profile">${this.t("profile")}</pap-tab>
                         <pap-tab value="sound">${this.t("sound")}</pap-tab>
                         <pap-tab value="devices">${this.t("devices")}</pap-tab>
@@ -258,7 +254,7 @@ export class Settings extends CustomElement {
                                             name="status"
                                             value="${status}"
                                             checked="${profile?.status === status && "true"}"
-                                            @change="${() => this.handleStatus(status)}"
+                                            @change="${(e: Event) => this.handleStatus(status, e)}"
                                         >${this.t(`status-${status}`)}</pap-radio>
                                     `)}
                                 </div>
@@ -315,10 +311,6 @@ export class Settings extends CustomElement {
                             </pap-tabpanel>
                         ` : ""}
                     </pap-tabs>
-                </div>
-
-                <div slot="footer">
-                    <pap-button @click="${this.handleClose}">${this.t("close")}</pap-button>
                 </div>
             </pap-dialog>
         `;

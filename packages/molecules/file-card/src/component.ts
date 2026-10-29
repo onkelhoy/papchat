@@ -35,7 +35,7 @@ export class FileCard extends CustomElement {
     @translate t = useTranslator("pc-file-card");
 
     // object: set as a property (JSON attribute also works, see TASKS gotchas)
-    @property({ type: Object }) file?: FileEntry;
+    @property({ type: Object, rerender: true }) file?: FileEntry;
     @property({ type: Boolean, reflect: true }) mine: boolean = false;
 
     @bind

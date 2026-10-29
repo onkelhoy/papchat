@@ -1,4 +1,4 @@
-import "@papchat/theme";
+import "@papit/codeblock";
 import "@papchat/level-meter";
 
 const toggle = document.getElementById("toggle");

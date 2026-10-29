@@ -72,7 +72,7 @@ export class LevelMeter extends CustomElement {
     static sheet = sheet;
 
     @property({ type: Object, attribute: false, rerender: false, after: function (this: LevelMeter) { this.connectStream(); } }) stream?: MediaStream | null;
-    @property({ type: Number }) bars: number = 5;
+    @property({ type: Number, rerender: true }) bars: number = 5;
 
     private source?: MediaStreamAudioSourceNode;
     private analyser?: AnalyserNode;

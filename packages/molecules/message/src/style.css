@@ -7,6 +7,10 @@
     padding-block: var(--space-1, 4px);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 :host([grouped]) {
     padding-block-start: 0;
 }

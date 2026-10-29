@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import { translator } from '@papit/translator';
 
 import '@papchat/toaster';
@@ -26,17 +27,13 @@ for (const toaster of toasters)
     });
 }
 
-const [basic, overflow, dark] = toasters;
+const [basic, overflow] = toasters;
 basic.toasts = [
     make({ kind: "info", text: "Connecting to the lobby", duration: 0 }),
     make({ kind: "warning", text: "Bob is unreachable", action: "Retry", duration: 0, onAction: () => { log.textContent = "onAction called (page runs it)"; } }),
     make({ kind: "success", text: "Auto dismisses after 5 s" }),
 ];
 overflow.toasts = Array.from({ length: 6 }, (_, i) => make({ text: `Sticky ${i + 1} (only the newest 4 show)`, duration: 0 }));
-dark.toasts = [
-    make({ kind: "error", text: "Connection lost", action: "Reconnect", duration: 0 }),
-    make({ kind: "success", text: "Invite sent", duration: 0 }),
-];
 
 document.getElementById("add").addEventListener("click", () =>
 {

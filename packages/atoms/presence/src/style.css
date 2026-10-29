@@ -10,6 +10,10 @@
     vertical-align: middle;
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 :host([status="available"]) { --_color: var(--pc-available); }
 :host([status="busy"]) { --_color: var(--pc-busy); }
 :host([status="away"]) { --_color: var(--pc-away); }

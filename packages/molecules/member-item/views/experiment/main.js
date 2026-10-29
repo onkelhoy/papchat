@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/member-item';
 import { translator } from '@papit/translator';
 
@@ -48,8 +49,3 @@ setInterval(() =>
 }, 2000);
 item("created", profile("u-new", "Created Element", "available"), { canInvite: true });
 
-item("dark", profile("u-me", "Henry Pap", "available"), { self: true });
-item("dark", profile("u-anna", "Anna Berg", "available"), { incall: true });
-item("dark", profile("u-bob", "Bob Stone", "busy"), { canInvite: true });
-item("dark", profile("u-asa", "Åsa Öberg", "away"));
-item("dark", profile("u-li", "李 小龙", "dnd"));

@@ -15,47 +15,49 @@
     <section>
         <h2>Audio</h2>
         <p>Start the oscillator to drive the level meters and the speaking ring of every tile with audio.</p>
-        <button id="tone" type="button">Start tone</button>
+        <pap-codeblock display="both">
+            <button id="tone" type="button">Start tone</button>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>States</h2>
-        <div class="row">
-            <pc-video-tile class="demo" data-name="Anna Berg" data-video data-audio></pc-video-tile>
-            <pc-video-tile class="demo" data-name="Bob Lind" data-audio></pc-video-tile>
-            <pc-video-tile class="demo" data-name="Cleo Dahl" data-video muted></pc-video-tile>
-            <pc-video-tile class="demo" data-name="Dan Ek" muted></pc-video-tile>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-video-tile class="demo" data-name="Anna Berg" data-video data-audio></pc-video-tile>
+                <pc-video-tile class="demo" data-name="Bob Lind" data-audio></pc-video-tile>
+                <pc-video-tile class="demo" data-name="Cleo Dahl" data-video muted></pc-video-tile>
+                <pc-video-tile class="demo" data-name="Dan Ek" muted></pc-video-tile>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Self (mirrored) / screen (contain) / pinned</h2>
-        <div class="row">
-            <pc-video-tile class="demo" data-name="Me Myself" data-video data-audio self></pc-video-tile>
-            <pc-video-tile class="demo" data-name="Anna Berg" data-video data-screen screen></pc-video-tile>
-            <pc-video-tile class="demo" data-name="Eva Fors" data-video data-audio pinned></pc-video-tile>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-video-tile class="demo" data-name="Me Myself" data-video data-audio self></pc-video-tile>
+                <pc-video-tile class="demo" data-name="Anna Berg" data-video data-screen screen></pc-video-tile>
+                <pc-video-tile class="demo" data-name="Eva Fors" data-video data-audio pinned></pc-video-tile>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Long name</h2>
-        <div class="row">
-            <pc-video-tile class="demo" data-name="Maximilian Alexander von Hohenzollern-Sigmaringen" data-audio></pc-video-tile>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-video-tile class="demo" data-name="Maximilian Alexander von Hohenzollern-Sigmaringen" data-audio></pc-video-tile>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement</h2>
-        <div class="row" id="created"></div>
-        <p id="log">events: none</p>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="row">
-            <pc-video-tile class="demo" data-name="Anna Berg" data-video data-audio></pc-video-tile>
-            <pc-video-tile class="demo" data-name="Bob Lind" data-audio muted></pc-video-tile>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row" id="created"></div>
+            <p id="log">events: none</p>
+        </pap-codeblock>
     </section>
 </body>
 

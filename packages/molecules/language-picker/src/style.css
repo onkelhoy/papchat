@@ -2,6 +2,10 @@
     display: inline-block;
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 [part="trigger"] {
     display: inline-flex;
     align-items: center;

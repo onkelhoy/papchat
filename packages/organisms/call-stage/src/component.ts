@@ -39,7 +39,7 @@ export class CallStage extends CustomElement {
 
     @translate t = useTranslator("pc-call-stage");
 
-    @property({ type: Array, attribute: false }) tiles: CallTile[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) tiles: CallTile[] = [];
     @property({ type: String }) sinkid: string = "";
 
     // undefined: follow `tiles[].pinned`; "": nothing pinned; otherwise the pinned tile id

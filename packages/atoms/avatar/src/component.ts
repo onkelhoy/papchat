@@ -25,9 +25,9 @@ import type { AvatarSize } from "./types";
 export class Avatar extends CustomElement {
     static sheet = sheet;
 
-    @property({ type: String, after: function (this: Avatar) { this.updateLabel(); } }) name?: string;
-    @property({ type: String }) color?: string;
-    @property({ type: String }) uid?: string;
+    @property({ type: String, after: function (this: Avatar) { this.updateLabel(); }, rerender: true }) name?: string;
+    @property({ type: String, rerender: true }) color?: string;
+    @property({ type: String, rerender: true }) uid?: string;
     @property({ type: String, reflect: true, rerender: false }) size?: AvatarSize;
 
     connectedCallback(): void {

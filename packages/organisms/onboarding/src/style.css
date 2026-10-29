@@ -3,6 +3,10 @@
     color: var(--text);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 form {
     display: grid;
     gap: var(--space-3, 0.75rem);
@@ -51,4 +55,16 @@ pap-radio::part(marker) {
 
 pap-button {
     justify-self: stretch;
+}
+
+/* icon and label sit apart; icon-only buttons are round and easy to hit */
+pap-button {
+    gap: var(--space-2, 0.5rem);
+    white-space: nowrap;
+}
+
+pap-button[size="icon"] {
+    inline-size: var(--space-9, 2.25rem);
+    block-size: var(--space-9, 2.25rem);
+    border-radius: 50%;
 }

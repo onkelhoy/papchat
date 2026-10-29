@@ -14,43 +14,41 @@
 
     <section>
         <h2>Kinds (sticky, duration="0")</h2>
-        <div class="col">
-            <pc-toast kind="info" text="Connecting to the lobby" duration="0"></pc-toast>
-            <pc-toast kind="success" text="Invite sent to Anna" duration="0"></pc-toast>
-            <pc-toast kind="warning" text="Bob is unreachable" duration="0"></pc-toast>
-            <pc-toast kind="error" text="Connection lost" duration="0"></pc-toast>
-        </div>
+        <pap-codeblock display="both">
+            <div class="col">
+                <pc-toast kind="info" text="Connecting to the lobby" duration="0"></pc-toast>
+                <pc-toast kind="success" text="Invite sent to Anna" duration="0"></pc-toast>
+                <pc-toast kind="warning" text="Bob is unreachable" duration="0"></pc-toast>
+                <pc-toast kind="error" text="Connection lost" duration="0"></pc-toast>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>With action / long text</h2>
-        <div class="col">
-            <pc-toast kind="info" text="Anna invited you to Project room" action="Join" duration="0"></pc-toast>
-            <pc-toast kind="error" text="A very long message that has to wrap onto several lines without breaking the layout, including_a_very_long_unbroken_word_like_this_one" action="Retry" duration="0"></pc-toast>
-        </div>
-        <p id="log">events: -</p>
+        <pap-codeblock display="both">
+            <div class="col">
+                <pc-toast kind="info" text="Anna invited you to Project room" action="Join" duration="0"></pc-toast>
+                <pc-toast kind="error" text="A very long message that has to wrap onto several lines without breaking the layout, including_a_very_long_unbroken_word_like_this_one" action="Retry" duration="0"></pc-toast>
+            </div>
+            <p id="log">events: -</p>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Auto dismiss (2 s, pauses on hover/focus; fires dismiss but stays in the DOM)</h2>
-        <div class="col">
-            <pc-toast kind="info" text="Hover me to pause the timer" duration="2000"></pc-toast>
-        </div>
+        <pap-codeblock display="both">
+            <div class="col">
+                <pc-toast kind="info" text="Hover me to pause the timer" duration="2000"></pc-toast>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement</h2>
-        <div class="col" id="created"></div>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="col">
-            <pc-toast kind="info" text="Connecting to the lobby" duration="0"></pc-toast>
-            <pc-toast kind="success" text="Invite sent to Anna" duration="0"></pc-toast>
-            <pc-toast kind="warning" text="Bob is unreachable" action="Retry" duration="0"></pc-toast>
-            <pc-toast kind="error" text="Connection lost" duration="0"></pc-toast>
-        </div>
+        <pap-codeblock display="both">
+            <div class="col" id="created"></div>
+        </pap-codeblock>
     </section>
 </body>
 

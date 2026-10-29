@@ -31,8 +31,8 @@ export class LanguagePicker extends CustomElement {
 
     @translate t = useTranslator("pc-language-picker");
 
-    @property({ type: String }) value: string = "en";
-    @property({ type: Array, attribute: false }) languages: Language[] = DEFAULT_LANGUAGES;
+    @property({ type: String, rerender: true }) value: string = "en";
+    @property({ type: Array, attribute: false, rerender: true }) languages: Language[] = DEFAULT_LANGUAGES;
 
     @query("pap-menu") private menu!: Menu;
 

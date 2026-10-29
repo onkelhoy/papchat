@@ -26,7 +26,7 @@ export class ConnectionStatus extends CustomElement {
 
     @translate t = useTranslator("pc-connection-status");
 
-    @property({ type: String, reflect: true }) status: ConnectionStatusValue = "connecting";
+    @property({ type: String, reflect: true, rerender: true }) status: ConnectionStatusValue = "connecting";
 
     connectedCallback(): void {
         super.connectedCallback();

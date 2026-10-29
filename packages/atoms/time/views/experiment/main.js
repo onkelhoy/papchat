@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import { translator } from '@papit/translator';
 import '@papchat/time';
 
@@ -23,7 +24,6 @@ function fill(id, offsetList) {
 
 fill("past", offsets);
 fill("created", [3 * MINUTE, 2 * HOUR]);
-fill("dark", [5 * MINUTE, DAY]);
 
 document.getElementById("future").at = Date.now() + 2 * HOUR;
 document.getElementById("live").at = Date.now();

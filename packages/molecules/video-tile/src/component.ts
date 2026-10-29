@@ -48,17 +48,17 @@ export class VideoTile extends CustomElement {
 
     @translate t = useTranslator("pc-video-tile");
 
-    @property({ type: Object, attribute: false }) profile?: Profile;
-    @property({ type: Object, attribute: false, after: function (this: VideoTile) { this.watch("video"); } }) video?: MediaStream | null;
-    @property({ type: Object, attribute: false, after: function (this: VideoTile) { this.syncAudio(); } }) audio?: MediaStream | null;
-    @property({ type: Boolean, reflect: true, after: function (this: VideoTile) { if (this.muted) this.setSpeaking(false); } }) muted: boolean = false;
-    @property({ type: Boolean, reflect: true }) self: boolean = false;
-    @property({ type: Boolean, reflect: true }) screen: boolean = false;
-    @property({ type: Boolean, reflect: true }) pinned: boolean = false;
+    @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
+    @property({ type: Object, attribute: false, after: function (this: VideoTile) { this.watch("video"); }, rerender: true }) video?: MediaStream | null;
+    @property({ type: Object, attribute: false, after: function (this: VideoTile) { this.syncAudio(); }, rerender: true }) audio?: MediaStream | null;
+    @property({ type: Boolean, reflect: true, after: function (this: VideoTile) { if (this.muted) this.setSpeaking(false); }, rerender: true }) muted: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) self: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) screen: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) pinned: boolean = false;
 
     // bumped when the video stream gains or loses tracks, so render() re-checks them
-    @property({ type: Number, attribute: false }) private tracks: number = 0;
-    @property({ type: Boolean, attribute: false }) private fullscreen: boolean = false;
+    @property({ type: Number, attribute: false, rerender: true }) private tracks: number = 0;
+    @property({ type: Boolean, attribute: false, rerender: true }) private fullscreen: boolean = false;
 
     @query({ selector: "pc-video", load: function (this: VideoTile) { this.syncVideo(); } }) private videoEl?: Video | null;
     @query({ selector: "pc-level-meter", load: function (this: VideoTile) { this.syncAudio(); } }) private meterEl?: LevelMeter | null;

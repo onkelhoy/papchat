@@ -15,40 +15,40 @@
     <section>
         <h2>Test signal</h2>
         <p>A tone is generated in the page (no microphone needed). Browsers need a click before audio can start.</p>
-        <div class="row">
-            <button id="toggle" type="button">Start test signal</button>
-            <span id="speaking">speaking: false</span>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <button id="toggle" type="button">Start test signal</button>
+                <span id="speaking">speaking: false</span>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Bars</h2>
-        <div class="row">
-            <pc-level-meter class="demo" bars="3"></pc-level-meter>
-            <pc-level-meter class="demo"></pc-level-meter>
-            <pc-level-meter class="demo" bars="8"></pc-level-meter>
-            <pc-level-meter class="demo big" bars="12"></pc-level-meter>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-level-meter class="demo" bars="3"></pc-level-meter>
+                <pc-level-meter class="demo"></pc-level-meter>
+                <pc-level-meter class="demo" bars="8"></pc-level-meter>
+                <pc-level-meter class="demo big" bars="12"></pc-level-meter>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>No stream (idle)</h2>
-        <div class="row">
-            <pc-level-meter></pc-level-meter>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <pc-level-meter></pc-level-meter>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement</h2>
-        <div class="row" id="created"></div>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="row">
-            <pc-level-meter class="demo"></pc-level-meter>
-            <pc-level-meter class="demo big" bars="8"></pc-level-meter>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row" id="created"></div>
+        </pap-codeblock>
     </section>
 </body>
 

@@ -34,10 +34,10 @@ export class RingtonePicker extends CustomElement {
 
     @translate t = useTranslator("pc-ringtone-picker");
 
-    @property({ type: Array }) tones: Tone[] = [];
-    @property({ type: String }) value: string = "";
-    @property({ type: Number }) volume: number = 1;
-    @property({ type: String }) playing: string = "";
+    @property({ type: Array, rerender: true }) tones: Tone[] = [];
+    @property({ type: String, rerender: true }) value: string = "";
+    @property({ type: Number, rerender: true }) volume: number = 1;
+    @property({ type: String, rerender: true }) playing: string = "";
 
     @bind
     private handleSelect(id: string, e: Event) {

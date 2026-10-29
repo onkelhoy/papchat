@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/device-picker';
 import { translator } from '@papit/translator';
 

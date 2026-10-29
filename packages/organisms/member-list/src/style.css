@@ -5,6 +5,10 @@
     color: var(--text);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 .heading {
     margin: 0;
     padding-inline: var(--space-3, 0.75rem);

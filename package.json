@@ -12,8 +12,8 @@
         "start": "npx @papit/server --info",
         "version:reset": "npx @papit/version --reset",
         "version:sync": "npx @papit/version --sync",
-        "pages": "npm run build && cd packages/pages/app && npx @papit/static -- --base /papchat/",
-        "signal": "npx @papit/signal-server --port 3000"
+        "pages": "npm run build && cd packages/pages/app && npx @papit/static -- --base / --output ../../../docs --info",
+        "signal": "npx @papit/signal-server --port 3001"
     },
     "keywords": [
         "typescript",
@@ -30,22 +30,22 @@
         "!packages/**/asset/**"
     ],
     "devDependencies": {
-        "esbuild": "0.27.2",
-        "typescript": "5.9.3",
-        "@papit/bundle-ts": "*",
-        "@papit/bundle-js": "*",
-        "@papit/arguments": "*",
-        "@papit/terminal": "*",
-        "@papit/information": "*",
-        "@papit/build": "*",
-        "@papit/server": "*",
-        "@papit/create": "*",
-        "@papit/version": "*",
         "@papit/analyse": "*",
+        "@papit/arguments": "*",
+        "@papit/build": "*",
+        "@papit/bundle-js": "*",
+        "@papit/bundle-ts": "*",
+        "@papit/create": "*",
+        "@papit/information": "*",
         "@papit/react": "*",
+        "@papit/server": "*",
+        "@papit/signal-server": "*",
         "@papit/static": "*",
         "@papit/svg-spritesheet": "*",
-        "@papit/signal-server": "*"
+        "@papit/terminal": "*",
+        "@papit/version": "*",
+        "esbuild": "0.27.2",
+        "typescript": "5.9.3"
     },
     "papit": {
         "htmlprefix": "pc"
@@ -53,5 +53,8 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/onkelhoy/papchat.git"
+    },
+    "dependencies": {
+        "@papit/theme": "^0.0.3"
     }
 }

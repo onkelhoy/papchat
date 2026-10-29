@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/member-list';
 import { translator } from '@papit/translator';
 
@@ -40,12 +41,6 @@ full.members = members;
 full.incall = ["u-bob"];
 
 document.getElementById("empty").me = me;
-
-const dark = document.getElementById("dark");
-dark.me = me;
-dark.members = members;
-dark.incall = ["u-anna"];
-dark.stages = stages;
 
 // createElement + members arriving over time
 const created = document.createElement("pc-member-list");

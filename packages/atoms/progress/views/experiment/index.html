@@ -14,42 +14,41 @@
 
     <section>
         <h2>Determinate</h2>
-        <div class="stack">
-            <pc-progress value="0" label="Empty"></pc-progress>
-            <pc-progress value="0.25" label="Quarter"></pc-progress>
-            <pc-progress value="0.6" label="Sixty percent"></pc-progress>
-            <pc-progress value="1" label="Complete"></pc-progress>
-            <pc-progress value="1.7" label="Clamped above 1"></pc-progress>
-        </div>
+        <pap-codeblock display="both">
+            <div class="stack">
+                <pc-progress value="0" label="Empty"></pc-progress>
+                <pc-progress value="0.25" label="Quarter"></pc-progress>
+                <pc-progress value="0.6" label="Sixty percent"></pc-progress>
+                <pc-progress value="1" label="Complete"></pc-progress>
+                <pc-progress value="1.7" label="Clamped above 1"></pc-progress>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Indeterminate (no value)</h2>
-        <div class="stack">
-            <pc-progress label="Waiting"></pc-progress>
-            <pc-progress></pc-progress>
-        </div>
+        <pap-codeblock display="both">
+            <div class="stack">
+                <pc-progress label="Waiting"></pc-progress>
+                <pc-progress></pc-progress>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Custom size and colour</h2>
-        <div class="stack">
-            <pc-progress value="0.5" style="--progress-height: 0.75rem; --progress-color: var(--success)"></pc-progress>
-        </div>
+        <pap-codeblock display="both">
+            <div class="stack">
+                <pc-progress value="0.5" style="--progress-height: 0.75rem; --progress-color: var(--success)"></pc-progress>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement (animated)</h2>
-        <div class="stack" id="created"></div>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="stack">
-            <pc-progress value="0.4" label="Forty percent"></pc-progress>
-            <pc-progress value="1" label="Complete"></pc-progress>
-            <pc-progress label="Waiting"></pc-progress>
-        </div>
+        <pap-codeblock display="both">
+            <div class="stack" id="created"></div>
+        </pap-codeblock>
     </section>
 </body>
 

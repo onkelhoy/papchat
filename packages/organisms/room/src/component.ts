@@ -54,9 +54,9 @@ export class Room extends CustomElement {
 
     @translate t = useTranslator("pc-room");
 
-    @property({ type: Boolean, reflect: true }) incall: boolean = false;
-    @property({ type: Boolean, reflect: true }) viewer: boolean = false;
-    @property({ type: String }) heading: string = "";
+    @property({ type: Boolean, reflect: true, rerender: true }) incall: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) viewer: boolean = false;
+    @property({ type: String, rerender: true }) heading: string = "";
     @property({ type: String }) me: string = "";
     @property({ type: Array, attribute: false }) messages: ChatMessage[] = [];
     @property({ type: Object, attribute: false }) profiles: Record<string, Profile> = {};
@@ -70,9 +70,9 @@ export class Room extends CustomElement {
     @property({ type: Boolean }) canscreen: boolean = true;
     @property({ type: String }) sinkid: string = "";
 
-    @property({ type: Boolean, attribute: false }) private narrow: boolean = false;
+    @property({ type: Boolean, attribute: false, rerender: true }) private narrow: boolean = false;
     // viewers only: chat panel toggled from the controls
-    @property({ type: Boolean, attribute: false }) private showChat: boolean = false;
+    @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
     @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[] };
     @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
@@ -185,7 +185,7 @@ export class Room extends CustomElement {
     private renderTabs() {
         return html`
             <div class="side" slot="secondary">
-                <pap-tabs value="chat" aria-label="${this.t("tabs")}">
+                <pap-tabs value="chat">
                     <pap-tab value="chat">${this.t("chat")}</pap-tab>
                     <pap-tab value="files">${this.t("files")}</pap-tab>
                     <pap-tab value="people">${this.t("people")}</pap-tab>
@@ -211,11 +211,11 @@ export class Room extends CustomElement {
             return html`
                 <div part="header" class="header">
                     <div class="heading">${this.heading}</div>
-                    <pap-button size="s" type="button" data-kind="call" @click="${this.handleCall}">
+                    <pap-button size="small" variant="clear" type="button" data-kind="call" @click="${this.handleCall}">
                         <pap-icon name="/icons/spritesheet.svg#phone" width="16" height="16" aria-hidden="true"></pap-icon>
                         ${this.t("call")}
                     </pap-button>
-                    <pap-button size="s" type="button" data-kind="video" @click="${this.handleCall}">
+                    <pap-button size="small" variant="clear" type="button" data-kind="video" @click="${this.handleCall}">
                         <pap-icon name="/icons/spritesheet.svg#camera" width="16" height="16" aria-hidden="true"></pap-icon>
                         ${this.t("video")}
                     </pap-button>

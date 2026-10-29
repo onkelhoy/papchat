@@ -3,6 +3,10 @@
     color: var(--text);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 pap-group {
     display: flex;
     flex-direction: column;

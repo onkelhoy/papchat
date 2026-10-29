@@ -47,7 +47,7 @@ export class Time extends CustomElement {
 
     @translate t = useTranslator("pc-time");
 
-    @property({ type: Number }) at?: number;
+    @property({ type: Number, rerender: true }) at?: number;
 
     connectedCallback(): void {
         super.connectedCallback();

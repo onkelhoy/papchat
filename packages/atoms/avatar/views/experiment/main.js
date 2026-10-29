@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/avatar';
 
 const created = document.getElementById("created");

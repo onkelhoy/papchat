@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import "@papit/icon";
 
 window.onload = () => {

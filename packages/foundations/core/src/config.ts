@@ -1,7 +1,6 @@
 import { storage } from "./storage";
 
 export const DEFAULT_SIGNAL = "wss://render-webrtc-signal-server.onrender.com";
-export const LOCAL_SIGNAL = "ws://localhost:3000";
 
 export const RTC: RTCConfiguration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -30,7 +29,7 @@ export const LIMITS = {
 export const LOBBY_NAME = "papchat";
 export const APP = "papchat";
 
-// ?signal=<url> overrides and is remembered, localhost pages use a local server, everything else the default
+// ?signal=<url> overrides and is remembered, everything else (localhost too) uses the deployed server
 export function signalUrl(): string {
     let override: string | null = null;
     try
@@ -47,9 +46,6 @@ export function signalUrl(): string {
 
     const stored = storage.debug.get().signal;
     if (stored) return stored;
-
-    const host = typeof location !== "undefined" ? location.hostname : "";
-    if (host === "localhost" || host === "127.0.0.1") return LOCAL_SIGNAL;
 
     return DEFAULT_SIGNAL;
 }

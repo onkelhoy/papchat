@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import { translator } from '@papit/translator';
 
 import '@papchat/incoming-call';
@@ -14,7 +15,6 @@ const calls = {
     video: { id: "c2", from: bob, kind: "video", title: "", at },
     stage: { id: "c3", from: anna, kind: "stage", title: "Demo", at },
     chat: { id: "c4", from: bob, kind: "chat", title: "Project room", at },
-    dark: { id: "c5", from: anna, kind: "video", title: "", at },
 };
 for (const [id, call] of Object.entries(calls)) document.getElementById(id).call = call;
 

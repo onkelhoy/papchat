@@ -35,7 +35,7 @@ import type { AcceptDetail, DeclineDetail } from "./types";
 export class IncomingCall extends CustomElement {
     static sheet = sheet;
 
-    @property({ type: Object }) call?: CallInfo;
+    @property({ type: Object, rerender: true }) call?: CallInfo;
 
     @translate t = useTranslator("pc-incoming-call");
 

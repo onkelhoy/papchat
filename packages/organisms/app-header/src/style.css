@@ -4,6 +4,10 @@
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 .bar {
     display: flex;
     align-items: center;
@@ -11,13 +15,6 @@
     min-block-size: 3.5rem;
     padding-inline: var(--space-4, 1rem);
     box-sizing: border-box;
-}
-
-.logo {
-    font-weight: 700;
-    font-size: 1.125rem;
-    letter-spacing: -0.01em;
-    color: var(--primary);
 }
 
 .spacer {
@@ -76,10 +73,7 @@ pap-menuitem[aria-checked="true"] {
 
     pc-connection-status {
         min-inline-size: 0;
-    }
-
-    .logo {
-        display: none;
+        overflow: hidden;
     }
 }
 
@@ -98,4 +92,16 @@ pap-menuitem[aria-checked="true"] {
         clip-path: inset(50%);
         white-space: nowrap;
     }
+}
+
+/* icon and label sit apart; icon-only buttons are round and easy to hit */
+pap-button {
+    gap: var(--space-2, 0.5rem);
+    white-space: nowrap;
+}
+
+pap-button[size="icon"] {
+    inline-size: var(--space-9, 2.25rem);
+    block-size: var(--space-9, 2.25rem);
+    border-radius: 50%;
 }

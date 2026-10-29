@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/invite-picker';
 import { translator } from '@papit/translator';
 
@@ -26,7 +27,7 @@ function wire(picker) {
 }
 
 document.querySelectorAll("pc-invite-picker").forEach(wire);
-for (const id of ["many", "dark"]) document.getElementById(id).members = members;
+document.getElementById("many").members = members;
 document.getElementById("empty").members = [];
 
 document.querySelectorAll("[data-open]").forEach((button) => {

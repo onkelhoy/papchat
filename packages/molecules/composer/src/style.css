@@ -7,13 +7,17 @@
     color: var(--text);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 textarea {
     flex: 1;
     min-inline-size: 0;
     box-sizing: border-box;
     resize: none;
     field-sizing: content;
-    min-block-size: 2.5rem;
+    min-block-size: 4rem;
     max-block-size: 8rem;
     overflow-y: auto;
     padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
@@ -57,4 +61,16 @@ pap-file-input {
     overflow: hidden;
     clip-path: inset(50%);
     pointer-events: none;
+}
+
+/* icon and label sit apart; icon-only buttons are round and easy to hit */
+pap-button {
+    gap: var(--space-2, 0.5rem);
+    white-space: nowrap;
+}
+
+pap-button[size="icon"] {
+    inline-size: var(--space-9, 2.25rem);
+    block-size: var(--space-9, 2.25rem);
+    border-radius: 50%;
 }

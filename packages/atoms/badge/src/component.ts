@@ -23,7 +23,7 @@ import type { BadgeVariant } from "./types";
 export class Badge extends CustomElement {
     static sheet = sheet;
 
-    @property({ type: Number, after: function (this: Badge) { this.updateHidden(); } }) count?: number;
+    @property({ type: Number, after: function (this: Badge) { this.updateHidden(); }, rerender: true }) count?: number;
     @property({ type: String, reflect: true, rerender: false }) variant?: BadgeVariant;
 
     connectedCallback(): void {

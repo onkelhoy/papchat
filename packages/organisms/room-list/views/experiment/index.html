@@ -14,28 +14,27 @@
 
     <section>
         <h2>Rooms (unread, in a call, live, title fallback, overflow)</h2>
-        <div class="row">
-            <div><pc-room-list data-demo active="r2"></pc-room-list></div>
-            <div><pc-room-list data-demo></pc-room-list></div>
-            <span id="log">select / leave events show here</span>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row">
+                <div><pc-room-list data-demo active="r2"></pc-room-list></div>
+                <div><pc-room-list data-demo></pc-room-list></div>
+                <span id="log">select / leave events show here</span>
+            </div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>Empty</h2>
-        <div class="row"><div><pc-room-list></pc-room-list></div></div>
+        <pap-codeblock display="both">
+            <div class="row"><div><pc-room-list></pc-room-list></div></div>
+        </pap-codeblock>
     </section>
 
     <section>
         <h2>createElement</h2>
-        <div class="row"><div id="created"></div></div>
-    </section>
-
-    <section data-theme="dark">
-        <h2>Dark</h2>
-        <div class="row">
-            <div><pc-room-list data-demo active="r1"></pc-room-list></div>
-        </div>
+        <pap-codeblock display="both">
+            <div class="row"><div id="created"></div></div>
+        </pap-codeblock>
     </section>
 </body>
 

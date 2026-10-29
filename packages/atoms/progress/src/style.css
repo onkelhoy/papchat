@@ -8,6 +8,10 @@
     block-size: var(--_height);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 [part="track"] {
     position: relative;
     overflow: hidden;

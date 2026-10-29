@@ -45,13 +45,13 @@ export class MemberList extends CustomElement {
 
     @translate t = useTranslator("pc-member-list");
 
-    @property({ type: Array, attribute: false }) members: Profile[] = [];
-    @property({ type: Object, attribute: false }) me?: Profile;
+    @property({ type: Array, attribute: false, rerender: true }) members: Profile[] = [];
+    @property({ type: Object, attribute: false, rerender: true }) me?: Profile;
     @property({ type: Array, attribute: false }) incall: string[] = [];
-    @property({ type: Array, attribute: false }) stages: StageSummary[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) stages: StageSummary[] = [];
     @property({ type: Boolean, attribute: "caninvite" }) canInvite: boolean = false;
 
-    @property({ type: String, attribute: false }) private query: string = "";
+    @property({ type: String, attribute: false, rerender: true }) private query: string = "";
 
     private get sorted(): Profile[] {
         return [...(this.members ?? [])]

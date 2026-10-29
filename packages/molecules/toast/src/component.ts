@@ -35,7 +35,7 @@ const GLYPH: Record<ToastKind, string> = { info: "i", success: "✓", warning: "
 export class Toast extends CustomElement {
     static sheet = sheet;
 
-    @property({ type: String, reflect: true }) kind: ToastKind = "info";
+    @property({ type: String, reflect: true, rerender: true }) kind: ToastKind = "info";
     @property({ type: String, rerender: true }) text?: string;
     @property({ type: String, rerender: true }) action?: string;
     @property({

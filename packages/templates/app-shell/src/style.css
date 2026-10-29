@@ -10,8 +10,13 @@
     background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 [part="header"] {
     grid-area: header;
+    border-block-end: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
     display: flex;
     align-items: center;
     gap: var(--space-2, 0.5rem);
@@ -26,6 +31,7 @@
 
 pap-sidebar {
     grid-area: sidebar;
+    border-inline-end: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
 }
 
 [part="main"] {
@@ -69,4 +75,16 @@ pap-sidebar {
     pap-drawer {
         position: fixed;
     }
+}
+
+/* icon and label sit apart; icon-only buttons are round and easy to hit */
+pap-button {
+    gap: var(--space-2, 0.5rem);
+    white-space: nowrap;
+}
+
+pap-button[size="icon"] {
+    inline-size: var(--space-9, 2.25rem);
+    block-size: var(--space-9, 2.25rem);
+    border-radius: 50%;
 }

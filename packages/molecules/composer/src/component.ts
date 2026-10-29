@@ -37,11 +37,11 @@ export class Composer extends CustomElement {
 
     @translate t = useTranslator("pc-composer");
 
-    @property({ type: Boolean, reflect: true }) disabled: boolean = false;
-    @property({ type: String }) placeholder?: string;
+    @property({ type: Boolean, reflect: true, rerender: true }) disabled: boolean = false;
+    @property({ type: String, rerender: true }) placeholder?: string;
 
     // only tracks "is there something to send", rerenders the send button state
-    @property({ type: Boolean, attribute: false }) private filled: boolean = false;
+    @property({ type: Boolean, attribute: false, rerender: true }) private filled: boolean = false;
 
     @query("textarea") private field!: HTMLTextAreaElement;
     @query("pap-file-input") private picker!: FileInput;
@@ -114,14 +114,14 @@ export class Composer extends CustomElement {
             <pap-file-input multiple tabindex="-1" aria-hidden="true" @change="${this.handlePicked}"></pap-file-input>
             <textarea
                 part="field"
-                rows="1"
+                rows="2"
                 placeholder="${this.placeholder ?? this.t("placeholder")}"
                 aria-label="${this.placeholder ?? this.t("placeholder")}"
                 disabled="${off}"
                 @input="${this.handleInput}"
                 @keydown="${this.handleKeydown}"
             ></textarea>
-            <pap-button part="send" color="primary" size="icon" type="button" disabled="${sendOff}" aria-label="${this.t("send")}" @click="${this.submit}">
+            <pap-button part="send" color="primary" size="icon" variant="clear" type="button" disabled="${sendOff}" aria-label="${this.t("send")}" @click="${this.submit}">
                 <pap-icon name="/icons/spritesheet.svg#send" aria-hidden="true"></pap-icon>
             </pap-button>
         `;

@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/presence';
 
 const created = document.getElementById("created");

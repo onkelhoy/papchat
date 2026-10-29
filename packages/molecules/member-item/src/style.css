@@ -11,6 +11,10 @@
     outline: none;
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 :host(:hover) {
     background-color: color-mix(in oklch, var(--text) 6%, transparent);
 }

@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import { translator } from '@papit/translator';
 import '@papchat/progress';
 

@@ -16,6 +16,10 @@
     box-shadow: 0 4px 16px oklch(0% 0 0 / 0.25);
 }
 
+:host([hidden]) {
+    display: none;
+}
+
 :host([kind="success"]) {
     --_accent: var(--success);
 }
@@ -61,4 +65,16 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+}
+
+/* icon and label sit apart; icon-only buttons are round and easy to hit */
+pap-button {
+    gap: var(--space-2, 0.5rem);
+    white-space: nowrap;
+}
+
+pap-button[size="icon"] {
+    inline-size: var(--space-9, 2.25rem);
+    block-size: var(--space-9, 2.25rem);
+    border-radius: 50%;
 }

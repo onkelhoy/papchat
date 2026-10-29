@@ -35,7 +35,7 @@ export class RoomList extends CustomElement {
 
     @translate t = useTranslator("pc-room-list");
 
-    @property({ type: Array, attribute: false }) rooms: RoomSummary[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) rooms: RoomSummary[] = [];
     @property({ type: String }) active?: string;
 
     private labelOf(room: RoomSummary): string {
@@ -78,10 +78,10 @@ export class RoomList extends CustomElement {
                     ${room.live ? html`<pc-badge variant="live">${this.t("live")}</pc-badge>` : ""}
                     ${room.unread > 0 ? html`<pc-badge variant="primary" count="${room.unread}" role="img" aria-label="${this.t("unread", { count: room.unread })}"></pc-badge>` : ""}
                 </button>
-                <button type="button" class="more" popovertarget="menu-${index}" aria-haspopup="menu" aria-label="${this.t("options", { title })}">
+                <button type="button" class="more" popovertarget="${`menu-${index}`}" aria-haspopup="menu" aria-label="${this.t("options", { title })}">
                     <span aria-hidden="true">⋯</span>
                 </button>
-                <pap-menu id="menu-${index}" placement="bottom-right">
+                <pap-menu id="${`menu-${index}`}" placement="bottom-right">
                     <pap-menuitem @click="${(e: Event) => this.handleLeave(room, e)}">${this.t("leave")}</pap-menuitem>
                 </pap-menu>
             </div>
