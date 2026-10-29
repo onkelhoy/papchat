@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 56/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 57/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -445,12 +445,13 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **done when:** closing a phone tab removes the person within ~2.5 min. Reload, then call right away: it rings.
 - Done (papchat only, no papit change): `lobby.ts` broadcasts `here` every 30 s (60 s while hidden). Any message marks its sender heard; newcomers count as heard on arrival. Peers silent for 150 s drop out of `members`/`peerByUid` (they stay in `memberByPeer`, so a later message brings them back at once). After our own tab comes back to the front, nobody is dropped for 70 s (we may have been asleep too). The newest-peer-per-uid rule was already there. "Can't reach" after a reload: unicasts are remembered for 10 s per receiving peer, and an `unreachable` resends them up to 2× after 1.5 s to the uid's newest peer by then; the toast shows only when that fails. No `bye` message: `pagehide` already closes the client. Timings in `LIMITS`. Peers on an older build (no `here`) drop after 150 s until they send something. Typecheck + build pass; not run in a browser.
 
-### [ ] T7.5 Ringtone on phones · `opus` · needs —
+### [x] T7.5 Ringtone on phones · `opus` · needs —
 - **symptom:** on mobile the ringtone often doesn't play. The "allow sound" prompt shows, and tapping it does nothing.
 - **cause?:** `ringtone.ts` `unlock()` does `await context.resume()` **before** `silence.play()`. iOS Safari loses the user activation across the `await`, so the play is still blocked and the unlock silently fails, and then `setAudioBlocked(false)` hides the prompt anyway.
 - **do:** in `unlock()`, start everything synchronously inside the gesture: `context.resume()` and `silence.play()` called without awaiting in between (await both afterwards). Only clear `audioBlocked` when the play actually resolved. Also unlock on the **first tap anywhere** (one-shot `pointerdown` listener at boot), so the prompt rarely shows. Prefer one shared `AudioContext` for ringtones (decode files with `decodeAudioData`) over `new Audio()`, since an unlocked context keeps working on iOS while each new `<audio>` needs its own gesture. Silent-mode switch on iPhone mutes Web Audio: note that under limits.
 - **files:** `core/src/ringtone.ts`, page boot.
 - **done when:** on an iPhone and an Android phone, after one tap anywhere, an incoming call rings (with the app in front).
+- Done: `unlock()` now does everything inside the gesture before any `await` (context `resume()`, a 1-sample silent buffer started on the context, a silent `<audio>` play), and only clears `audioBlocked` when the context really runs. Files are decoded once (`decodeAudioData`) and play as buffer sources on the one shared context (no more `new Audio()` per ring, which iOS blocks without a fresh tap). `ringtone.ts` listens (capture, passive) for `pointerup`/`touchend`/`keydown` and unlocks on any tap while the context isn't running, so the first tap anywhere unlocks, and so does one after iOS suspends the context (phone call, background). Known limit for the README: the iPhone silent switch mutes Web Audio (Safari's `navigator.audioSession` could override it, but switching it while the mic is live risks the call). Typecheck + build pass; not run on a phone.
 
 ### [ ] T7.6 Stage can't share the screen · `opus` · needs —
 - **symptom:** going live, sharing the screen didn't work.
@@ -499,6 +500,7 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 ### [ ] T7.14 More ringtones and a dial tone · `sonnet` · needs — (user adds the audio files)
 - **do:** the user drops files in `asset/audio/ringtones/` and `asset/audio/dialtones/`. Both get a `*.json` manifest (`{ id, name, file }`). Settings gets a "Dial tone" picker next to the ringtone one (`pc-ringtone-picker` reused). `ringback()` plays the chosen file and falls back to the current synth when there's none or it fails to load.
 - **files:** `core/src/ringtone.ts`, `organisms/settings`, page, `asset/audio/README.md`.
+- **Files added by the user (2026-10-29):** `ringtones/Adventure Pulse.mp3` and `dialtones/Ringback Tone.mp3`. Rename them without spaces first (papit finding #11: the static fetch shim misses paths with spaces), e.g. `adventure-pulse.mp3`, `ringback.mp3`, and add them to the manifests. Playback is Web Audio now (T7.5): decode with `bufferOf()`.
 
 ### [ ] T7.15 Better audio · `opus` · needs —
 - **step 1 (cheap, do first):** `devices.ts` already asks for `echoCancellation`/`noiseSuppression`. Add `autoGainControl: true`, `channelCount: 1`, `sampleRate: 48000`. Then compare with Teams again. Check the Opus settings in the SDP (`useinbandfec=1`, `maxaveragebitrate` ~ 40000, `usedtx` off). If `@papit/webrtc` has no SDP hook, write a papit finding asking for one. Check that `source.clone()` doesn't drop constraints.

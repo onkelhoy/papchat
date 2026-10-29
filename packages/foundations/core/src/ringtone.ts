@@ -3,9 +3,11 @@ import { signal } from "@papit/signals";
 import { log } from "./log";
 import { audioBlocked, prefs, setAudioBlocked } from "./state";
 
-// Ringtones (PLAN §5). Files load with fetch → blob URL (`@papit/static` only rewrites fetch, not
-// `new Audio(src)`) and are cached. A missing file falls back to a WebAudio tone, so calls ring
-// before any mp3 is added. A rejected `play()` raises `audioBlocked` until `unlock()` (a click).
+// Ringtones (PLAN §5). Everything plays through one shared AudioContext: files are fetched
+// (`@papit/static` only rewrites fetch) and decoded once. Phones (iOS above all) only let audio
+// start inside a tap, but a context unlocked once keeps playing later without one, so the first
+// tap anywhere unlocks it. A missing file falls back to a synth tone. A context that won't run
+// raises `audioBlocked` until `unlock()` (a tap).
 
 export type Tone = { id: string; label: string; file: string };
 
@@ -47,7 +49,7 @@ export const [tones, setTones] = signal<Tone[]>([]);
 export const [previewing, setPreviewing] = signal("");
 
 let list: Promise<Tone[]> | null = null;
-const blobs = new Map<string, Promise<string | null>>();
+const buffers = new Map<string, Promise<AudioBuffer | null>>();
 let context: AudioContext | null = null;
 let current: Playback | null = null;
 let wanted: Request | null = null;
@@ -95,23 +97,55 @@ export function stop() {
     setPreviewing("");
 }
 
-/** Call from a click: lets audio play, clears `audioBlocked` and resumes a ring that was blocked. */
+/**
+ * Call from a tap or click: lets audio play, clears `audioBlocked` and resumes a ring that was
+ * blocked. Everything that needs the gesture starts synchronously: iOS forgets the tap across an
+ * `await`. Also runs by itself on every tap while the context isn't running (see below).
+ */
 export async function unlock() {
+    const pending: Promise<unknown>[] = [];
     try
     {
         context ??= new AudioContext();
-        await context.resume();
-        const silence = new Audio(SILENCE);
-        await silence.play();
+        pending.push(context.resume());
+        // a silent buffer started inside the gesture is what really unlocks Safari's context
+        const source = context.createBufferSource();
+        source.buffer = context.createBuffer(1, 1, 22_050);
+        source.connect(context.destination);
+        source.start(0);
+        // and one <audio> play, for anything else on the page using media elements
+        pending.push(new Audio(SILENCE).play());
     }
     catch (error)
     {
         log("ringtone: unlock failed", error);
     }
 
+    await Promise.allSettled(pending);
+    if (context?.state !== "running")
+    {
+        log("ringtone: still blocked after unlock", context?.state);
+        return;
+    }
+
     setAudioBlocked(false);
     const retry = wanted;
     if (retry && retry.loop && !current) void begin(retry);
+}
+
+// the first tap (and any later one while iOS has suspended the context, e.g. after a phone call)
+// unlocks audio, so a call that comes in later can ring without asking
+function handleGesture() {
+    if (context?.state === "running") return;
+    void unlock();
+}
+
+if (typeof document !== "undefined")
+{
+    for (const type of ["pointerup", "touchend", "keydown"])
+    {
+        document.addEventListener(type, handleGesture, { capture: true, passive: true });
+    }
 }
 
 // ---------------------------------------------------------------- playing
@@ -153,25 +187,35 @@ async function begin(request: Request) {
 }
 
 async function open(request: Request, onEnd: () => void, stale: () => boolean = () => false): Promise<Playback> {
-    const url = await sourceOf(request);
+    const buffer = await sourceOf(request);
     const volume = Math.min(1, Math.max(0, prefs().volume));
     if (stale()) return { stop: () => undefined };
 
-    return url ? playFile(url, request.loop, volume, onEnd) : playTone(request.sound, request.loop, volume, onEnd);
+    return buffer ? playFile(buffer, request.loop, volume, onEnd) : playTone(request.sound, request.loop, volume, onEnd);
 }
 
-async function playFile(url: string, loop: boolean, volume: number, onEnd: () => void): Promise<Playback> {
-    const audio = new Audio(url);
-    audio.loop = loop;
-    audio.volume = volume;
-    audio.addEventListener("ended", onEnd);
-    await audio.play();
+async function playFile(buffer: AudioBuffer, loop: boolean, volume: number, onEnd: () => void): Promise<Playback> {
+    const ctx = await running();
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    gain.connect(ctx.destination);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = loop;
+    source.connect(gain);
+    source.addEventListener("ended", onEnd);
+    source.start();
 
     return {
         stop() {
-            audio.removeEventListener("ended", onEnd);
-            audio.pause();
-            audio.removeAttribute("src");
+            source.removeEventListener("ended", onEnd);
+            try
+            {
+                source.stop();
+            }
+            catch { /* already stopped */ }
+            gain.disconnect();
         },
     };
 }
@@ -232,16 +276,17 @@ async function running(): Promise<AudioContext> {
 
 // ---------------------------------------------------------------- files
 
-async function sourceOf(request: Request): Promise<string | null> {
-    if (request.sound !== "ring") return blobOf(FILES[request.sound]);
+async function sourceOf(request: Request): Promise<AudioBuffer | null> {
+    if (request.sound !== "ring") return bufferOf(FILES[request.sound]);
 
     const tones = await loadTones();
     const tone = tones.find(t => t.id === request.id);
-    return tone ? blobOf(`/audio/ringtones/${tone.file}`) : null;
+    return tone ? bufferOf(`/audio/ringtones/${tone.file}`) : null;
 }
 
-function blobOf(path: string): Promise<string | null> {
-    let found = blobs.get(path);
+// fetched and decoded once; decoding works on a suspended context, so this needs no gesture
+function bufferOf(path: string): Promise<AudioBuffer | null> {
+    let found = buffers.get(path);
     if (!found)
     {
         found = fetch(path)
@@ -249,10 +294,15 @@ function blobOf(path: string): Promise<string | null> {
                 const type = res.headers.get("content-type") ?? "";
                 // a dev server may answer a missing file with its html page
                 if (!res.ok || type.startsWith("text/")) return null;
-                return URL.createObjectURL(await res.blob());
+                const data = await res.arrayBuffer();
+                context ??= new AudioContext();
+                return await context.decodeAudioData(data);
             })
-            .catch(() => null);
-        blobs.set(path, found);
+            .catch(error => {
+                log("ringtone: could not load", path, error);
+                return null;
+            });
+        buffers.set(path, found);
     }
     return found;
 }
