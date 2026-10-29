@@ -6,10 +6,13 @@ import "@papit/file-input";
 import type { FileInput } from "@papit/file-input";
 import "@papit/icon";
 import { renderText } from "@papchat/message";
+import "@papchat/emoji-picker";
+import { loadEmoji, searchEmoji } from "@papchat/emoji-picker";
+import type { EmojiEntry, EmojiPickEvent } from "@papchat/emoji-picker";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { FilesEvent, SendEvent } from "./types";
+import type { EmojiEvent, FilesEvent, SendEvent } from "./types";
 
 const TYPING_INTERVAL = 1000;
 
@@ -39,6 +42,15 @@ const TOOLS: Tool[][] = [
 
 const SHORTCUTS: Record<string, string> = { b: "bold", i: "italic", u: "underline" };
 const LIST_LINE = /^(\s*)([-*]|\d{1,3}[.)]|>)\s+\S/;
+// ":smi" right before the cursor (at the start or after a space), for emoji autocomplete
+const EMOJI_TOKEN = /(?:^|\s):([a-z0-9_+-]{2,})$/i;
+const SUGGESTIONS = 6;
+// emoji in the "All" tab's row
+const ROW_SIZE = 16;
+// the popover keeps this far from the viewport edges
+const EDGE = 8;
+
+type PickTab = "all" | "emoji";
 
 /**
  * Message composer: a growing field with formatting, attach and send.
@@ -52,15 +64,22 @@ const LIST_LINE = /^(\s*)([-*]|\d{1,3}[.)]|>)\s+\S/;
  * format. Enter during IME composition is left alone. Attaching goes through a visually hidden
  * `pap-file-input` (multiple), opened by the attach button.
  *
+ * The smiley button opens a popover (top layer, so no parent clips it) with tabs All / Emoji and a
+ * search field: All shows one row of emoji (recently used first), Emoji the whole `pc-emoji-picker`.
+ * A pick goes in at the cursor and closes the popover; Escape closes it too. Typing `:smi` suggests
+ * emoji above the field (arrows, Enter/Tab to pick, Escape to dismiss). T7.16d adds a GIFs tab.
+ *
  * @element pc-composer
  *
  * @property {boolean} disabled disables the field and the buttons (reflected)
  * @property {string} placeholder placeholder text (default: translated "Type a message")
  * @property {boolean} formatting the toolbar and preview are open (reflected)
+ * @property {string[]} recent recently used emoji, newest first (property only; the host keeps the list)
  *
  * @fires send `CustomEvent<{ text: string }>` trimmed text, the field is cleared afterwards
  * @fires typing `CustomEvent<void>` at most once per second while the user types
  * @fires files `CustomEvent<{ files: File[] }>` files chosen with the attach button
+ * @fires emoji `CustomEvent<{ emoji: string }>` an emoji was inserted (picker or autocomplete), to update the recent list
  *
  * @csspart box the frame around field, toolbar and buttons
  * @csspart toolbar the formatting toolbar
@@ -68,6 +87,9 @@ const LIST_LINE = /^(\s*)([-*]|\d{1,3}[.)]|>)\s+\S/;
  * @csspart field the textarea
  * @csspart send the send button
  * @csspart attach the attach button
+ * @csspart emoji the emoji button
+ * @csspart popover the emoji popover
+ * @csspart suggestions the `:emoji` autocomplete list
  */
 export class Composer extends CustomElement {
     static sheet = sheet;
@@ -78,13 +100,42 @@ export class Composer extends CustomElement {
     @property({ type: String, rerender: true }) placeholder?: string;
     @property({ type: Boolean, reflect: true, rerender: true, after: function (this: Composer) { this.syncPreview(); } }) formatting: boolean = false;
 
+    @property({ type: Array, attribute: false, rerender: true }) recent: string[] = [];
+
     // only tracks "is there something to send", rerenders the send button state
     @property({ type: Boolean, attribute: false, rerender: true }) private filled: boolean = false;
+    // the emoji popover
+    @property({ type: Boolean, attribute: false, rerender: true }) private picking: boolean = false;
+    @property({ type: String, attribute: false, rerender: true }) private pickTab: PickTab = "all";
+    @property({ type: String, attribute: false, rerender: true }) private pickQuery: string = "";
+    // `:emoji` autocomplete
+    @property({ type: Array, attribute: false, rerender: true }) private suggestions: EmojiEntry[] = [];
+    @property({ type: Number, attribute: false, rerender: true }) private active: number = 0;
 
     @query("textarea") private field!: HTMLTextAreaElement;
     @query("pap-file-input") private picker!: FileInput;
+    @query(".popover") private pickPopover?: HTMLElement;
+    @query("[part='emoji']") private emojiButton?: HTMLElement;
 
     private lastTyping = 0;
+    // where a picked emoji goes: the field's selection when the popover opened
+    private caret = { start: 0, end: 0 };
+    // when the popover last closed, so the click that light-dismissed it doesn't reopen it
+    private closedAt = 0;
+    // focus was in the popover when it closed (Escape): put it back in the field
+    private refocus = false;
+
+    connectedCallback() {
+        super.connectedCallback();
+        // emoji-pick bubbles out of the picker inside the popover
+        this.shadowRoot?.addEventListener("emoji-pick", this.handlePick);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.shadowRoot?.removeEventListener("emoji-pick", this.handlePick);
+        window.removeEventListener("resize", this.place);
+    }
 
     focus(options?: FocusOptions) {
         this.field?.focus(options);
@@ -103,6 +154,7 @@ export class Composer extends CustomElement {
     private handleInput() {
         this.filled = this.field.value.trim().length > 0;
         this.syncPreview();
+        this.suggest();
         if (!this.filled) return;
 
         const now = performance.now();
@@ -115,6 +167,7 @@ export class Composer extends CustomElement {
     @bind
     private handleKeydown(e: KeyboardEvent) {
         if (e.isComposing) return;
+        if (this.suggestions.length && this.handleSuggestKey(e)) return;
 
         const shortcut = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey ? SHORTCUTS[e.key.toLowerCase()] : undefined;
         if (shortcut)
@@ -324,6 +377,173 @@ export class Composer extends CustomElement {
         preview.dataset.text = text;
     }
 
+    // ---------------------------------------------------------------- emoji popover
+
+    @bind
+    private handleEmojiButton() {
+        const popover = this.pickPopover;
+        if (this.disabled || !popover) return;
+        if (this.picking || performance.now() - this.closedAt < 300)
+        {
+            popover.hidePopover();
+            return;
+        }
+
+        this.caret = { start: this.field.selectionStart, end: this.field.selectionEnd };
+        this.place();
+        popover.showPopover();
+    }
+
+    @bind
+    private handleBeforeToggle(e: Event) {
+        if ((e as ToggleEvent).newState === "closed") this.refocus = !!this.pickPopover?.matches(":focus-within");
+    }
+
+    @bind
+    private handleToggle(e: Event) {
+        const open = (e as ToggleEvent).newState === "open";
+        this.picking = open;
+        if (open)
+        {
+            window.addEventListener("resize", this.place);
+            // the search field exists after this render
+            requestAnimationFrame(() => this.shadowRoot?.querySelector<HTMLInputElement>(".search")?.focus());
+            return;
+        }
+
+        window.removeEventListener("resize", this.place);
+        this.closedAt = performance.now();
+        this.pickTab = "all";
+        this.pickQuery = "";
+        if (this.refocus) this.field?.focus();
+        this.refocus = false;
+    }
+
+    // above the composer's box, right edges lined up, inside the viewport
+    @bind
+    private place() {
+        const box = this.shadowRoot?.querySelector<HTMLElement>(".box");
+        const popover = this.pickPopover;
+        if (!box || !popover) return;
+
+        const rect = box.getBoundingClientRect();
+        popover.style.setProperty("--pick-right", `${Math.max(EDGE, window.innerWidth - rect.right)}px`);
+        popover.style.setProperty("--pick-bottom", `${window.innerHeight - rect.top + EDGE / 2}px`);
+        popover.style.setProperty("--pick-max-height", `${Math.max(160, rect.top - EDGE * 2)}px`);
+    }
+
+    @bind
+    private handleTab(e: Event) {
+        const tab = (e.currentTarget as HTMLElement).dataset.tab as PickTab | undefined;
+        if (tab) this.pickTab = tab;
+    }
+
+    // tabs: arrows move between them (APG tabs, automatic activation)
+    @bind
+    private handleTabKey(e: KeyboardEvent) {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        this.pickTab = this.pickTab === "all" ? "emoji" : "all";
+        requestAnimationFrame(() => this.shadowRoot?.querySelector<HTMLElement>(`[data-tab="${this.pickTab}"]`)?.focus());
+    }
+
+    @bind
+    private handleSeeAll() {
+        this.pickTab = "emoji";
+    }
+
+    @bind
+    private handleSearch(e: Event) {
+        this.pickQuery = (e.target as HTMLInputElement).value;
+    }
+
+    @bind
+    private handlePick(e: Event) {
+        const { emoji } = (e as CustomEvent<EmojiPickEvent>).detail;
+        e.stopPropagation();
+        this.pickPopover?.hidePopover();
+        this.insertEmoji(emoji, this.caret.start, this.caret.end);
+    }
+
+    private insertEmoji(emoji: string, start: number, end: number) {
+        if (!this.field || this.disabled) return;
+        this.replace(start, end, emoji, emoji.length, emoji.length);
+        this.handleInput();
+        this.dispatchEvent(new CustomEvent<EmojiEvent>("emoji", { detail: { emoji }, bubbles: true, composed: true }));
+    }
+
+    // ---------------------------------------------------------------- :emoji autocomplete
+
+    // the `:token` before the cursor, if there is one
+    private token(): string | null {
+        const field = this.field;
+        if (!field || field.selectionStart !== field.selectionEnd) return null;
+        return field.value.slice(0, field.selectionStart).match(EMOJI_TOKEN)?.[1] ?? null;
+    }
+
+    private async suggest() {
+        const token = this.token();
+        if (!token)
+        {
+            if (this.suggestions.length) this.suggestions = [];
+            return;
+        }
+
+        let found: EmojiEntry[] = [];
+        try
+        {
+            found = searchEmoji(await loadEmoji(), token, SUGGESTIONS);
+        }
+        catch { /* no data: no suggestions */ }
+
+        // the user kept typing while the data loaded
+        if (this.token() !== token) return;
+        this.suggestions = found;
+        this.active = 0;
+    }
+
+    // true when the key was for the suggestion list
+    private handleSuggestKey(e: KeyboardEvent): boolean {
+        const count = this.suggestions.length;
+        switch (e.key)
+        {
+            case "ArrowDown": this.active = (this.active + 1) % count; break;
+            case "ArrowUp": this.active = (this.active - 1 + count) % count; break;
+            case "Enter":
+            case "Tab":
+                if (e.shiftKey) return false;
+                this.pickSuggestion(this.active);
+                break;
+            case "Escape": this.suggestions = []; break;
+            default: return false;
+        }
+        e.preventDefault();
+        return true;
+    }
+
+    private pickSuggestion(index: number) {
+        const entry = this.suggestions[index];
+        const token = this.token();
+        this.suggestions = [];
+        if (!entry || token === null) return;
+
+        const end = this.field.selectionStart;
+        this.insertEmoji(entry.emoji, end - token.length - 1, end);
+    }
+
+    // pointerdown, not click: keeps focus (and the cursor) in the field
+    @bind
+    private handleSuggestPointer(e: PointerEvent) {
+        e.preventDefault();
+        const index = Number((e.currentTarget as HTMLElement).dataset.index);
+        this.pickSuggestion(index);
+    }
+
+    @bind
+    private handleBlur() {
+        if (this.suggestions.length) this.suggestions = [];
+    }
+
     // ---------------------------------------------------------------- files
 
     @bind
@@ -368,6 +588,41 @@ export class Composer extends CustomElement {
         </div>`;
     }
 
+    private renderPicker() {
+        const t = this.t;
+        const recent = JSON.stringify(this.recent);
+
+        // one root element (papit finding #20); each tab's content is its own single-root conditional (#10)
+        return html`<div class="pick" role="dialog" aria-label="${t("emoji")}">
+            <div class="tabs" role="tablist" aria-label="${t("emoji")}" @keydown="${this.handleTabKey}">
+                <button type="button" role="tab" data-tab="all" aria-selected="${String(this.pickTab === "all")}" aria-controls="pick-panel" tabindex="${this.pickTab === "all" ? "0" : "-1"}" @click="${this.handleTab}">${t("tab-all")}</button>
+                <button type="button" role="tab" data-tab="emoji" aria-selected="${String(this.pickTab === "emoji")}" aria-controls="pick-panel" tabindex="${this.pickTab === "emoji" ? "0" : "-1"}" @click="${this.handleTab}">${t("tab-emoji")}</button>
+            </div>
+            <input class="search" type="search" placeholder="${t("search")}" aria-label="${t("search")}" autocomplete="off" @input="${this.handleSearch}" />
+            <div id="pick-panel" class="panel" role="tabpanel">
+                ${this.pickTab === "all" ? html`<section class="row-section">
+                    <header>
+                        <h3>${t("tab-emoji")}</h3>
+                        <button type="button" class="see-all" @click="${this.handleSeeAll}">${t("see-all")} ›</button>
+                    </header>
+                    <pc-emoji-picker limit="${String(ROW_SIZE)}" query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>
+                </section>` : ""}
+                ${this.pickTab === "emoji" ? html`<pc-emoji-picker class="full" query="${this.pickQuery}" recent="${recent}"></pc-emoji-picker>` : ""}
+            </div>
+        </div>`;
+    }
+
+    private renderSuggestions() {
+        return html`<ul part="suggestions" id="suggestions" class="suggestions" role="listbox" aria-label="${this.t("suggestions")}">
+            ${this.suggestions.map((entry, i) => html`
+                <li id="${`suggestion-${i}`}" role="option" aria-selected="${String(i === this.active)}" data-index="${String(i)}" @pointerdown="${this.handleSuggestPointer}">
+                    <span class="glyph" aria-hidden="true">${entry.emoji}</span>
+                    <span>${`:${entry.slug}:`}</span>
+                </li>
+            `)}
+        </ul>`;
+    }
+
     render() {
         // attribute bindings must be the whole value; an empty value removes the attribute
         const off = this.disabled ? "disabled" : "";
@@ -377,6 +632,7 @@ export class Composer extends CustomElement {
         return html`
             <div part="box" class="box">
                 ${this.formatting ? this.renderToolbar() : ""}
+                ${this.suggestions.length ? this.renderSuggestions() : ""}
                 <div class="row">
                     <textarea
                         part="field"
@@ -385,11 +641,18 @@ export class Composer extends CustomElement {
                         aria-label="${placeholder}"
                         disabled="${off}"
                         @input="${this.handleInput}"
+                        aria-autocomplete="list"
+                        aria-controls="${this.suggestions.length ? "suggestions" : ""}"
+                        aria-activedescendant="${this.suggestions.length ? `suggestion-${this.active}` : ""}"
                         @keydown="${this.handleKeydown}"
+                        @blur="${this.handleBlur}"
                     ></textarea>
                     <div class="actions">
                         <pap-button class="format" size="icon" variant="clear" color="${this.formatting ? "primary" : "secondary"}" type="button" disabled="${off}" aria-pressed="${String(this.formatting)}" aria-label="${this.t("format")}" title="${this.t("format")}" @click="${this.handleFormatting}">
                             <pap-icon name="/icons/spritesheet.svg#format" aria-hidden="true"></pap-icon>
+                        </pap-button>
+                        <pap-button part="emoji" size="icon" variant="clear" color="${this.picking ? "primary" : "secondary"}" type="button" disabled="${off}" aria-haspopup="dialog" aria-expanded="${String(this.picking)}" aria-label="${this.t("emoji")}" title="${this.t("emoji")}" @click="${this.handleEmojiButton}">
+                            <pap-icon name="/icons/spritesheet.svg#smile" aria-hidden="true"></pap-icon>
                         </pap-button>
                         <pap-button part="attach" size="icon" variant="clear" color="secondary" type="button" disabled="${off}" aria-label="${this.t("attach")}" title="${this.t("attach")}" @click="${this.handleAttach}">
                             <pap-icon name="/icons/spritesheet.svg#paperclip" aria-hidden="true"></pap-icon>
@@ -400,6 +663,9 @@ export class Composer extends CustomElement {
                         </pap-button>
                     </div>
                 </div>
+            </div>
+            <div part="popover" class="popover" popover="auto" @beforetoggle="${this.handleBeforeToggle}" @toggle="${this.handleToggle}">
+                ${this.picking ? this.renderPicker() : ""}
             </div>
             <pap-file-input multiple tabindex="-1" aria-hidden="true" @change="${this.handlePicked}"></pap-file-input>
         `;

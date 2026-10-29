@@ -35,12 +35,16 @@ npm install @papchat/composer
 | `disabled`    | `disabled`    | `boolean` | `false`                      | disables the field and the buttons, reflected |
 | `placeholder` | `placeholder` | `string`  | translated "Type a message" | placeholder and accessible label of the field  |
 | `formatting`  | `formatting`  | `boolean` | `false`                      | the formatting toolbar and live preview are open (the "T" button toggles it), reflected |
+| `recent`      | -             | `string[]`| `[]`                         | recently used emoji, newest first, for the emoji popover (property only; the host keeps the list, e.g. from the `emoji` event) |
 
 | Event    | Detail              | Description                                                                                              |
 | -------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
 | `send`   | `{ text: string }`  | Enter or the send button (Shift+Enter is a new line and continues a list or quote; Ctrl/Cmd+B/I/U format); text is trimmed, the field is cleared. Nothing fires for empty/whitespace text |
 | `typing` | -                   | at most once per second while the field has text                                                         |
 | `files`  | `{ files: File[] }` | files chosen with the attach button (`pap-file-input`, multiple)                                         |
+| `emoji`  | `{ emoji: string }` | an emoji was inserted at the cursor, from the smiley popover or `:name` autocomplete (bubbles, composed) |
+
+The smiley button opens a popover with tabs All / Emoji and a "Find something fun" search (`pc-emoji-picker` inside). Typing `:smi` suggests up to 6 emoji above the field: arrows move, Enter or Tab picks, Escape dismisses.
 
 The toolbar writes the markdown subset `pc-message` renders (`**bold**`, `*italic*`, `__underline__`, `~~strike~~`, lists, `> ` quotes, `[link](https://…)`, `` `code` ``), so what's sent is plain text. Parts: `box`, `toolbar`, `preview`, `field`, `attach`, `send`.
 

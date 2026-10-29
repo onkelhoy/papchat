@@ -61,7 +61,8 @@
     "@papit/file-input": "*",
     "@papit/button": "*",
     "@papit/icon": "*",
-    "@papchat/message": "*"
+    "@papchat/message": "*",
+    "@papchat/emoji-picker": "*"
   },
   "peerDependencies": {
     "react": "^19"

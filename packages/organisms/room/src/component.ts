@@ -43,6 +43,7 @@ const NARROW = "(max-width: 40rem)";
  * @property {boolean} canscreen the browser can share a screen (default true)
  * @property {boolean} canbuzz show the Buzz button in the header (1:1 chats)
  * @property {string} sinkid output device id for remote audio
+ * @property {string[]} recentEmoji recently used emoji for the composer's picker (property only)
  *
  * @fires call `CustomEvent<{ kind: "call" | "video" }>` header buttons, not in a call
  * @fires buzz the header's Buzz button (bubbles, composed)
@@ -72,12 +73,13 @@ export class Room extends CustomElement {
     @property({ type: Boolean, rerender: true }) screen: boolean = false;
     @property({ type: Boolean, rerender: true }) canscreen: boolean = true;
     @property({ type: String, rerender: true }) sinkid: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) recentEmoji: string[] = [];
 
     @property({ type: Boolean, attribute: false, rerender: true }) private narrow: boolean = false;
     // chat panel next to the stage, toggled from the controls
     @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
-    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[] };
+    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[] };
     @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
 
     @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean };
@@ -113,6 +115,7 @@ export class Room extends CustomElement {
             conversation.me = this.me;
             conversation.typing = this.typing;
             conversation.files = this.files;
+            conversation.recentEmoji = this.recentEmoji;
         }
 
         const stage = this.stage;

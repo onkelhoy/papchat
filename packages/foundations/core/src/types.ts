@@ -26,6 +26,8 @@ export type Prefs = {
     notifications: boolean;
     devices: { mic?: string; camera?: string; speaker?: string };
     sidebarOpen: boolean;
+    // emoji picked in the composer, newest first (at most 24)
+    recentEmoji: string[];
 };
 
 /** A private network: its own lobby, found by name and locked with the password. `null` = the public papchat lobby. */

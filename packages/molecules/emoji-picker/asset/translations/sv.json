@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-emoji-picker": {
+    "label": "Emoji",
+    "categories": "Emojikategorier",
+    "recent": "Senast använda",
+    "results": "Sökresultat",
+    "none": "Inga emoji hittades",
+    "loading": "Laddar emoji…",
+    "error": "Det gick inte att ladda emoji.",
+    "retry": "Försök igen",
+    "smileys_emotion": "Smileys & känslor",
+    "people_body": "Människor & kropp",
+    "animals_nature": "Djur & natur",
+    "food_drink": "Mat & dryck",
+    "travel_places": "Resor & platser",
+    "activities": "Aktiviteter",
+    "objects": "Föremål",
+    "symbols": "Symboler",
+    "flags": "Flaggor"
+  }
+}

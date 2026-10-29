@@ -177,3 +177,146 @@ pap-button[size="icon"] {
     block-size: var(--space-8, 2rem);
     border-radius: 50%;
 }
+
+/* ---------------------------------------------------------------- :emoji autocomplete */
+
+.suggestions {
+    margin: 0;
+    padding: var(--space-1, 0.25rem);
+    list-style: none;
+    border-block-end: 1px solid light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12));
+}
+
+.suggestions li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+    border-radius: var(--radius-small, 0.5rem);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.suggestions li[aria-selected="true"],
+.suggestions li:hover {
+    background-color: light-dark(oklch(0% 0 0 / 0.07), oklch(100% 0 0 / 0.1));
+    color: var(--text);
+}
+
+.glyph {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+/* ---------------------------------------------------------------- emoji popover (top layer) */
+
+.popover {
+    position: fixed;
+    inset: auto var(--pick-right, 0.5rem) var(--pick-bottom, 4rem) auto;
+    margin: 0;
+    padding: 0;
+    inline-size: min(22rem, calc(100vw - 1rem));
+    max-block-size: min(26rem, var(--pick-max-height, 26rem));
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.15), oklch(100% 0 0 / 0.18));
+    border-radius: var(--radius-medium, 0.75rem);
+    background-color: var(--background);
+    color: var(--text);
+    box-shadow: 0 0.5rem 1.5rem oklch(0% 0 0 / 0.2);
+}
+
+.popover:popover-open {
+    display: flex;
+}
+
+.pick {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    flex: 1;
+    min-block-size: 0;
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem) var(--space-3, 0.75rem);
+}
+
+.tabs {
+    display: flex;
+    gap: var(--space-3, 0.75rem);
+    border-block-end: 1px solid light-dark(oklch(0% 0 0 / 0.1), oklch(100% 0 0 / 0.12));
+}
+
+.tabs button {
+    padding: var(--space-1, 0.25rem) 0;
+    border: none;
+    border-block-end: 2px solid transparent;
+    background: none;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+    border-block-end-color: var(--primary);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.tabs button:focus-visible,
+.see-all:focus-visible,
+.search:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 1px;
+}
+
+.search {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.2), oklch(100% 0 0 / 0.25));
+    border-radius: var(--radius-small, 0.5rem);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+}
+
+.search::placeholder {
+    color: var(--text-secondary);
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-block-size: 0;
+}
+
+.row-section header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.row-section h3 {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.see-all {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+
+pc-emoji-picker.full {
+    flex: 1;
+    min-block-size: 12rem;
+    --emoji-picker-background: var(--background);
+}

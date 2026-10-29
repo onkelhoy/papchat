@@ -19,6 +19,7 @@ export const DEFAULT_PREFS: Prefs = {
     notifications: false,
     devices: {},
     sidebarOpen: true,
+    recentEmoji: [],
 };
 
 function read(area: () => Storage, key: string): unknown {
@@ -72,14 +73,19 @@ export const storage = {
         // unknown or wrongly typed fields fall back to the defaults one by one
         get(): Prefs {
             const value = read(local, KEYS.prefs);
-            if (!isObject(value) || value.v !== 1) return { ...DEFAULT_PREFS, devices: {} };
+            if (!isObject(value) || value.v !== 1) return { ...DEFAULT_PREFS, devices: {}, recentEmoji: [] };
 
-            const prefs = { ...DEFAULT_PREFS, devices: {} } as Prefs;
+            const prefs = { ...DEFAULT_PREFS, devices: {}, recentEmoji: [] } as Prefs;
             for (const key of Object.keys(DEFAULT_PREFS) as (keyof Prefs)[])
             {
                 if (key === "devices")
                 {
                     if (isObject(value.devices)) prefs.devices = { ...value.devices } as Prefs["devices"];
+                    continue;
+                }
+                if (key === "recentEmoji")
+                {
+                    if (Array.isArray(value.recentEmoji)) prefs.recentEmoji = value.recentEmoji.filter((e): e is string => typeof e === "string").slice(0, 24);
                     continue;
                 }
                 if (typeof value[key] === typeof DEFAULT_PREFS[key]) (prefs as Record<string, unknown>)[key] = value[key];

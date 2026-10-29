@@ -20,6 +20,12 @@
     "code": "Code",
     "clear": "Clear message",
     "preview": "Preview",
-    "link-text": "link text"
+    "link-text": "link text",
+    "emoji": "Emoji",
+    "tab-all": "All",
+    "tab-emoji": "Emoji",
+    "search": "Find something fun",
+    "see-all": "See all",
+    "suggestions": "Emoji suggestions"
   }
 }

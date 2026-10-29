@@ -20,6 +20,12 @@
     "code": "Kod",
     "clear": "Rensa meddelandet",
     "preview": "Förhandsvisning",
-    "link-text": "länktext"
+    "link-text": "länktext",
+    "emoji": "Emoji",
+    "tab-all": "Alla",
+    "tab-emoji": "Emoji",
+    "search": "Hitta något kul",
+    "see-all": "Visa alla",
+    "suggestions": "Emojiförslag"
   }
 }

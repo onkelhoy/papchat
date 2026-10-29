@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pc-emoji-picker | experiment</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer type="module" src="main.js"></script>
+</head>
+
+<body>
+    <h1>pc-emoji-picker</h1>
+    <p id="log">emoji-pick events show here</p>
+
+    <section>
+        <h2>Full picker (categories)</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker class="box"></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>With recently used</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker class="box" recent='["🎉","👍","😂","❤️"]'></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>Search ("heart")</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker class="box" query="heart"></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>Search with no match</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker query="zzzz"></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>One row (limit="16", recent first)</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker limit="16" recent='["🎉","👍"]'></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>Data fails to load (bad src)</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker src="/emoji/missing.json"></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <pap-codeblock display="both">
+            <pc-emoji-picker class="box" recent='["🔥"]'></pc-emoji-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>createElement</h2>
+        <div id="created"></div>
+    </section>
+</body>
+
+</html>

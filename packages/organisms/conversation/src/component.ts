@@ -5,6 +5,7 @@ import "@papit/button";
 import "@papchat/message";
 import type { Message } from "@papchat/message";
 import "@papchat/composer";
+import type { Composer } from "@papchat/composer";
 import "@papchat/file-card";
 import type { FileCard } from "@papchat/file-card";
 
@@ -35,10 +36,12 @@ const BOTTOM_THRESHOLD = 24;
  * @property {string} me own uid
  * @property {string[]} typing uids currently typing (own uid is ignored)
  * @property {string} heading optional header text (not `title`: that would add a native tooltip)
+ * @property {string[]} recentEmoji recently used emoji, newest first, for the composer's picker (property only)
  *
  * @fires send `CustomEvent<{ text: string }>` re-dispatched from the composer
  * @fires typing `CustomEvent<void>` re-dispatched from the composer
  * @fires files `CustomEvent<{ files: File[] }>` re-dispatched from the composer, or dropped on the element
+ * @fires emoji `CustomEvent<{ emoji: string }>` from the composer: an emoji was inserted (bubbles, composed)
  * @fires cancel `CustomEvent<{ fid }>` from a file card (bubbles, composed)
  *
  * @csspart header the heading
@@ -57,6 +60,7 @@ export class Conversation extends CustomElement {
     @property({ type: String, rerender: true }) me: string = "";
     @property({ type: Array, attribute: false, rerender: true }) typing: string[] = [];
     @property({ type: String, rerender: true }) heading: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) recentEmoji: string[] = [];
 
     // shown while there are messages below the viewport
     @property({ type: Boolean, attribute: false, rerender: true }) private unseen: boolean = false;
@@ -64,6 +68,7 @@ export class Conversation extends CustomElement {
     @property({ type: Boolean, attribute: false, rerender: true }) private dropping: boolean = false;
 
     @query(".list") private list!: HTMLElement;
+    @query("pc-composer") private composer?: Composer;
 
     private stuck = true;
     private lastId?: string;
@@ -90,6 +95,7 @@ export class Conversation extends CustomElement {
     update() {
         super.update();
         this.syncMessages();
+        if (this.composer) this.composer.recent = this.recentEmoji;
         this.followBottom();
         return undefined;
     }

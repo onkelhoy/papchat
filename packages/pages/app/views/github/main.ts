@@ -574,6 +574,14 @@ view.addEventListener("send", (e) =>
     else current()?.send(text);
 });
 
+// recently used emoji for the composer's picker, newest first, kept in prefs
+effect(() => { view.recentEmoji = prefs().recentEmoji; });
+view.addEventListener("emoji", (e) =>
+{
+    const { emoji } = (e as CustomEvent<{ emoji: string }>).detail;
+    setPrefs({ recentEmoji: [emoji, ...prefs().recentEmoji.filter(other => other !== emoji)].slice(0, 24) });
+});
+
 // buzz: the header button or "/buzz"; one per 10 s, the wait is toasted
 function sendBuzz() {
     const room = current();

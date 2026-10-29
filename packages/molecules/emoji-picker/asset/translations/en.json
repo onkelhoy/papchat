@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-emoji-picker": {
+    "label": "Emoji",
+    "categories": "Emoji categories",
+    "recent": "Recently used",
+    "results": "Search results",
+    "none": "No emoji found",
+    "loading": "Loading emoji…",
+    "error": "Couldn't load the emoji.",
+    "retry": "Try again",
+    "smileys_emotion": "Smileys & emotion",
+    "people_body": "People & body",
+    "animals_nature": "Animals & nature",
+    "food_drink": "Food & drink",
+    "travel_places": "Travel & places",
+    "activities": "Activities",
+    "objects": "Objects",
+    "symbols": "Symbols",
+    "flags": "Flags"
+  }
+}
