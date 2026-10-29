@@ -348,7 +348,8 @@ export class Composer extends CustomElement {
     private renderToolbar() {
         const off = this.disabled ? "disabled" : "";
 
-        return html`
+        // one root element: papit's html can't remove a nested template with several top-level nodes
+        return html`<div class="format">
             <div part="toolbar" class="toolbar" role="toolbar" aria-label="${this.t("toolbar")}">
                 ${TOOLS.map((group, g) => html`
                     ${g > 0 ? html`<span class="divider" aria-hidden="true"></span>` : ""}
@@ -364,7 +365,7 @@ export class Composer extends CustomElement {
                 </pap-button>
             </div>
             <div part="preview" class="preview" aria-label="${this.t("preview")}" hidden></div>
-        `;
+        </div>`;
     }
 
     render() {

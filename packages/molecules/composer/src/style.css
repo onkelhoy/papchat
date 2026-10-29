@@ -1,5 +1,6 @@
 :host {
     display: block;
+    container-type: inline-size;
     padding: var(--space-2, 0.5rem);
     box-sizing: border-box;
     color: var(--text);
@@ -135,6 +136,13 @@ textarea:disabled {
 :host([formatting]) textarea {
     flex-basis: 100%;
     min-block-size: 5rem;
+}
+
+/* narrow (a phone, a slim chat panel): the text gets the whole row and the buttons sit under it */
+@container (max-width: 30rem) {
+    textarea {
+        flex-basis: 100%;
+    }
 }
 
 .actions {
