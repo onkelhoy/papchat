@@ -36,6 +36,7 @@ import {
     devices,
     incoming,
     listDevices,
+    listNetworks,
     placeCall,
     requestNotifications,
     ringtone,
@@ -131,6 +132,7 @@ async function boot() {
         onboarding.name = "";
         onboarding.color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
         onboarding.open = true;
+        void listNetworks().then(list => { onboarding.networks = list; });
     }
 }
 
@@ -362,8 +364,13 @@ effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, l
 effect(() => { settings.devices = devices(); });
 effect(() => { settings.playing = ringtone.previewing(); });
 
+async function refreshNetworks() {
+    settings.networks = await listNetworks();
+}
+
 function openSettings() {
     void listDevices();
+    void refreshNetworks();
     settings.open = true;
 }
 
@@ -418,6 +425,7 @@ settings.addEventListener("prefs-change", (e) =>
     setPrefs(partial);
     if (partial.devices) restartCaptures(before, prefs().devices);
 });
+settings.addEventListener("networks-refresh", () => void refreshNetworks());
 settings.addEventListener("network-change", (e) => switchNetwork((e as CustomEvent<{ network: { name: string; password: string } | null }>).detail.network));
 settings.addEventListener("language-change", (e) =>
 {
@@ -629,6 +637,7 @@ onboarding.addEventListener("language-change", (e) =>
     setPrefs({ language: value });
     changeLanguage(value);
 });
+onboarding.addEventListener("networks-refresh", async () => { onboarding.networks = await listNetworks(); });
 onboarding.addEventListener("submit", (e) =>
 {
     const { name, color, language, network: net } = (e as unknown as CustomEvent<{ name: string; color: string; language: string; network: { name: string; password: string } | null }>).detail;

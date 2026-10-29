@@ -1,0 +1,70 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 1rem);
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    margin: 0;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+}
+
+.label,
+label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.hint {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-secondary, inherit);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1, 0.25rem);
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    min-block-size: 2.5rem;
+    padding-inline: var(--space-3, 0.75rem);
+    border-radius: var(--radius-medium, 0.5rem);
+    background: color-mix(in oklch, var(--text) 5%, transparent);
+}
+
+.name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.spacer {
+    flex: 1;
+}
+
+/* icon and label sit apart */
+pap-button {
+    gap: var(--space-2, 0.5rem);
+    white-space: nowrap;
+}

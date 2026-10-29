@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-network-picker": {
+    "public-current": "Du är på det publika papchat-nätverket.",
+    "private": "Du är på det privata nätverket \"{name}\".",
+    "networks": "Tillgängliga nätverk",
+    "refresh": "Uppdatera",
+    "public": "papchat (publikt)",
+    "members": "{count} online",
+    "locked": "lösenord",
+    "current": "Nuvarande",
+    "join": "Gå med",
+    "join-or-create": "Gå med eller skapa",
+    "name": "Nätverksnamn",
+    "password": "Lösenord",
+    "hint": "Går med i nätverket med det här namnet, eller skapar det om det inte finns. Lämna lösenordet tomt för ett öppet nätverk."
+  }
+}

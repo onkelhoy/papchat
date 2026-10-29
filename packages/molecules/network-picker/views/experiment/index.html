@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pc-network-picker | experiment</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer type="module" src="main.js"></script>
+</head>
+
+<body>
+    <h1>pc-network-picker</h1>
+
+    <section>
+        <h2>Networks</h2>
+        <pap-codeblock display="both">
+            <pc-network-picker id="picker"></pc-network-picker>
+        </pap-codeblock>
+    </section>
+
+    <section>
+        <h2>On a private network</h2>
+        <pap-codeblock display="both">
+            <pc-network-picker id="private" network="team"></pc-network-picker>
+        </pap-codeblock>
+    </section>
+    <pre id="log"></pre>
+</body>
+
+</html>

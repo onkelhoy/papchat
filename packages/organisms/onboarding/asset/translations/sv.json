@@ -11,11 +11,6 @@
     "color": "Färg",
     "language": "Språk",
     "submit": "Fortsätt",
-    "private": "Privat nätverk",
-    "public-hint": "Du går med i det publika papchat-nätverket.",
-    "private-hint": "Bara de med samma nätverksnamn och lösenord ser varandra.",
-    "network": "Nätverksnamn",
-    "password": "Lösenord",
-    "network-error": "Ange ett nätverksnamn."
+    "network": "Nätverk"
   }
 }

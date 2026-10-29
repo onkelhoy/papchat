@@ -27,6 +27,8 @@
     gap: var(--space-1, 4px);
     min-inline-size: 0;
     max-inline-size: min(100%, var(--message-max-width, 36rem));
+    /* the bubble fits its text instead of stretching to the name + time line */
+    align-items: flex-start;
 }
 
 .meta {

@@ -11,6 +11,7 @@ import "@papit/theme-picker";
 import "@papchat/ringtone-picker";
 import "@papchat/device-picker";
 import "@papchat/language-picker";
+import "@papchat/network-picker";
 import "@papchat/video";
 import "@papchat/level-meter";
 
@@ -18,7 +19,7 @@ import "@papchat/level-meter";
 import sheet from "./style.css" with { type: "css" };
 import type {
     DeviceLists, LanguageChangeEvent, Prefs, PrefsChangeEvent, PreviewDeviceEvent,
-    NetworkChangeEvent, Profile, ProfileChangeEvent, Shortcut, Status, Tone,
+    NetworkEntry, Profile, ProfileChangeEvent, Shortcut, Status, Tone,
 } from "./types";
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
@@ -43,12 +44,14 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {MediaStream | null} micstream microphone test stream (property only)
  * @property {boolean} sinkSupported the browser can pick an output device (default true)
  * @property {string} network name of the private network in use, "" for the public one
+ * @property {NetworkEntry[]} networks the networks on the server, for the Network tab (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
  * @fires prefs-change `{ partial }` ringtone, volume, devices or auto-decline changed
  * @fires language-change `{ value }`
- * @fires network-change `{ network }` "Switch network" pressed (`null` = public); the page reconnects
+ * @fires network-change `{ network }` from the Network tab's `pc-network-picker` (`null` = public); the page reconnects
+ * @fires networks-refresh the Network tab wants a fresh `networks` list
  * @fires request-notifications switch turned on: the page asks for permission, then sets `prefs.notifications`
  * @fires preview-device `{ kind: "camera" | "mic" }` a test button was pressed
  * @fires close the dialog was dismissed (the page sets `open = false`)
@@ -71,17 +74,11 @@ export class Settings extends CustomElement {
     @property({ type: Object, attribute: false, rerender: true }) micstream?: MediaStream;
     @property({ type: Boolean, attribute: false, rerender: true }) sinkSupported: boolean = true;
     @property({ type: Array, attribute: false, rerender: true }) shortcuts: Shortcut[] = [];
-    @property({
-        type: String,
-        rerender: true,
-        after: function (this: Settings) { this.priv = !!this.network; this.netName = this.network; },
-    }) network: string = "";
-
-    // the network form is a draft until "Switch network" is pressed
-    @property({ type: Boolean, attribute: false, rerender: true }) private priv: boolean = false;
-    @property({ type: String, attribute: false, rerender: true }) private netName: string = "";
+    @property({ type: String, rerender: true }) network: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
 
     @query("pc-ringtone-picker") private ringtones?: Synced;
+    @query("pc-network-picker") private picker?: Synced;
     @query("pc-language-picker") private languages?: Synced;
     @query("pc-video") private video?: Synced;
     @query("pc-level-meter") private meter?: Synced;
@@ -102,6 +99,10 @@ export class Settings extends CustomElement {
             this.ringtones.value = prefs?.ringtone ?? "";
             this.ringtones.volume = prefs?.volume ?? 1;
             this.ringtones.playing = this.playing;
+        }
+        if (this.picker)
+        {
+            this.picker.networks = this.networks;
         }
 
         if (this.languages) this.languages.value = this.language;
@@ -135,28 +136,6 @@ export class Settings extends CustomElement {
 
     private emitPrefs(partial: Partial<Prefs>) {
         this.emit<PrefsChangeEvent>("prefs-change", { partial });
-    }
-
-    @bind
-    private handlePrivate(e: Event) {
-        this.priv = !!(e.currentTarget as HTMLInputElement).checked;
-    }
-
-    @bind
-    private handleNetName(e: Event) {
-        this.netName = String((e.currentTarget as HTMLInputElement).value ?? "");
-    }
-
-    // read when pressed: a field may not have fired `change` yet
-    private field(id: string): string {
-        return String(this.shadowRoot?.querySelector<HTMLInputElement>(`#${id}`)?.value ?? "");
-    }
-
-    @bind
-    private handleSwitchNetwork() {
-        const name = this.field("network-name").trim();
-        if (this.priv && !name) return;
-        this.emit<NetworkChangeEvent>("network-change", { network: this.priv ? { name, password: this.field("network-password") } : null });
     }
 
     @bind
@@ -261,6 +240,7 @@ export class Settings extends CustomElement {
                 <div class="body">
                     <pap-tabs value="profile">
                         <pap-tab value="profile">${this.t("profile")}</pap-tab>
+                        <pap-tab value="network">${this.t("network")}</pap-tab>
                         <pap-tab value="sound">${this.t("sound")}</pap-tab>
                         <pap-tab value="devices">${this.t("devices")}</pap-tab>
                         <pap-tab value="appearance">${this.t("appearance")}</pap-tab>
@@ -292,23 +272,11 @@ export class Settings extends CustomElement {
                                     `)}
                                 </div>
                             </fieldset>
-                            <fieldset class="field network">
-                                <legend>${this.t("network")}</legend>
-                                <p class="hint">${this.network ? this.t("network-private", { name: this.network }) : this.t("network-public")}</p>
-                                <pap-switch checked="${this.priv && "true"}" @change="${this.handlePrivate}">${this.t("private")}</pap-switch>
-                                ${this.priv ? html`
-                                    <label for="network-name">${this.t("network-name")}</label>
-                                    <pap-input id="network-name" maxlength="40" autocomplete="off" value="${this.netName}" @change="${this.handleNetName}"></pap-input>
-                                    <label for="network-password">${this.t("password")}</label>
-                                    <pap-input id="network-password" type="password" autocomplete="off"></pap-input>
-                                ` : ""}
-                                <div class="row">
-                                    <pap-button variant="outline" @click="${this.handleSwitchNetwork}">${this.t("switch-network")}</pap-button>
-                                </div>
-                                <p class="hint">${this.t("switch-hint")}</p>
-                            </fieldset>
                         </pap-tabpanel>
 
+                        <pap-tabpanel value="network">
+                            <pc-network-picker network="${this.network}"></pc-network-picker>
+                        </pap-tabpanel>
                         <pap-tabpanel value="sound">
                             <pc-ringtone-picker @change="${this.handleTone}" @volume="${this.handleVolume}"></pc-ringtone-picker>
                             <pap-switch checked="${prefs?.autoDeclineBusy && "true"}" @change="${this.handleAutoDecline}">${this.t("auto-decline")}</pap-switch>

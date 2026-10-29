@@ -28,6 +28,13 @@ export type Network = {
     password: string;
 };
 
+/** One network on the signal server, for the network list. `name` is "" for the public one. */
+export type NetworkEntry = {
+    name: string;
+    members: number;
+    locked: boolean;
+};
+
 export type Debug = {
     signal?: string;
     log?: boolean;

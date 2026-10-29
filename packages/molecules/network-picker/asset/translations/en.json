@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-network-picker": {
+    "public-current": "You're on the public papchat network.",
+    "private": "You're on the private network \"{name}\".",
+    "networks": "Available networks",
+    "refresh": "Refresh",
+    "public": "papchat (public)",
+    "members": "{count} online",
+    "locked": "password",
+    "current": "Current",
+    "join": "Join",
+    "join-or-create": "Join or create",
+    "name": "Network name",
+    "password": "Password",
+    "hint": "Joins the network with this name, or creates it if there is none. Leave the password empty for an open network."
+  }
+}

@@ -69,7 +69,8 @@
     "@papchat/device-picker": "*",
     "@papchat/language-picker": "*",
     "@papchat/video": "*",
-    "@papchat/level-meter": "*"
+    "@papchat/level-meter": "*",
+    "@papchat/network-picker": "*"
   },
   "peerDependencies": {
     "react": "^19"

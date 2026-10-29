@@ -3,7 +3,7 @@ import { Client } from "@papit/webrtc";
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
 import { log } from "./log";
 import { me, network, setLobbyStatus, setMembers, toast } from "./state";
-import type { Profile, Status } from "./types";
+import type { NetworkEntry, Profile, Status } from "./types";
 
 // The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in. A private network
 // (`network()`) is the same thing under its own name and password, so only its members meet. Find the canonical
@@ -161,6 +161,40 @@ export function lobbyClient(): Client | null {
     return client;
 }
 
+/**
+ * The papchat networks on the signal server: the public one first (always listed), then the
+ * private ones by name. Uses the lobby's socket, or a short-lived one when we're not in a lobby
+ * (e.g. after a wrong password). Resolves to just the public one when the server can't be reached.
+ */
+export async function listNetworks(): Promise<NetworkEntry[]> {
+    const own = client;
+    const c = own ?? new Client({ url: signalUrl(), rtc: RTC, topology: "chord" });
+    const found = new Map<string, NetworkEntry>([["", { name: "", members: 0, locked: false }]]);
+    try
+    {
+        await c.ready;
+        for (const info of await c.list())
+        {
+            if (info.meta?.app !== APP || info.meta?.kind !== "lobby") continue;
+            const name = typeof info.meta.network === "string" ? info.meta.network : "";
+            // two lobbies under one name (a race that hasn't converged yet) count as one network
+            const entry = found.get(name) ?? { name, members: 0, locked: false };
+            entry.members += info.size;
+            entry.locked ||= info.meta.locked === true;
+            found.set(name, entry);
+        }
+    }
+    catch (error)
+    {
+        log("lobby: listing networks failed", error);
+    }
+    finally
+    {
+        if (!own) try { c.close(); } catch { /* already closed */ }
+    }
+    return [...found.values()].sort((a, b) => (a.name === "" ? -1 : b.name === "" ? 1 : a.name.localeCompare(b.name)));
+}
+
 // ---------------------------------------------------------------- client lifecycle
 
 function startClient(): Promise<boolean> {
@@ -274,7 +308,7 @@ async function boot(current: number): Promise<boolean> {
             await serverCall(current, () => c.create({
                 name: net?.name ?? LOBBY_NAME,
                 ...(net?.password ? { password: net.password } : {}),
-                meta: { app: APP, kind: "lobby", v: 1, created: Date.now(), ...(net ? { network: net.name } : {}) },
+                meta: { app: APP, kind: "lobby", v: 1, created: Date.now(), ...(net ? { network: net.name, locked: !!net.password } : {}) },
             }));
         }
         alive(current);

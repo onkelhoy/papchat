@@ -1,8 +1,12 @@
 :host {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3, 0.75rem);
     box-sizing: border-box;
+    /* shrink to the sidebar instead of pushing Watch out of view; Watch wraps below when narrow */
+    min-inline-size: 0;
+    max-inline-size: 100%;
     padding: var(--space-3, 0.75rem);
     border-radius: var(--radius-medium, 0.5rem);
     border: 1px solid color-mix(in oklch, var(--text) 12%, transparent);
@@ -17,7 +21,7 @@
 .text {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 1 1 8rem;
     gap: var(--space-1, 0.25rem);
     min-inline-size: 0;
 }

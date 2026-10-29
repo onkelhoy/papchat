@@ -11,11 +11,6 @@
     "color": "Colour",
     "language": "Language",
     "submit": "Continue",
-    "private": "Private network",
-    "public-hint": "You join the public papchat network.",
-    "private-hint": "Only people with the same network name and password see each other.",
-    "network": "Network name",
-    "password": "Password",
-    "network-error": "Enter a network name."
+    "network": "Network"
   }
 }

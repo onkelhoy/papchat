@@ -6,9 +6,10 @@ import type { Dialog } from "@papit/dialog";
 import "@papit/input";
 import "@papit/radio";
 import "@papit/button";
-import "@papit/switch";
 import "@papchat/avatar";
 import "@papchat/language-picker";
+import "@papchat/network-picker";
+import type { NetworkChangeEvent, NetworkEntry } from "@papchat/network-picker";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -45,9 +46,11 @@ export const NAME_MAX = 32;
  * @property {string} color the chosen colour, one of `colors`
  * @property {string} language code of the chosen language (default "en")
  * @property {string[]} colors the swatches (default: the 8 colours of `PALETTE` in core)
- * @property {string} network name of a private network to join, "" for the public one
+ * @property {string} network name of the picked network, "" for the public one
+ * @property {NetworkEntry[]} networks the networks on the server, for the picker (property only)
  *
  * @fires submit `CustomEvent<{ name, color, language, network }>` valid form submitted (bubbles, composed)
+ * @fires networks-refresh the picker wants a fresh `networks` (bubbles, composed)
  * @fires language-change `CustomEvent<{ value }>` the language was changed, so the page can translate live (bubbles, composed)
  * @csspart dialog the `pap-dialog`
  */
@@ -62,9 +65,10 @@ export class Onboarding extends CustomElement {
     @property({ type: String, rerender: true }) language: string = "en";
     @property({ type: Array, attribute: false, rerender: true }) colors: string[] = DEFAULT_COLORS;
     @property({ type: String, rerender: true }) network: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
 
-    // the private network fields only show while the switch is on
-    @property({ type: Boolean, attribute: false, rerender: true }) private priv: boolean = false;
+    // what the picker chose, used on submit; null = public
+    private picked: NetworkChangeEvent["network"] = null;
 
     // errors only show after a first attempt, not while the field is still empty
     @property({ type: Boolean, attribute: false, rerender: true }) private attempted: boolean = false;
@@ -76,27 +80,23 @@ export class Onboarding extends CustomElement {
     }
 
     private get valid(): boolean {
-        return this.trimmed.length >= 1 && this.trimmed.length <= NAME_MAX && (!this.priv || this.network.trim().length > 0);
+        return this.trimmed.length >= 1 && this.trimmed.length <= NAME_MAX;
     }
 
-    connectedCallback(): void {
-        super.connectedCallback();
-        this.priv = !!this.network;
+    // objects can't go through html``: hand the list to the picker after each patch
+    update() {
+        super.update();
+        const picker = this.shadowRoot?.querySelector<HTMLElement & { networks: NetworkEntry[] }>("pc-network-picker");
+        if (picker) picker.networks = this.networks;
+        return undefined;
     }
 
+    // nothing connects yet: remember the pick and mark it in the list
     @bind
-    private handlePrivate(e: Event) {
-        this.priv = !!(e.currentTarget as HTMLInputElement).checked;
-    }
-
-    @bind
-    private handleNetwork(e: Event) {
-        this.network = String((e.currentTarget as HTMLInputElement).value ?? "");
-    }
-
-    // read at submit: a password field may not have fired `change` yet
-    private field(id: string): string {
-        return String(this.shadowRoot?.querySelector<HTMLInputElement>(`#${id}`)?.value ?? "");
+    private handlePick(e: CustomEvent<NetworkChangeEvent>) {
+        e.stopPropagation();
+        this.picked = e.detail.network;
+        this.network = this.picked?.name ?? "";
     }
 
     @bind
@@ -134,7 +134,6 @@ export class Onboarding extends CustomElement {
     @bind
     private handleSubmit(e: Event) {
         e.preventDefault();
-        if (this.priv) this.network = this.field("network");
         this.attempted = true;
         if (!this.valid) return;
 
@@ -144,7 +143,7 @@ export class Onboarding extends CustomElement {
                 name: this.trimmed,
                 color: this.color || this.colors[0],
                 language: this.language,
-                network: this.priv ? { name: this.network.trim(), password: this.field("password") } : null,
+                network: this.picked,
             },
             bubbles: true,
             composed: true,
@@ -154,7 +153,6 @@ export class Onboarding extends CustomElement {
     render() {
         const color = this.color || this.colors[0];
         const invalid = this.attempted && !(this.trimmed.length >= 1 && this.trimmed.length <= NAME_MAX);
-        const networkInvalid = this.attempted && this.priv && !this.network.trim();
 
         return html`
             <pap-dialog part="dialog" open="${this.open && "true"}" header="${this.t("title")}" @close="${this.handleClose}">
@@ -199,23 +197,8 @@ export class Onboarding extends CustomElement {
                     </div>
 
                     <div class="network">
-                        <pap-switch checked="${this.priv && "true"}" @change="${this.handlePrivate}">${this.t("private")}</pap-switch>
-                        <p class="hint">${this.t(this.priv ? "private-hint" : "public-hint")}</p>
-                        ${this.priv ? html`
-                            <label for="network">${this.t("network")}</label>
-                            <pap-input
-                                id="network"
-                                name="network"
-                                maxlength="40"
-                                autocomplete="off"
-                                value="${this.network}"
-                                aria-invalid="${String(networkInvalid)}"
-                                @change="${this.handleNetwork}"
-                            ></pap-input>
-                            <label for="password">${this.t("password")}</label>
-                            <pap-input id="password" name="password" type="password" autocomplete="off"></pap-input>
-                            <p class="error" role="alert">${networkInvalid ? this.t("network-error") : ""}</p>
-                        ` : ""}
+                        <span class="label">${this.t("network")}</span>
+                        <pc-network-picker network="${this.network}" @network-change="${this.handlePick}"></pc-network-picker>
                     </div>
 
                     <pap-button type="submit" size="large">${this.t("submit")}</pap-button>
