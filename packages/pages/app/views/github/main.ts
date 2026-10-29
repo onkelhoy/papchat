@@ -205,7 +205,7 @@ effect(() =>
     for (const summary of rooms())
     {
         const room = getRoom(summary.id);
-        if (room?.incall) for (const s of room.streams()) uids.add(s.uid);
+        if (room?.incall) for (const uid of room.othersInCall()) uids.add(uid);
     }
     list.incall = [...uids];
 });
@@ -224,8 +224,10 @@ function tilesOf(room: Room): CallTile[] {
     }
 
     const streams = room.streams();
+    const incall = new Set(room.othersInCall());
     for (const p of room.participants())
     {
+        if (!incall.has(p.uid)) continue;
         const theirs = streams.filter(s => s.uid === p.uid);
         const of = (name: string) => theirs.find(s => s.name === name)?.stream;
         const mic = of("mic");
@@ -551,7 +553,7 @@ view.addEventListener("hangup", () =>
     const room = current();
     if (!room) return;
     if (room.kind === "call" || room.kind === "video") room.leave();
-    else for (const name of Object.keys(room.captures())) room.stop(name);
+    else room.hangUp();
 });
 
 view.addEventListener("invite", () =>

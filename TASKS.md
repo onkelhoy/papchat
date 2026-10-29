@@ -6,7 +6,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-29)
 
-- **Done:** 53/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
+- **Done:** 54/75 tasks. Waves 0-6 are in except T6.9. Wave 7 (feedback from the first real use, 2026-10-29) is new and not started.
 - **Next, in order:** Wave 7 phase A (bugs: T7.1-T7.8), then B (UI: T7.9-T7.12), then C (features: T7.13-T7.18). T6.9 final live pass comes after wave 7. T0.6 (go live) is the user's.
 - **Not run in a browser:** the 50 MB transfer check (T4.1/T4.5) and the 3-tab flows; the user reviews live with `npm start`.
 - **Agents:** Sonnet only, one or two at a time.
@@ -419,14 +419,15 @@ Found while testing with real people (one on a phone, one non-technical). Phase 
 - **do:** (1) A call to someone you already have a 1:1 chat with happens **in that room**: start mic/camera there and ring over the lobby with the existing room id. A new room only when there's no direct room. (2) Simultaneous open: when a direct invite arrives from `uid` and we already have a direct room with them, keep the room with the smaller id (deterministic on both sides). The losing side moves to the winner, and its messages go into the winner's history (resend them as a one-time `merge` batch, or just show them locally above the winner's history). Then leave the loser. (3) Calls to someone with no chat yet create the direct room (kind `call`/`video`), so a later "chat" reuses it.
 - **files:** `core/src/invites.ts`, `core/src/room.ts` (directs, adopt/merge), page if the sidebar needs a tweak.
 - **done when:** in 2 tabs, click chat on both sides at once, then call, then mute both: one row per person the whole time.
-- Done: invites carry `direct: true` for 1:1s. `placeCall` calls inside `directRoom(uid)`, or creates a **`chat`-kind** direct room (no more `call`/`video` rooms for 1:1s), and ringback ends on newcomers/`invite.accept` only, or when you hang up (captures gone). Callee rings for a call in a room it's already in. Two 1:1s with the same person: the smaller network id wins on both ends, the loser's text/system messages are `absorb`ed into the winner and it is left (file cards stay behind). `openChat` re-invites when the other left. **Depends on T7.2:** with calls in chat rooms, the other side hanging up no longer closes your call (no room leave to react to), so your mic stays on alone until T7.2 adds an explicit call state. Typecheck + build pass; not run in a browser.
+- Done: invites carry `direct: true` for 1:1s. `placeCall` calls inside `directRoom(uid)`, or creates a **`chat`-kind** direct room (no more `call`/`video` rooms for 1:1s), and ringback ends on newcomers/`invite.accept` only, or when you hang up (captures gone). Callee rings for a call in a room it's already in. Two 1:1s with the same person: the smaller network id wins on both ends, the loser's text/system messages are `absorb`ed into the winner and it is left (file cards stay behind). `openChat` re-invites when the other left. Hang-up from the other side is handled by T7.2. Typecheck + build pass; not run in a browser.
 
-### [ ] T7.2 Muting everything ends the call (UI) · `opus` · needs —
+### [x] T7.2 Muting everything ends the call (UI) · `opus` · needs —
 - **symptom:** both peers muted, and the call disappeared from the room. Calling again brought it back unmuted. The sidebar then counted an extra conversation.
 - **cause?:** `room.incall` is "has a capture or a remote stream" (`room.ts` `inAnyCall`). Muting stops the mic track, so with no camera both sides look like "not in a call".
 - **do:** an explicit `inCall` signal on `Room`, set when you start or accept a call and cleared only by hanging up or by the room closing. Mute is `track.enabled = false` (or a muted flag sent to peers), not stopping the capture. Stage, call controls and the sidebar phone icon read `inCall`.
 - **files:** `core/src/room.ts`, page wiring, `pc-room` / `pc-call-stage` if they test streams.
 - **done when:** both sides mute mic and camera, and the stage stays with both tiles showing the muted icon.
+- Done: `Room.oncall` signal (`incall` reads it): set by `joinCall()` (any successful `start()`, and accepting a call even if the mic is refused), cleared only by `hangUp()` (stops all captures) or the room closing. Mute still stops the capture (frees the device); it no longer ends the call. `MediaFlags` gained `call` (older peers: anything sent = in call). `othersInCall()` = flags.call of present people + stream senders; tiles and the member-list phone icon use it, so people in the chat but not the call get no tile. In a 1:1 the call ends for you when the other drops out (`call` flag true→false, or they leave). Page hangup in a chat room calls `room.hangUp()`. Typecheck + build pass; not run in a browser.
 
 ### [ ] T7.3 Remote video sometimes black for one side · `opus` · needs —
 - **symptom:** sometimes I can't see a peer's video while the other side can see theirs. Toggling the chat often (not always) brings it back, so the stream arrives but the local `<video>` doesn't show it.

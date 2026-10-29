@@ -108,6 +108,8 @@ export async function acceptInvite(roomId: string, withVideo = false): Promise<R
     selectRoom(room.id);
     if (invite.kind === "call" || invite.kind === "video")
     {
+        // in the call even when the mic is refused: you still hear them
+        room.joinCall();
         await room.start("mic");
         if (invite.kind === "video" && withVideo) await room.start("camera");
     }
@@ -153,7 +155,7 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     // a new room is only there for this call; an existing chat stays, only the call ends
     const giveUp = (target: Room) => {
         if (fresh) target.leave();
-        else hangUp(target);
+        else target.hangUp();
     };
 
     selectRoom(room.id);
@@ -183,7 +185,7 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
             const here = target.participants().map(p => p.uid).filter(u => !before.has(u));
             if (here.length > 0) setTimeout(() => answered(call, here), 0);
             // hung up while ringing (the chat stays, so there's no `leave` to catch it)
-            if (Object.keys(target.captures()).length === 0) setTimeout(() => endCall(call, true), 0);
+            if (!target.oncall()) setTimeout(() => endCall(call, true), 0);
         }),
     };
     outgoing.set(room.id, call);
@@ -343,17 +345,12 @@ function finishIfEmpty(call: Outgoing) {
     if (call.ringing.size > 0) return;
     const room = call.room;
     const empty = room.kind === "chat"
-        ? room.streams().length === 0
+        ? room.othersInCall().length === 0
         : room.participants().length === 0;
     endCall(call, false);
     if (!empty) return;
-    if (room.kind === "chat") hangUp(room);
+    if (room.kind === "chat") room.hangUp();
     else room.leave();
-}
-
-// ends your part of a call in a room that stays (a chat): stops every capture
-function hangUp(room: Room) {
-    for (const name of Object.keys(room.captures())) room.stop(name);
 }
 
 // one 1:1 per person: `loser` hands its history (and focus) to `winner`, then is left

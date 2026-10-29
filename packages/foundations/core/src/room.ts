@@ -44,8 +44,8 @@ export type RoomHandler<Payload = any> = (payload: Payload, from: RoomFrom) => v
 /** A remote media stream: `name` is `mic`, `camera` or `screen`. `uid` is "" until the peer's profile is known. */
 export type RemoteStream = { peer: string; uid: string; name: string; stream: MediaStream };
 
-/** What a peer says it is sending (broadcast on the `state` channel). */
-export type MediaFlags = { mic: boolean; camera: boolean; screen: boolean };
+/** What a peer says it is sending, and whether they're in the call at all (broadcast on the `state` channel). */
+export type MediaFlags = { mic: boolean; camera: boolean; screen: boolean; call: boolean };
 
 export type RoomOptions = {
     // the other uid of a 1:1 chat: stored in the network meta so both ends map uid → room
@@ -102,12 +102,15 @@ export class Room extends EventTarget {
     readonly streams: () => RemoteStream[];
     /** uid → what that person says they send; use it to show mute and camera-off before a stream arrives. */
     readonly flags: () => Record<string, MediaFlags>;
+    /** You're in this room's call: from joining it until you hang up, whatever you mute. */
+    readonly oncall: () => boolean;
 
     private transfers: Transfers;
 
     private setCaptures: (next: Record<string, MediaStream>) => void;
     private setStreams: (next: RemoteStream[] | ((prev: RemoteStream[]) => RemoteStream[])) => void;
     private setFlags: (next: Record<string, MediaFlags> | ((prev: Record<string, MediaFlags>) => Record<string, MediaFlags>)) => void;
+    private setOncall: (next: boolean) => void;
     // the captures themselves; the client gets clones, so a rebuild can hand them to the next client
     private local = new Map<string, MediaStream>();
     private localEnded = new Map<string, () => void>();
@@ -150,6 +153,7 @@ export class Room extends EventTarget {
         [this.captures, this.setCaptures] = signal<Record<string, MediaStream>>({});
         [this.streams, this.setStreams] = signal<RemoteStream[]>([]);
         [this.flags, this.setFlags] = signal<Record<string, MediaFlags>>({});
+        [this.oncall, this.setOncall] = signal(false);
 
         this.onMessage("chat", this.handleChat);
         this.onState("typing", this.handleTyping);
@@ -260,9 +264,40 @@ export class Room extends EventTarget {
         this.sendState("typing");
     }
 
-    /** True while you capture something or someone sends you a stream. */
+    /** True from joining the call until hanging up; muting mic and camera doesn't end it. */
     get incall(): boolean {
-        return Object.keys(this.captures()).length > 0 || this.streams().length > 0;
+        return this.oncall();
+    }
+
+    /** uids of everyone else in the call (by what they say, or by a stream they send). */
+    othersInCall(): string[] {
+        const uids = new Set<string>();
+        for (const [uid, flags] of Object.entries(this.flags()))
+        {
+            if (flags.call && this.present.has(uid)) uids.add(uid);
+        }
+        for (const s of this.streams())
+        {
+            if (s.uid) uids.add(s.uid);
+        }
+        return [...uids];
+    }
+
+    /** Joins the call without starting anything (starting a capture joins too). */
+    joinCall() {
+        if (this.closed || this.oncall()) return;
+        this.setOncall(true);
+        this.sendFlags();
+        this.mediaChanged();
+    }
+
+    /** Leaves the call: stops every capture, the room (and its chat) stays. */
+    hangUp() {
+        for (const name of [...this.local.keys()]) this.stop(name);
+        if (!this.oncall()) return;
+        this.setOncall(false);
+        this.sendFlags();
+        this.mediaChanged();
     }
 
     /**
@@ -291,6 +326,7 @@ export class Room extends EventTarget {
 
             await this._client.media.start(name, source.clone());
             this.captured();
+            this.joinCall();
             void listDevices();
             return true;
         }
@@ -500,7 +536,7 @@ export class Room extends EventTarget {
     }
 
     private ownFlags(): MediaFlags {
-        return { mic: this.local.has("mic"), camera: this.local.has("camera"), screen: this.local.has("screen") };
+        return { mic: this.local.has("mic"), camera: this.local.has("camera"), screen: this.local.has("screen"), call: this.oncall() };
     }
 
     private sendFlags() {
@@ -553,10 +589,21 @@ export class Room extends EventTarget {
     private handleFlags = (payload: unknown, from: RoomFrom) => {
         if (!from.uid || from.uid === me()?.uid || typeof payload !== "object" || payload === null) return;
         const value = payload as Record<string, unknown>;
-        const flags: MediaFlags = { mic: value.mic === true, camera: value.camera === true, screen: value.screen === true };
+        const mic = value.mic === true, camera = value.camera === true, screen = value.screen === true;
+        // older peers don't send `call`: sending anything means in the call
+        const call = typeof value.call === "boolean" ? value.call : mic || camera || screen;
         const uid = from.uid;
-        this.setFlags(map => ({ ...map, [uid]: flags }));
+        const was = this.flags()[uid]?.call ?? false;
+        this.setFlags(map => ({ ...map, [uid]: { mic, camera, screen, call } }));
+        if (was && !call) this.endIfAlone();
     };
+
+    // a 1:1 call is over once the other person is out of it (hung up or left)
+    private endIfAlone() {
+        if (!this.direct || !this.oncall() || this.othersInCall().length > 0) return;
+        log("room: the other side hung up", this.id);
+        this.hangUp();
+    }
 
     // peers get their uid once the members are known
     private resolveStreams() {
@@ -758,6 +805,7 @@ export class Room extends EventTarget {
         for (const name of [...this.local.keys()]) this.release(name);
         this.setCaptures({});
         this.setFlags({});
+        this.setOncall(false);
         this.mediaChanged();
         this.clearReinvite();
         this.clearAdoptTimer();
@@ -881,6 +929,11 @@ export class Room extends EventTarget {
                     this.leaving.delete(uid);
                     if (this.closed || this.present.has(uid)) return;
                     this.system(`${profile.name} left`, uid);
+                    if (this.flags()[uid])
+                    {
+                        this.setFlags(({ [uid]: _gone, ...rest }) => rest);
+                        this.endIfAlone();
+                    }
                     // a call room with nobody else left is over: close it instead of leaving you alone in it
                     if ((this.kind === "call" || this.kind === "video") && this.present.size === 0 && this.leaving.size === 0) this.leave();
                 }, LIMITS.leaveGraceMs));
@@ -1075,7 +1128,7 @@ function updateBusy() {
     }
 }
 
-/** True while any room has a capture or a remote stream. */
+/** True while you're in any room's call. */
 export function inAnyCall(): boolean {
     for (const room of registry.values())
     {
