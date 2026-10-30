@@ -88,17 +88,17 @@ export class IncomingCall extends CustomElement {
                 <p id="message">${this.message()}</p>
                 <div class="actions">
                     <pap-button id="accept" part="accept" color="success" @click="${this.handleAccept}">
-                        <pap-icon name="/icons/spritesheet.svg#phone" width="20" height="20" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/phone.svg" width="20" height="20" aria-hidden="true"></pap-icon>
                         ${this.t("accept")}
                     </pap-button>
                     ${call?.kind === "video" ? html`
                         <pap-button part="accept-video" color="success" variant="outline" @click="${this.handleAcceptVideo}">
-                            <pap-icon name="/icons/spritesheet.svg#camera" width="20" height="20" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/camera.svg" width="20" height="20" aria-hidden="true"></pap-icon>
                             ${this.t("acceptVideo")}
                         </pap-button>
                     ` : ""}
                     <pap-button part="decline" color="error" @click="${this.handleDecline}">
-                        <pap-icon name="/icons/spritesheet.svg#phone-off" width="20" height="20" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/phone-off.svg" width="20" height="20" aria-hidden="true"></pap-icon>
                         ${this.t("decline")}
                     </pap-button>
                 </div>

@@ -184,14 +184,14 @@ export class AppHeader extends CustomElement {
                 <span class="spacer"></span>
 
                 <pap-button class="live" size="small" variant="${this.live ? "filled" : "clear"}" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">
-                    <pap-icon name="/icons/spritesheet.svg#broadcast" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/broadcast.svg" aria-hidden="true"></pap-icon>
                     <span class="label">${this.live ? this.t("end") : this.t("golive")}</span>
                 </pap-button>
 
                 ${this.renderTheme()}
                 <pap-theme-picker storage="local" aria-hidden="true" @change="${this.handleThemeChange}"></pap-theme-picker>
                 <pap-button class="settings" size="icon" variant="clear" aria-label="${this.t("settings")}" @click="${this.handleSettings}">
-                    <pap-icon name="/icons/spritesheet.svg#settings" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/settings.svg" aria-hidden="true"></pap-icon>
                 </pap-button>
 
                 ${me ? html`

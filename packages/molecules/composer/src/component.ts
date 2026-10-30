@@ -623,13 +623,13 @@ export class Composer extends CustomElement {
                     ${g > 0 ? html`<span class="divider" aria-hidden="true"></span>` : ""}
                     ${group.map(tool => html`
                         <pap-button size="icon" variant="clear" color="secondary" type="button" data-tool="${tool.id}" disabled="${off}" aria-label="${this.t(tool.id)}" title="${this.t(tool.id)}" @click="${this.handleTool}">
-                            <pap-icon name="${`/icons/spritesheet.svg#${tool.icon}`}" aria-hidden="true"></pap-icon>
+                            <pap-icon name="${`/icons/${tool.icon}.svg`}" aria-hidden="true"></pap-icon>
                         </pap-button>
                     `)}
                 `)}
                 <span class="spacer"></span>
                 <pap-button size="icon" variant="clear" color="secondary" type="button" disabled="${off}" aria-label="${this.t("clear")}" title="${this.t("clear")}" @click="${this.handleClear}">
-                    <pap-icon name="/icons/spritesheet.svg#trash" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/trash.svg" aria-hidden="true"></pap-icon>
                 </pap-button>
             </div>
             <div part="preview" class="preview" aria-label="${this.t("preview")}" hidden></div>
@@ -692,17 +692,17 @@ export class Composer extends CustomElement {
                     ></textarea>
                     <div class="actions">
                         <pap-button class="format" size="icon" variant="clear" color="${this.formatting ? "primary" : "secondary"}" type="button" disabled="${off}" aria-pressed="${String(this.formatting)}" aria-label="${this.t("format")}" title="${this.t("format")}" @click="${this.handleFormatting}">
-                            <pap-icon name="/icons/spritesheet.svg#format" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/format.svg" aria-hidden="true"></pap-icon>
                         </pap-button>
                         <pap-button part="emoji" size="icon" variant="clear" color="${this.picking ? "primary" : "secondary"}" type="button" disabled="${off}" aria-haspopup="dialog" aria-expanded="${String(this.picking)}" aria-label="${this.t("emoji")}" title="${this.t("emoji")}" @click="${this.handleEmojiButton}">
-                            <pap-icon name="/icons/spritesheet.svg#smile" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/smile.svg" aria-hidden="true"></pap-icon>
                         </pap-button>
                         <pap-button part="attach" size="icon" variant="clear" color="secondary" type="button" disabled="${off}" aria-label="${this.t("attach")}" title="${this.t("attach")}" @click="${this.handleAttach}">
-                            <pap-icon name="/icons/spritesheet.svg#paperclip" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/paperclip.svg" aria-hidden="true"></pap-icon>
                         </pap-button>
                         <span class="divider" aria-hidden="true"></span>
                         <pap-button part="send" size="icon" variant="clear" color="primary" type="button" disabled="${sendOff}" aria-label="${this.t("send")}" title="${this.t("send")}" @click="${this.submit}">
-                            <pap-icon name="/icons/spritesheet.svg#send" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/send.svg" aria-hidden="true"></pap-icon>
                         </pap-button>
                     </div>
                 </div>

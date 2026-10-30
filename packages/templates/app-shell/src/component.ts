@@ -148,7 +148,7 @@ export class AppShell extends CustomElement {
             <header part="header">
                 ${this.mobile ? html`
                     <pap-button part="menu" size="icon" variant="clear" aria-label="${this.t("menu")}" @click="${this.handlemenu}">
-                        <pap-icon name="/icons/spritesheet.svg#menu" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/menu.svg" aria-hidden="true"></pap-icon>
                     </pap-button>
                 ` : null}
                 <slot name="header"></slot>
@@ -158,7 +158,7 @@ export class AppShell extends CustomElement {
                     <div class="drawer-header">
                         <slot name="brand"></slot>
                         <pap-button part="close" size="icon" variant="clear" aria-label="${this.t("close")}" @click="${this.handleclosedrawer}">
-                            <pap-icon name="/icons/spritesheet.svg#x" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/x.svg" aria-hidden="true"></pap-icon>
                         </pap-button>
                     </div>
                     <slot name="sidebar"></slot>

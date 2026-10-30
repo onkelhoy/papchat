@@ -226,16 +226,16 @@ export class Room extends CustomElement {
                     <div class="heading">${this.heading}</div>
                     ${this.canbuzz ? html`
                         <pap-button size="small" variant="clear" type="button" @click="${this.handleBuzz}">
-                            <pap-icon name="/icons/spritesheet.svg#volume" width="16" height="16" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/volume.svg" width="16" height="16" aria-hidden="true"></pap-icon>
                             ${this.t("buzz")}
                         </pap-button>
                     ` : ""}
                     <pap-button size="small" variant="clear" type="button" data-kind="call" @click="${this.handleCall}">
-                        <pap-icon name="/icons/spritesheet.svg#phone" width="16" height="16" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/phone.svg" width="16" height="16" aria-hidden="true"></pap-icon>
                         ${this.t("call")}
                     </pap-button>
                     <pap-button size="small" variant="clear" type="button" data-kind="video" @click="${this.handleCall}">
-                        <pap-icon name="/icons/spritesheet.svg#camera" width="16" height="16" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/camera.svg" width="16" height="16" aria-hidden="true"></pap-icon>
                         ${this.t("video")}
                     </pap-button>
                 </div>

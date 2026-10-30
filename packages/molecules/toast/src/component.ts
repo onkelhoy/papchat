@@ -152,7 +152,7 @@ export class Toast extends CustomElement {
                 <pap-button part="action" size="small" variant="clear" @click="${this.handleAction}">${this.action}</pap-button>
             ` : ""}
             <pap-button part="close" size="icon" variant="clear" aria-label="${this.t("dismiss")}" @click="${this.handleDismiss}">
-                <pap-icon name="/icons/spritesheet.svg#x" width="16" height="16" aria-hidden="true"></pap-icon>
+                <pap-icon name="/icons/x.svg" width="16" height="16" aria-hidden="true"></pap-icon>
             </pap-button>
         `;
     }

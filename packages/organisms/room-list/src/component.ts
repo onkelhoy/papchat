@@ -77,7 +77,7 @@ export class RoomList extends CustomElement {
                         ${room.participants.length ? "" : html`<pc-avatar size="s" name="${title}"></pc-avatar>`}
                     </span>
                     <span class="title">${title}</span>
-                    ${room.incall ? html`<pap-icon class="call" name="/icons/spritesheet.svg#phone" role="img" aria-label="${this.t("incall")}"></pap-icon>` : ""}
+                    ${room.incall ? html`<pap-icon class="call" name="/icons/phone.svg" role="img" aria-label="${this.t("incall")}"></pap-icon>` : ""}
                     ${room.live ? html`<pc-badge variant="live">${this.t("live")}</pc-badge>` : ""}
                     ${room.unread > 0 ? html`<pc-badge variant="primary" count="${room.unread}" role="img" aria-label="${this.t("unread", { count: room.unread })}"></pc-badge>` : ""}
                 </button>

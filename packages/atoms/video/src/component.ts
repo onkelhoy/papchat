@@ -130,7 +130,7 @@ export class Video extends CustomElement {
             ${this.blocked ? html`
                 <div part="overlay" class="overlay">
                     <pap-button part="play" color="primary" size="large" type="button" @click="${this.handlePlay}">
-                        <pap-icon name="/icons/spritesheet.svg#play" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/play.svg" aria-hidden="true"></pap-icon>
                         ${this.t("play")}
                     </pap-button>
                 </div>

@@ -186,7 +186,7 @@ export class VideoTile extends CustomElement {
             `}
             <div class="footer">
                 <span class="label" part="label">
-                    ${this.muted ? html`<pap-icon class="mic-off" name="/icons/spritesheet.svg#mic-off" role="img" aria-label="${this.t("muted")}"></pap-icon>` : ""}
+                    ${this.muted ? html`<pap-icon class="mic-off" name="/icons/mic-off.svg" role="img" aria-label="${this.t("muted")}"></pap-icon>` : ""}
                     <span class="name">${name}${this.self ? html` <span class="you">(${this.t("you")})</span>` : ""}</span>
                 </span>
                 ${this.muted ? "" : html`<pc-level-meter @speaking="${this.handleSpeaking}"></pc-level-meter>`}

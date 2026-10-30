@@ -113,7 +113,7 @@ export class RingtonePicker extends CustomElement {
                                 aria-pressed="${String(playing)}"
                                 @click="${() => this.handlePreview(tone.id)}"
                             >
-                                <pap-icon name="${`/icons/spritesheet.svg#${playing ? "stop" : "play"}`}" width="20" height="20" aria-hidden="true"></pap-icon>
+                                <pap-icon name="${`/icons/${playing ? "stop" : "play"}.svg`}" width="20" height="20" aria-hidden="true"></pap-icon>
                             </pap-button>
                         </div>
                     `;

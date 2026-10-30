@@ -76,7 +76,7 @@ export class CallControls extends CustomElement {
 
         return html`
             <pap-button data-control="${control}" part="${control}" size="icon" type="button" color="${filled ? color : "secondary"}" variant="${filled ? "filled" : "outline"}" aria-label="${label}" aria-pressed="${on ? "true" : "false"}" popovertarget="${`tip-${control}`}" @click="${this.handleToggle}">
-                <pap-icon name="${`/icons/spritesheet.svg#${on ? icon : offIcon}`}" aria-hidden="true"></pap-icon>
+                <pap-icon name="${`/icons/${on ? icon : offIcon}.svg`}" aria-hidden="true"></pap-icon>
             </pap-button>
             <pap-tooltip id="${`tip-${control}`}" placement="top" instant>${tip}</pap-tooltip>
         `;
@@ -91,7 +91,7 @@ export class CallControls extends CustomElement {
                 <pap-group part="toolbar" aria-label="${t("label")}">
                     ${this.renderToggle("chat", this.chat, "chat", "chat", t("chat"), this.chat ? t("chatOn") : t("chatOff"))}
                     <pap-button part="hangup" size="icon" type="button" color="error" aria-label="${t("hangup")}" popovertarget="tip-hangup" @click="${this.handleHangup}">
-                        <pap-icon name="/icons/spritesheet.svg#phone-off" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/phone-off.svg" aria-hidden="true"></pap-icon>
                     </pap-button>
                 </pap-group>
                 <pap-tooltip id="tip-hangup" placement="top" instant>${t("hangupTip")}</pap-tooltip>
@@ -105,13 +105,13 @@ export class CallControls extends CustomElement {
                 ${this.canscreen ? this.renderToggle("screen", this.screen, "screen", "screen-off", t("screen"), this.screen ? t("screenOn") : t("screenOff")) : ""}
                 ${this.renderToggle("chat", this.chat, "chat", "chat", t("chat"), this.chat ? t("chatOn") : t("chatOff"))}
                 <pap-button part="invite" size="icon" type="button" color="secondary" variant="outline" aria-label="${t("invite")}" popovertarget="tip-invite" @click="${this.handleInvite}">
-                    <pap-icon name="/icons/spritesheet.svg#user-plus" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/user-plus.svg" aria-hidden="true"></pap-icon>
                 </pap-button>
                 <pap-button part="devices" size="icon" type="button" color="secondary" variant="outline" aria-label="${t("devices")}" popovertarget="tip-devices" @click="${this.handleDevices}">
-                    <pap-icon name="/icons/spritesheet.svg#settings" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/settings.svg" aria-hidden="true"></pap-icon>
                 </pap-button>
                 <pap-button part="hangup" size="icon" type="button" color="error" aria-label="${t("hangup")}" popovertarget="tip-hangup" @click="${this.handleHangup}">
-                    <pap-icon name="/icons/spritesheet.svg#phone-off" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/phone-off.svg" aria-hidden="true"></pap-icon>
                 </pap-button>
             </pap-group>
             <pap-tooltip id="tip-invite" placement="top" instant>${t("inviteTip")}</pap-tooltip>

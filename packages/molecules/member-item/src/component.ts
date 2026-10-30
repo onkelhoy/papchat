@@ -253,7 +253,7 @@ export class MemberItem extends CustomElement {
                 <span class="line">
                     <span part="name" class="name">${name}</span>
                     ${this.self ? html`<pc-badge>${this.t("you")}</pc-badge>` : ""}
-                    ${this.incall ? html`<pap-icon class="incall" name="/icons/spritesheet.svg#phone" title="${this.t("incall")}"></pap-icon>` : ""}
+                    ${this.incall ? html`<pap-icon class="incall" name="/icons/phone.svg" title="${this.t("incall")}"></pap-icon>` : ""}
                 </span>
                 <span part="status" class="status">${this.t(`status.${this.status}`)}</span>
             </span>
@@ -269,20 +269,20 @@ export class MemberItem extends CustomElement {
             </button>
             <pap-menu id="menu" placement="bottom-right" @toggle="${this.handleMenuToggle}">
                 <pap-menuitem data-action="chat" @click="${this.handleSelect}">
-                    <pap-icon name="/icons/spritesheet.svg#chat" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/chat.svg" aria-hidden="true"></pap-icon>
                     <span>${this.t("chat")}</span>
                 </pap-menuitem>
                 <pap-menuitem data-action="call" @click="${this.handleSelect}">
-                    <pap-icon name="/icons/spritesheet.svg#phone" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/phone.svg" aria-hidden="true"></pap-icon>
                     <span>${this.t("call")}</span>
                 </pap-menuitem>
                 <pap-menuitem data-action="video" @click="${this.handleSelect}">
-                    <pap-icon name="/icons/spritesheet.svg#camera" aria-hidden="true"></pap-icon>
+                    <pap-icon name="/icons/camera.svg" aria-hidden="true"></pap-icon>
                     <span>${this.t("video")}</span>
                 </pap-menuitem>
                 ${this.canInvite ? html`
                     <pap-menuitem data-action="invite" @click="${this.handleSelect}">
-                        <pap-icon name="/icons/spritesheet.svg#user-plus" aria-hidden="true"></pap-icon>
+                        <pap-icon name="/icons/user-plus.svg" aria-hidden="true"></pap-icon>
                         <span>${this.t("invite")}</span>
                     </pap-menuitem>
                 ` : ""}

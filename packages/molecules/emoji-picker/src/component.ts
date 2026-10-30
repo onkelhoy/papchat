@@ -9,7 +9,7 @@ import { EMOJI_SRC, loadEmoji, searchEmoji } from "./data";
 import type { EmojiData, EmojiEntry } from "./data";
 import type { EmojiPickEvent } from "./types";
 
-// the category bar: a line icon per group (spritesheet ids)
+// the category bar: a line icon per group (files in asset/icons)
 const GROUP_ICONS: Record<string, string> = {
     recent: "emoji-recent",
     smileys_emotion: "smile",
@@ -305,7 +305,7 @@ export class EmojiPicker extends CustomElement {
         return html`<nav part="nav" class="nav" aria-label="${this.t("categories")}">
             ${ids.map(id => html`
                 <button type="button" data-group="${id}" aria-label="${this.t(id)}" title="${this.t(id)}" aria-current="${(this.current || ids[0]) === id ? "true" : ""}" @click="${this.handleNav}">
-                    <pap-icon name="${`/icons/spritesheet.svg#${GROUP_ICONS[id] ?? "smile"}`}" aria-hidden="true"></pap-icon>
+                    <pap-icon name="${`/icons/${GROUP_ICONS[id] ?? "smile"}.svg`}" aria-hidden="true"></pap-icon>
                 </button>
             `)}
         </nav>`;

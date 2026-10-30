@@ -96,7 +96,7 @@ export class FileCard extends CustomElement {
         return html`
             <div part="card" class="card">
                 <div class="row">
-                    <pap-icon class="type" name="${`/icons/spritesheet.svg#${this.icon}`}" aria-hidden="true"></pap-icon>
+                    <pap-icon class="type" name="${`/icons/${this.icon}.svg`}" aria-hidden="true"></pap-icon>
                     <div class="info">
                         <span class="name" title="${name}">${name}</span>
                         <span class="meta">
@@ -109,7 +109,7 @@ export class FileCard extends CustomElement {
                     ` : ""}
                     ${done ? html`
                         <a class="download" href="${url}" download="${name}" aria-label="${`${t("download")}: ${name}`}">
-                            <pap-icon name="/icons/spritesheet.svg#download" aria-hidden="true"></pap-icon>
+                            <pap-icon name="/icons/download.svg" aria-hidden="true"></pap-icon>
                             <span>${t("download")}</span>
                         </a>
                     ` : ""}
