@@ -227,8 +227,10 @@ pap-button[size="icon"] {
     box-shadow: 0 0.5rem 1.5rem oklch(0% 0 0 / 0.2);
 }
 
+/* column, so max-block-size caps .pick and the picker list inside can scroll */
 .popover:popover-open {
     display: flex;
+    flex-direction: column;
 }
 
 .pick {
@@ -301,9 +303,10 @@ pc-emoji-picker.full {
     --emoji-picker-background: var(--background);
 }
 
+/* GIFs: the picker fills the panel, its own grid scrolls */
 pc-gif-picker.full {
     flex: 1;
-    min-block-size: 12rem;
+    min-block-size: 0;
 }
 
 

@@ -28,6 +28,8 @@
     overscroll-behavior: contain;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    /* full-height rows that overflow (and scroll) instead of shrinking to fit */
+    grid-auto-rows: max-content;
     gap: var(--space-1, 0.25rem);
     align-content: start;
 }
@@ -48,7 +50,6 @@
     overflow: hidden;
     background-color: light-dark(oklch(0% 0 0 / 0.06), oklch(100% 0 0 / 0.08));
     cursor: pointer;
-    aspect-ratio: 4 / 3;
 }
 
 .gif:focus-visible {
@@ -59,6 +60,7 @@
 .gif img {
     display: block;
     inline-size: 100%;
-    block-size: 100%;
+    block-size: auto;
+    aspect-ratio: 4 / 3;
     object-fit: cover;
 }

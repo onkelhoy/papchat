@@ -43,7 +43,7 @@ document.addEventListener("gif-search", async (e) =>
     const query = e.detail.query;
     const request = ++gifRequest;
     composer.gifs = { items: composer.gifs?.items ?? [], loading: true };
-    const params = new URLSearchParams({ api_key: GIPHY_KEY, limit: "24", rating: "pg-13" });
+    const params = new URLSearchParams({ api_key: GIPHY_KEY, limit: "8", rating: "pg-13" });
     if (query) params.set("q", query);
     let items = [];
     try
