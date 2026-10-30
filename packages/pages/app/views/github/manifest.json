@@ -8,6 +8,7 @@
     "background_color": "#1a1a1a",
     "theme_color": "#efa527",
     "icons": [
-        { "src": "logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+        { "src": "manifest.logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+        { "src": "manifest.logo.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
     ]
 }
