@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 73/92 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Waves 8 (rogue networks) and 9 (offline calling) are planned from `FINDINGS.md`.
-- **Next, in order:** T8.2, then the rest of wave 8, then T7.17 share links (onboarding already has `joining` for it; T9.6 needs it), then wave 9. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Done:** 74/92 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Waves 8 (rogue networks) and 9 (offline calling) are planned from `FINDINGS.md`.
+- **Next, in order:** T8.3, then the rest of wave 8, then T7.17 share links (onboarding already has `joining` for it; T9.6 needs it), then wave 9. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
@@ -586,11 +586,12 @@ A network goes rogue when its host loses the signal server while the peers stay 
 - **done when:** nothing compares `c.network.id` to a listed network any more; typecheck + build pass.
 - Done: `serverId(c)` is exported from `lobby.ts`, and `raceGuard` finds itself in the list by that id and compares the listed entry. Papit finding is #23. A member who joins after a re-register gets the old id in the welcome, so `serverId` is stale for them: `raceGuard` then does nothing for that member, which is fine because T8.2 only checks on the host, and T8.5's broadcast has to cover those members. Typecheck + build pass; not run in a browser.
 
-### [ ] T8.2 The host keeps checking · `opus` · needs T8.1
+### [x] T8.2 The host keeps checking · `opus` · needs T8.1
 - **why:** `raceGuard` runs once, 2 s after joining. An older rogue group coming back wins on `meta.created`, but the newer group isn't looking and the rogue group doesn't check either, so they stay split forever.
 - **do:** while we're host and connected, run the canonical check on every status change to `connected`, then every `LIMITS.rogueScanMs` (60 s). Reuse `findLobbies` + `compare` and go through `serverCall` (the server strikes fast messages). Don't overlap a running guard. Stop on `stopClient`. Also listen for `error` type `host` ("could not register the network again"): today it's only logged and the group stays unlisted.
 - **files:** `core/src/lobby.ts`, `core/src/config.ts`.
 - **done when:** a check runs on reconnect and on the timer, only on the host; typecheck + build pass. Log lines say what was decided.
+- Done: `scan()` starts with each client and ends with its epoch; `recheck()` is the host-only gate and also runs when status becomes `connected`. `raceGuard` keeps its 2 s wait and `guarding` flag, so checks can't overlap. A failed re-register sets `unregistered`, and the next scan resends it with `c["reregister"]()` (private, same papit gap as #23). If that failure was a timeout the server actually handled, a second copy of our network lasts until the socket drops. Until T8.3 a move still only moves the host. Typecheck + build pass; not run in a browser.
 
 ### [ ] T8.3 Merge the whole group · `opus` · needs T8.2
 - **do:** when the check finds a more canonical network, the host broadcasts `lobby-merge` `{ network }` over peer links, then moves itself last (so the network it hosts stays up until the others have gone). Everyone moves by running the fresh-client path: `reconnect()` (`lobby.ts:287`). Webrtc no longer fires the `reconnect` error, so that code only runs from here now: rename it to `rejoin()` and delete the dead `detail?.type === "reconnect"` line at `lobby.ts:691`. `boot` then lands on the canonical lobby by itself.

@@ -15,6 +15,8 @@ export const LIMITS = {
     // the server strikes messages sent < 200 ms apart, keep our own calls well above that
     serverGapMs: 1_000,
     raceGuardMs: 2_000,
+    // the host checks this often for a more canonical lobby: a rogue group coming back only shows up later
+    rogueScanMs: 60_000,
     messageChars: 4_000,
     // messages kept per room (no history: this is only what this tab saw)
     messagesKept: 500,

@@ -39,6 +39,8 @@ let running = false;
 let booting = false;
 let guarding = false;
 let rebooting = false;
+// the client's re-register failed: the group still works, but nobody can find it until it's sent again
+let unregistered = false;
 let retryMs = RETRY_MIN_MS;
 let nextServerSlot = 0;
 // when this client started: sent in the profile so "newest peer wins" is the same for everyone
@@ -254,6 +256,7 @@ function startClient(): Promise<boolean> {
 
     attach(client);
     syncStatus();
+    void scan(current);
     return boot(current);
 }
 
@@ -261,6 +264,7 @@ function stopClient() {
     epoch++;
     booting = false;
     guarding = false;
+    unregistered = false;
     for (const timer of timers)
     {
         clearTimeout(timer.id);
@@ -400,10 +404,18 @@ async function raceGuard(current: number) {
         // not listed yet (a re-register is still under way): our id and order aren't known, so decide nothing
         const own = serverId(c);
         const mine = lobbies.find(n => n.id === own);
-        if (!mine) return;
+        if (!mine)
+        {
+            log("lobby: not listed yet, checking again later", own);
+            return;
+        }
 
         const best = lobbies[0];
-        if (compare(best, mine) >= 0) return;
+        if (compare(best, mine) >= 0)
+        {
+            log("lobby: already the canonical lobby", mine.id);
+            return;
+        }
 
         log("lobby: a more canonical lobby exists, moving", mine.id, "→", best.id);
         booting = true;
@@ -439,6 +451,45 @@ async function raceGuard(current: number) {
             booting = false;
             syncStatus();
         }
+    }
+}
+
+// the race guard runs once after joining, which misses a rogue group that comes back later: keep looking
+async function scan(current: number) {
+    try
+    {
+        while (true)
+        {
+            await wait(LIMITS.rogueScanMs);
+            alive(current);
+            await recheck(current);
+        }
+    }
+    catch (error)
+    {
+        if (!(error instanceof Cancelled)) log("lobby: scan stopped", error);
+    }
+}
+
+// only the host has a socket, so it looks for everyone
+async function recheck(current: number) {
+    const c = client;
+    if (!c?.network || c.host !== c.id || c.status !== "connected" || booting) return;
+
+    try
+    {
+        if (unregistered)
+        {
+            log("lobby: registering the network again");
+            unregistered = false;
+            // private, and the only way to send it again (papit gap): it reports its own failure as an "error"
+            await serverCall(current, () => c["reregister"]());
+        }
+        await raceGuard(current);
+    }
+    catch (error)
+    {
+        if (!(error instanceof Cancelled)) log("lobby: recheck failed", error);
     }
 }
 
@@ -587,8 +638,11 @@ function handleStatus(event: Event) {
     if (event.target !== client) return;
     try
     {
-        log("lobby: status", (event as CustomEvent).detail);
+        const status = (event as CustomEvent).detail;
+        log("lobby: status", status);
         syncStatus();
+        // back from a drop: the server may have a same-name network now
+        if (status === "connected") void recheck(epoch);
     }
     catch (error)
     {
@@ -699,6 +753,8 @@ function handleError(event: Event) {
     if (event.target !== client) return;
     const detail = (event as CustomEvent<{ type: string; message: string; payload: unknown }>).detail;
     log("lobby: error", detail?.type, detail?.message, detail?.payload);
+    // the scan sends it again
+    if (detail?.type === "host") unregistered = true;
     // rebuild outside the client's own event dispatch
     if (detail?.type === "reconnect") setTimeout(reconnect, 0);
 }
