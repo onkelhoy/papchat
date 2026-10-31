@@ -6,10 +6,10 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 88/104 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Wave 8 (rogue networks) is in, waiting for its live test. Wave 9 (offline calling) is in (T9.1-T9.7), and T9.8 is the user's live test; Render is done. Wave 10 (identity, saved chats, linked devices, global chat) is planned; it opens with its decisions, and T10.1-T10.3 are in, with T10.1 waiting for its live check.
-- **Next, in order (user, 2026-10-31):** saved chats T10.4, T10.5, T10.6, then linked devices T10.7-T10.10. T10.11 global chat has no dependencies and can move earlier. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Done:** 96/104 tasks. All build work is in, through Wave 10 (saved chats T10.4-T10.6, linked devices T10.7-T10.10, global chat T10.11). What's left is the user's: repros and live checks.
+- **Next:** nothing to build. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
-- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
+- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
 - **Not run in a browser:** everything above is typecheck + build only; the user reviews live with `npm start` (dev server doesn't reload new translations: restart it).
@@ -777,6 +777,7 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### [ ] T10.12 Wave 10 live check + README · `opus` · needs T10.1-T10.11
 - User test: late joiner sees a stream; a day-old chat is still there; an offline message arrives on return; phone links by QR and a second browser by link; both get the chats; others see one person; removing a device works; global chat works. Update the README's identity, limits and trust sections.
+- README done. Left: the user's live test. Check early that the camera works in the installed iOS app (T10.8). Wave 10's logic ran in a two-device simulation, never on real browsers, real WebRTC or a real signal server, and global chat wasn't simulated at all.
 
 ---
 

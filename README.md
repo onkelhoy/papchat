@@ -14,10 +14,13 @@ A Teams-style chat, call and broadcast app that runs **entirely peer to peer** i
 - **Call** with mic, camera and screen share. Ringing, ringback, ringtone picker, incoming-call cards, and inviting more people mid-call.
 - **Share files** by dropping them on a conversation or on a person (up to 100 MB), with progress on both ends and previews for images, video and audio.
 - **Go live**: broadcast to anyone who clicks "Watch", with chat for the audience.
+- **Keep your chats**: text and GIFs stay on your device, so a chat is still there tomorrow with nobody online. Messages show sending, sent or not sent, and what didn't go out is delivered when that person is back.
+- **Link your devices**: show a QR code or a link, accept on both devices, and they're one person with the same chats. Calls ring all of them.
+- **Global chat**: one line everyone in your network shares, broadcast over the chord network. It's never saved and never notifies, and you can mute anyone for yourself.
 - **Offline calls**: turn on call notifications and the people you meet can ring your device with the app closed. A notification opens the normal answer card. People can also save you from a link or QR code, and saved contacts stay in the sidebar.
 - **Settings**: profile, ringtone and volume, devices, theme (light, dark, system), language (English or Swedish, switched live), notifications and keyboard shortcuts (`M` mic, `V` camera, `S` screen, `Esc` closes dialogs).
 
-Everything about you lives in `localStorage` in your own browser.
+Everything about you lives in your own browser: your profile in `localStorage`, your saved chats and device key in IndexedDB. No chat ever reaches a server.
 
 <!-- Screenshots (light and dark, a call, a stage) go here once they have been captured against the live page. -->
 
@@ -46,7 +49,13 @@ To heal that, the host looks for a more canonical network with the same name whe
 
 ### Identity
 
-Peer ids change on every connect, so identity is a stable `uid` stored once. The profile (`uid`, name, colour, status) travels in the client's `profile` option. The member list is deduplicated by `uid`, showing the newest peer.
+Identity is a key pair on the device, not a name: the private key can't be exported, and the `uid` is a hash of the public key. The profile (`uid`, `key`, name, colour, status) travels in the client's `profile` option, and every member signs a random challenge before they count, in the lobby and in rooms. A copied uid proves nothing.
+
+An account is a set of those keys. A link is two signatures, each device signing it, so neither can claim the other alone, and both identities stay valid. Devices tell the people they meet which keys are theirs in a message of its own, each receiver checks the signatures, and everyone agrees on one person with no coordinator: the smallest uid. The member list shows one entry per person, the newest device. Removing a device is signed too and spreads the same way.
+
+### Saved chats
+
+A conversation belongs to people, not to a room: a 1:1 is keyed by its two people, a group by a uuid its room carries in `meta`. Rooms come and go, and the conversation stays in IndexedDB, in `papchat-history`. Receivers confirm each message by id and drop repeats. What nobody confirmed stays in an outbox and goes out when someone is back, which needs both people online at once. Members who meet trade the ids of the last 7 days and fill each other's gaps, keeping the original author and time, but a group's past is only offered to someone already in it. Linked devices do the same over a direct link, and new messages follow over the lobby. Files are never saved.
 
 ### The invite protocol
 
@@ -111,13 +120,14 @@ Atomic layers, HTML prefix `pc` (`pc-avatar`, `pc-room`, …), every package is 
 
 ```
 packages/
-  foundations/  theme, core (config, storage, identity, lobby, rooms, stage, invites, transfer,
-                ringtone, devices, notify, state)
+  foundations/  theme, core (config, storage, keys, identity, account, lobby, rooms, stage, invites,
+                history, chats, sync, link, global, transfer, ringtone, devices, notify, state)
   atoms/        avatar, badge, presence, time, level-meter, progress, video
   molecules/    member-item, message, composer, file-card, call-controls, video-tile, incoming-call,
-                toast, language-picker, ringtone-picker, device-picker, connection-status, stage-card
+                toast, language-picker, ringtone-picker, device-picker, connection-status, stage-card,
+                qr-code, qr-scanner
   organisms/    member-list, conversation, call-stage, room, room-list, settings, onboarding,
-                invite-picker, app-header, toaster
+                invite-picker, link-device, app-header, toaster
   templates/    app-shell
   pages/app     the page that wires core to the components
 ```
@@ -132,7 +142,7 @@ The signal server can send web push without storing anything: it seals a browser
 - **Calling.** Someone in the lobby gets the normal invite. Otherwise the caller opens the room and pushes its id and password, signed with the device key. It rings for 60 s instead of 30. Hanging up or running out sends a cancel, which turns the notification into a missed call.
 - **Answering.** `sw.js` shows the notification, or a missed call if the push came late. A tap opens the app on a `#call=…&from=…` hash, the app checks the signature, and the usual incoming card rings for what's left of the 60 s.
 
-The worker only handles push, and nothing is cached. iOS 16.4+ only pushes to an app added to the Home Screen, so Settings shows a hint there. The installed app has its own storage and so its own key: on iOS it's a separate person from Safari until linked devices arrive.
+The worker only handles push, and nothing is cached. iOS 16.4+ only pushes to an app added to the Home Screen, so Settings shows a hint there. The installed app has its own storage and so its own key: on iOS it's a separate person from Safari until you link the two.
 
 ## Known limits
 
@@ -141,7 +151,12 @@ The worker only handles push, and nothing is cached. iOS 16.4+ only pushes to an
 - **A push token can ring your device.** Whoever holds it can show you a notification, and everyone you meet gets it, in the public lobby too. It can't pretend to be someone else, because calls are signed. Turning call notifications off cancels the token.
 - **Declining from a closed app** can't reach a caller outside your lobby, so they ring out the 60 s. Someone still listed in the lobby with a locked phone gets a normal invite rather than a push until they go stale.
 - **Free hosting for the signal server.** The first connect after it has been idle takes about 30 to 60 s; the header shows "waking up the server…".
-- **No history, no accounts.** Rooms are ephemeral and peers trust each other. Names are self-chosen.
+- **No server, so no safety net.** Chats live only on your devices, and Safari can evict data from a site that isn't installed. Names are self-chosen.
+- **"Don't save" is a request.** A network can ask its members not to save chats, but any device can keep what it receives.
+- **Saved history isn't signed.** A filled-in message is checked against the conversation's members, so a member could fake a line from another member. Chord relays can also fake the sender of a lobby message (global chat, `sync.live`) after the proof; rooms have direct links.
+- **Offline messages need both of you online at once.** Nothing wakes the other device, and linked devices only meet in the same network.
+- **Removing a device isn't a wipe.** It keeps what it has, and people who were offline only hear about it the next time they meet one of your devices.
+- **Global chat has no moderator.** Every client rate-limits senders and keeps its own mutes. Late joiners see nothing earlier.
 - **Files:** 100 MB cap, late joiners do not get earlier files, and files cannot be shared on a stage.
 - **Rogue merges take time.** Two groups can stay split for up to about a minute after the server returns, and everyone in the lobby reconnects during a merge. Calls and chats carry on.
 - **Split rooms stay split.** If a room loses its peer links and both sides re-register, they can't find each other. A stage re-registered by its presenter keeps handing out its old id in invites.
