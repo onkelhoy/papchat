@@ -151,6 +151,12 @@ pap-input:focus-within::part(wrapper) {
     cursor: pointer;
 }
 
+.contact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+}
+
 .toggle pap-switch {
     flex: none;
 }

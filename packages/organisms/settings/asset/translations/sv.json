@@ -27,6 +27,8 @@
     "theme": "Tema",
     "language": "Språk",
     "notify": "Visa notiser för meddelanden och samtal",
+    "contact-hint": "Dela det här med någon du inte har träffat här än. Alla som har det kan ringa den här enheten.",
+    "contact-qr": "QR-kod som sparar dig som kontakt",
     "push": "Samtal när papchat är stängt",
     "push-hint": "Låter personer som har träffat dig ringa den här enheten, även när appen är stängd.",
     "push-on": "På. Personer som har träffat dig kan ringa den här enheten.",

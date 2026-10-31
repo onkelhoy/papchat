@@ -32,10 +32,11 @@ import type { MemberAction, MemberActionEvent, MemberFilesEvent } from "./types"
  * @property {boolean} compact  avatar only (collapsed sidebar): name and status move to a tooltip, ⋯ menu via right-click (reflected)
  * @property {boolean} incall   shows a small phone icon (reflected)
  * @property {boolean} canInvite shows "Invite to current room" in the menu (attribute `caninvite`)
+ * @property {boolean} offline a saved contact who isn't here: shows Offline, the menu has Call / Video call / Remove, and a click opens it (reflected)
  *
  * Files dragged onto a row (not your own) highlight it (`:state(drop)`); dropping them fires `member-files`.
  *
- * @fires member-action `CustomEvent<{ uid, action: "chat" | "call" | "video" | "invite" }>` (bubbles, composed)
+ * @fires member-action `CustomEvent<{ uid, action: "chat" | "call" | "video" | "invite" | "remove" }>` (bubbles, composed)
  * @fires member-files `CustomEvent<{ uid, files: File[] }>` files dropped on the row (bubbles, composed)
  *
  * @csspart avatar  the `pc-avatar`
@@ -54,6 +55,7 @@ export class MemberItem extends CustomElement {
     @property({ type: Object, attribute: false, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) profile?: Profile;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) self: boolean = false;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) incall: boolean = false;
+    @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) offline: boolean = false;
     @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); } }) compact: boolean = false;
 
@@ -102,7 +104,7 @@ export class MemberItem extends CustomElement {
     }
 
     private get status() {
-        return this.profile?.status ?? "available";
+        return this.offline ? "offline" : this.profile?.status ?? "available";
     }
 
     private updateLabel() {
@@ -136,7 +138,7 @@ export class MemberItem extends CustomElement {
     private depth = 0;
 
     private acceptsDrop(e: DragEvent) {
-        return !this.self && !!this.profile?.uid && !!e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files");
+        return !this.self && !this.offline && !!this.profile?.uid && !!e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files");
     }
 
     private endDrop() {
@@ -194,13 +196,19 @@ export class MemberItem extends CustomElement {
         if (e.key !== "Enter" || e.composedPath()[0] !== this) return;
 
         e.preventDefault();
-        this.dispatchAction("chat");
+        this.activate();
     }
 
     @bind
     private handleClick(e: MouseEvent) {
         if (this.fromControls(e)) return;
-        this.dispatchAction("chat");
+        this.activate();
+    }
+
+    // nobody to chat with when they're offline, and a call shouldn't start from a stray click
+    private activate() {
+        if (this.offline) this.trigger?.click();
+        else this.dispatchAction("chat");
     }
 
     // right-click, Shift+F10 and the Menu key all fire contextmenu: open our menu instead
@@ -268,10 +276,12 @@ export class MemberItem extends CustomElement {
                 <span aria-hidden="true">⋯</span>
             </button>
             <pap-menu id="menu" placement="bottom-right" @toggle="${this.handleMenuToggle}">
-                <pap-menuitem data-action="chat" @click="${this.handleSelect}">
-                    <pap-icon name="/icons/chat.svg" aria-hidden="true"></pap-icon>
-                    <span>${this.t("chat")}</span>
-                </pap-menuitem>
+                ${this.offline ? "" : html`
+                    <pap-menuitem data-action="chat" @click="${this.handleSelect}">
+                        <pap-icon name="/icons/chat.svg" aria-hidden="true"></pap-icon>
+                        <span>${this.t("chat")}</span>
+                    </pap-menuitem>
+                `}
                 <pap-menuitem data-action="call" @click="${this.handleSelect}">
                     <pap-icon name="/icons/phone.svg" aria-hidden="true"></pap-icon>
                     <span>${this.t("call")}</span>
@@ -280,10 +290,15 @@ export class MemberItem extends CustomElement {
                     <pap-icon name="/icons/camera.svg" aria-hidden="true"></pap-icon>
                     <span>${this.t("video")}</span>
                 </pap-menuitem>
-                ${this.canInvite ? html`
+                ${this.canInvite && !this.offline ? html`
                     <pap-menuitem data-action="invite" @click="${this.handleSelect}">
                         <pap-icon name="/icons/user-plus.svg" aria-hidden="true"></pap-icon>
                         <span>${this.t("invite")}</span>
+                    </pap-menuitem>
+                ` : ""}
+                ${this.offline ? html`
+                    <pap-menuitem data-action="remove" @click="${this.handleSelect}">
+                        <span>${this.t("remove")}</span>
                     </pap-menuitem>
                 ` : ""}
             </pap-menu>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QrCode | experiment</title>
+
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+
+    <script defer type="module" src="main.js"></script>
+</head>
+
+<body>
+    <h1>QrCode | experiment</h1>
+    <section>
+        <h2>Short</h2>
+        <pc-qr-code value="https://onkelhoy.github.io/papchat/"></pc-qr-code>
+    </section>
+    <section>
+        <h2>Contact link (long)</h2>
+        <pc-qr-code id="long"></pc-qr-code>
+    </section>
+    <section data-theme="dark">
+        <h2>Dark</h2>
+        <pc-qr-code value="https://onkelhoy.github.io/papchat/"></pc-qr-code>
+    </section>
+    <section>
+        <h2>Too long</h2>
+        <pc-qr-code id="toolong"></pc-qr-code>
+    </section>
+    <section id="created">
+        <h2>Made with createElement</h2>
+    </section>
+</body>
+
+</html>

@@ -1,4 +1,4 @@
-import type { Debug, Network, Prefs, Profile, PushRecord, Session } from "./types";
+import type { Contact, Debug, Network, Prefs, Profile, PushRecord, Session } from "./types";
 
 const KEYS = {
     profile: "papchat:profile",
@@ -7,6 +7,7 @@ const KEYS = {
     session: "papchat:session",
     network: "papchat:network",
     push: "papchat:push",
+    contacts: "papchat:contacts",
 } as const;
 
 export const DEFAULT_PREFS: Prefs = {
@@ -61,6 +62,15 @@ function hasProfileFields(value: unknown): value is Record<string, unknown> {
         && typeof value.name === "string" && value.name.length > 0
         && typeof value.color === "string"
         && ["available", "busy", "away", "dnd"].includes(value.status as string);
+}
+
+function isContact(value: unknown): value is Contact {
+    return isObject(value)
+        && typeof value.uid === "string" && value.uid.length > 0
+        && typeof value.name === "string"
+        && typeof value.color === "string"
+        && typeof value.token === "string" && value.token.length > 0
+        && typeof value.at === "number";
 }
 
 export const storage = {
@@ -127,6 +137,15 @@ export const storage = {
         },
         set(value: PushRecord | null) {
             write(local, KEYS.push, value ?? undefined);
+        },
+    },
+    contacts: {
+        get(): Contact[] {
+            const value = read(local, KEYS.contacts);
+            return Array.isArray(value) ? value.filter(isContact) : [];
+        },
+        set(value: Contact[]) {
+            write(local, KEYS.contacts, value);
         },
     },
     debug: {

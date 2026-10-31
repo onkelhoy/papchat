@@ -28,6 +28,7 @@ const ORDER: Status[] = ["available", "busy", "away", "dnd"];
  * @property {Profile[]} members everyone else online; property only
  * @property {Profile} me        you; property only
  * @property {string[]} incall   uids currently in a call; property only
+ * @property {Profile[]} contacts saved people who aren't here, listed under the others as offline; property only
  * @property {StageSummary[]} stages live broadcasts, shown above the list in a "Live now" section (hidden when empty); property only
  * @property {boolean} compact   avatars only (collapsed sidebar): no heading, search or live section (reflected)
  * @property {boolean} canInvite adds "Invite to current room" to each row menu (attribute `caninvite`)
@@ -50,6 +51,7 @@ export class MemberList extends CustomElement {
     @property({ type: Object, attribute: false, rerender: true }) me?: Profile;
     @property({ type: Array, attribute: false, rerender: true }) incall: string[] = [];
     @property({ type: Array, attribute: false, rerender: true }) stages: StageSummary[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) contacts: Profile[] = [];
     @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) compact: boolean = false;
 
@@ -61,10 +63,17 @@ export class MemberList extends CustomElement {
             .sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status) || a.name.localeCompare(b.name));
     }
 
-    private get filtered(): Profile[] {
+    private searched(list: Profile[]): Profile[] {
         const q = this.query.trim().toLowerCase();
-        const list = this.sorted;
         return q ? list.filter(m => m.name.toLowerCase().includes(q)) : list;
+    }
+
+    private get filtered(): Profile[] {
+        return this.searched(this.sorted);
+    }
+
+    private get saved(): Profile[] {
+        return this.searched([...(this.contacts ?? [])].sort((a, b) => a.name.localeCompare(b.name)));
     }
 
     // event handlers
@@ -74,10 +83,11 @@ export class MemberList extends CustomElement {
         this.query = String((e.currentTarget as HTMLInputElement).value ?? "");
     }
 
-    // the rows in display order: you first (when shown), then the filtered others
-    private get rows(): { profile: Profile; self: boolean }[] {
-        const others = this.filtered.map(profile => ({ profile, self: false }));
-        return this.me ? [{ profile: this.me, self: true }, ...others] : others;
+    // the rows in display order: you first (when shown), then the filtered others, then saved contacts
+    private get rows(): { profile: Profile; self: boolean; offline: boolean }[] {
+        const others = this.filtered.map(profile => ({ profile, self: false, offline: false }));
+        const saved = this.saved.map(profile => ({ profile, self: false, offline: true }));
+        return [...(this.me ? [{ profile: this.me, self: true, offline: false }] : []), ...others, ...saved];
     }
 
     // attribute bindings only carry strings, so `profile` goes in as a property on the keyed rows
@@ -98,6 +108,7 @@ export class MemberList extends CustomElement {
 
             item.profile = row.profile;
             item.self = row.self;
+            item.offline = row.offline;
             item.incall = (this.incall ?? []).includes(row.profile.uid);
             item.canInvite = this.canInvite;
             item.compact = this.compact;
@@ -109,6 +120,7 @@ export class MemberList extends CustomElement {
     render() {
         const rows = this.rows;
         const others = this.sorted.length;
+        const saved = (this.contacts ?? []).length;
         const stages = this.stages ?? [];
 
         return html`
@@ -142,8 +154,8 @@ export class MemberList extends CustomElement {
                     ${rows.map(row => html`<pc-member-item key="${row.profile.uid}"></pc-member-item>`)}
                 </pap-group>
             ` : ""}
-            ${!others ? html`<p part="empty" class="empty">${this.t("empty")}</p>` : ""}
-            ${others && !this.filtered.length ? html`<p part="empty" class="empty">${this.t("no-results")}</p>` : ""}
+            ${!others && !saved ? html`<p part="empty" class="empty">${this.t("empty")}</p>` : ""}
+            ${others + saved && !this.filtered.length && !this.saved.length ? html`<p part="empty" class="empty">${this.t("no-results")}</p>` : ""}
         `;
     }
 }

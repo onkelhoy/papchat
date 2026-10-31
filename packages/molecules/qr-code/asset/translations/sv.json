@@ -1,0 +1,10 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-qr-code": {
+    "label": "QR-kod",
+    "too-long": "Det här är för långt för en QR-kod"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-qr-code": {
+    "label": "QR code",
+    "too-long": "This is too long for a QR code"
+  }
+}

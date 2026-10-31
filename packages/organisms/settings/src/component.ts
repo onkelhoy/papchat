@@ -12,6 +12,8 @@ import "@papchat/ringtone-picker";
 import "@papchat/device-picker";
 import "@papchat/language-picker";
 import "@papchat/network-picker";
+import "@papchat/qr-code";
+import "@papchat/share-link";
 import "@papchat/video";
 import "@papchat/level-meter";
 
@@ -53,6 +55,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {boolean} separated a same-name network with an unknown password exists (property only)
  * @property {string} invitelink invite link for the network in use (property only)
  * @property {PushState} pushstate calls while the app is closed: `unsupported` hides that section (property only)
+ * @property {string} contactlink link that saves you as a contact, "" hides it and its QR code (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
@@ -93,6 +96,7 @@ export class Settings extends CustomElement {
     @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
     @property({ type: String, attribute: false, rerender: true }) invitelink: string = "";
     @property({ type: String, attribute: false, rerender: true }) pushstate: PushState = "unsupported";
+    @property({ type: String, attribute: false, rerender: true }) contactlink: string = "";
 
     @query("pc-ringtone-picker.ring") private ringtones?: Synced;
     @query("pc-ringtone-picker.dial") private dials?: Synced;
@@ -292,6 +296,13 @@ export class Settings extends CustomElement {
                 ${on ? "" : html`<pap-button size="small" disabled="${busy && "true"}" @click="${this.handlePushEnable}">${this.t(busy ? "push-busy" : "push-enable")}</pap-button>`}
                 ${on ? html`<pap-button size="small" variant="clear" @click="${this.handlePushDisable}">${this.t("push-disable")}</pap-button>` : ""}
                 <p class="hint">${this.t("push-privacy")}</p>
+                ${on && this.contactlink ? html`
+                    <div class="contact">
+                        <p class="hint">${this.t("contact-hint")}</p>
+                        <pc-share-link link="${this.contactlink}"></pc-share-link>
+                        <pc-qr-code value="${this.contactlink}" label="${this.t("contact-qr")}"></pc-qr-code>
+                    </div>
+                ` : ""}
             </div>
         `;
     }

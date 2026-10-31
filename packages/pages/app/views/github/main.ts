@@ -31,10 +31,16 @@ import {
     stages,
     watch,
     audioBlocked,
+    addLinkedContact,
+    contactLink,
+    contactProfile,
+    contacts,
     denoise,
     disablePush,
     enablePush,
+    forgetContact,
     pushState,
+    pushToken,
     refreshPush,
     releaseDenoise,
     buzzed,
@@ -252,6 +258,8 @@ async function boot() {
 // invite links: read once and taken out of the address bar, so a reload doesn't follow them again
 let waitingCall: Extract<ShareLink, { kind: "call" }> | null = null;
 
+type JoinLink = Exclude<ShareLink, { kind: "contact" }>;
+
 function receiveLink() {
     const hash = location.hash;
     const link = readShareLink(hash);
@@ -261,6 +269,12 @@ function receiveLink() {
     if (link === "expired" || link === "invalid")
     {
         toast("warning", t(link === "expired" ? "linkExpired" : "linkInvalid"));
+        return;
+    }
+    if (link.kind === "contact")
+    {
+        const added = addLinkedContact(link.contact);
+        toast("info", t(added ? "contactSaved" : "contactKnown", { name: link.contact.name }));
         return;
     }
     if (me())
@@ -273,7 +287,7 @@ function receiveLink() {
 }
 window.addEventListener("hashchange", receiveLink);
 
-function openLink(link: ShareLink, hash: string) {
+function openLink(link: JoinLink, hash: string) {
     if (link.kind === "network" && sameNetwork(link.network, network()))
     {
         toast("info", t("linkHere"));
@@ -287,7 +301,7 @@ function openLink(link: ShareLink, hash: string) {
     toast("info", t("linkConfirm"), { action: t("linkConfirmAction"), duration: 0, onAction: () => followLink(link, hash) });
 }
 
-function followLink(link: ShareLink, hash: string) {
+function followLink(link: JoinLink, hash: string) {
     if (link.kind === "network")
     {
         void moveTo(link.network);
@@ -316,6 +330,11 @@ effect(() => { header.separated = separated() !== null; });
 effect(() => { list.me = me() ?? undefined; });
 effect(() => { list.members = members(); });
 effect(() => { list.stages = stages(); });
+effect(() =>
+{
+    const here = new Set(members().map(p => p.uid));
+    list.contacts = contacts().filter(c => !here.has(c.uid)).map(contactProfile);
+});
 effect(() => { header.live = !!currentStage()?.mine; });
 
 // the stage you're on sits first in the room list, with a Live badge
@@ -540,6 +559,12 @@ effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { settings.separated = separated() !== null; });
 effect(() => { settings.invitelink = networkLink(network()); });
 effect(() => { settings.pushstate = pushState(); });
+effect(() =>
+{
+    const profile = me();
+    const token = pushToken();
+    settings.contactlink = profile && token ? contactLink({ uid: profile.uid, name: profile.name, color: profile.color, token }) : "";
+});
 effect(() => { header.invitelink = me() ? networkLink(network()) : ""; });
 effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
@@ -844,7 +869,11 @@ view.addEventListener("invite", () =>
     const room = current();
     if (!stage?.mine && !room) return;
     const here = new Set(stage ? [] : room!.participants().map(p => p.uid));
-    picker.members = members().filter(p => !here.has(p.uid) && p.uid !== me()?.uid);
+    const online = members().filter(p => !here.has(p.uid) && p.uid !== me()?.uid);
+    // saved contacts get rung on their device, so only a call can take them
+    const away = !stage && room?.incall ? contacts().filter(c => !here.has(c.uid) && !online.some(p => p.uid === c.uid)).map(contactProfile) : [];
+    picker.members = [...online, ...away];
+    picker.offline = away.map(p => p.uid);
     picker.link = !stage && room?.incall ? callLink(room) : "";
     picker.open = true;
 });
@@ -900,6 +929,7 @@ document.addEventListener("member-action", (e) =>
     if (action === "chat") void openChat(uid);
     else if (action === "call" || action === "video") void placeCall(uid, action);
     else if (action === "invite") invite(uid);
+    else if (action === "remove") forgetContact(uid);
 });
 
 // files dropped on a member (sidebar or People tab): open their chat, then send

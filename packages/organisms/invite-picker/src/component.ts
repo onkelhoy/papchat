@@ -22,6 +22,7 @@ import type { InviteEvent } from "./types";
  *
  * @property {boolean} open whether the dialog is shown
  * @property {Profile[]} members who can be invited (property only)
+ * @property {string[]} offline uids in `members` who aren't online and get rung on their device (property only)
  * @property {string} link invite link for the call, "" hides the copy button (property only)
  *
  * @fires invite `CustomEvent<{ uids }>` the invite button was pressed (bubbles, composed)
@@ -43,6 +44,7 @@ export class InvitePicker extends CustomElement {
         }
     }) open: boolean = false;
     @property({ type: Array, attribute: false, rerender: true }) members: Profile[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) offline: string[] = [];
     @property({ type: String, attribute: false, rerender: true }) link: string = "";
 
     @property({ type: String, attribute: false, rerender: true }) private query: string = "";
@@ -138,6 +140,7 @@ export class InvitePicker extends CustomElement {
                                     <span class="member">
                                         <pc-avatar size="s" name="${member.name}" color="${member.color}" uid="${member.uid}"></pc-avatar>
                                         <span class="name">${member.name}</span>
+                                        ${(this.offline ?? []).includes(member.uid) ? html`<span class="offline">${this.t("offline")}</span>` : ""}
                                     </span>
                                 </pap-checkbox>
                             </li>

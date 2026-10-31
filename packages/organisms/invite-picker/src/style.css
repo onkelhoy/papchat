@@ -60,6 +60,12 @@ pap-checkbox {
     display: none;
 }
 
+.offline {
+    flex: none;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
 .share {
     display: grid;
     justify-items: start;

@@ -11,6 +11,7 @@
     "call": "Call",
     "video": "Video call",
     "invite": "Invite to current room",
+    "remove": "Remove contact",
     "status": {
       "available": "Available",
       "busy": "Busy",

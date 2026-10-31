@@ -11,6 +11,7 @@
     "call": "Ring",
     "video": "Videosamtal",
     "invite": "Bjud in till det öppna rummet",
+    "remove": "Ta bort kontakt",
     "status": {
       "available": "Tillgänglig",
       "busy": "Upptagen",

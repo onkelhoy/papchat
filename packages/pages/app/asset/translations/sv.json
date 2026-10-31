@@ -19,6 +19,8 @@
     "filesOnStage": "Filer kan inte delas på en scen",
     "buzzWait": "Vänta {seconds} s innan du buzzar igen",
     "dialSynth": "Klassiskt pip",
+    "contactSaved": "{name} sparad som kontakt",
+    "contactKnown": "{name} är redan en kontakt",
     "linkExpired": "Inbjudningslänken har gått ut",
     "linkInvalid": "Inbjudningslänken fungerar inte",
     "linkHere": "Du är redan på det här nätverket",

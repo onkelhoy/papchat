@@ -19,6 +19,8 @@
     "filesOnStage": "Files can't be shared on a stage",
     "buzzWait": "Wait {seconds} s before buzzing again",
     "dialSynth": "Classic beep",
+    "contactSaved": "{name} saved as a contact",
+    "contactKnown": "{name} is already a contact",
     "linkExpired": "This invite link has expired",
     "linkInvalid": "This invite link doesn't work",
     "linkHere": "You're already on this network",

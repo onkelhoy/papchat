@@ -46,6 +46,16 @@ export type NetworkEntry = {
     locked: boolean;
 };
 
+/** Someone who can be rung with nobody online. `token` is their push token (push.ts). */
+export type Contact = {
+    uid: string;
+    name: string;
+    color: string;
+    token: string;
+    // last time they told us
+    at: number;
+};
+
 export type PushRecord = {
     token: string;
     endpoint: string;

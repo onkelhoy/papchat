@@ -70,7 +70,9 @@
     "@papchat/language-picker": "*",
     "@papchat/video": "*",
     "@papchat/level-meter": "*",
-    "@papchat/network-picker": "*"
+    "@papchat/network-picker": "*",
+    "@papchat/qr-code": "*",
+    "@papchat/share-link": "*"
   },
   "peerDependencies": {
     "react": "^19"

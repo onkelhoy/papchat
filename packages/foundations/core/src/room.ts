@@ -415,6 +415,26 @@ export class Room extends EventTarget {
         return sent;
     }
 
+    /** Sends an app message to one person in the room. False when they aren't here. */
+    sendTo(uid: string, type: string, payload?: unknown): boolean {
+        const c = this._client;
+        if (!c?.network) return false;
+        for (const [peer, profile] of this.memberByPeer)
+        {
+            if (profile.uid !== uid) continue;
+            try
+            {
+                return c.send(peer, type, payload);
+            }
+            catch (error)
+            {
+                log("room: send failed", type, error);
+                return false;
+            }
+        }
+        return false;
+    }
+
     /** Resets the unread count. */
     markRead() {
         if (this.unread() === 0) return;

@@ -9,6 +9,7 @@
     "members": "People to invite",
     "none": "Everyone is already in this room.",
     "no-results": "No one matches your search.",
+    "offline": "Rings their device",
     "cancel": "Cancel",
     "invite": "Invite",
     "invite-count": "Invite {count}",

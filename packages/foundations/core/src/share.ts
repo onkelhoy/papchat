@@ -1,17 +1,20 @@
 import { log } from "./log";
 import { isRejected, Room, selectRoom } from "./room";
 import { network, toast } from "./state";
-import type { Network } from "./types";
+import type { Contact, Network } from "./types";
 
 // Invite links. Everything sits in the hash, so it never reaches a server or its logs. Anyone holding
 // a link can join: it carries the password.
 
 export type ShareLink =
     | { kind: "network"; network: Network | null }
-    | { kind: "call"; room: string; password: string; network: Network | null };
+    | { kind: "call"; room: string; password: string; network: Network | null }
+    | { kind: "contact"; contact: Omit<Contact, "at"> };
 
 const NAME_MAX = 40;
 const ROOM_MAX = 200;
+const TOKEN_MAX = 4_096;
+const COLOR = /^#[0-9a-f]{6}$/i;
 
 function linkTo(params: Record<string, string>): string {
     return `${location.origin}${location.pathname}#${new URLSearchParams(params)}`;
@@ -28,6 +31,11 @@ export function callLink(room: Room): string {
     return linkTo({ call: room.network, key: room.password, join: net?.name ?? "", ...(net?.password ? { netkey: net.password } : {}) });
 }
 
+/** A link that saves you as a contact. Whoever holds it can ring this device. */
+export function contactLink(contact: Omit<Contact, "at">): string {
+    return linkTo({ contact: contact.uid, name: contact.name, color: contact.color, token: contact.token });
+}
+
 export function sameNetwork(a: Network | null, b: Network | null): boolean {
     return (a?.name ?? "") === (b?.name ?? "") && (a?.password ?? "") === (b?.password ?? "");
 }
@@ -35,6 +43,8 @@ export function sameNetwork(a: Network | null, b: Network | null): boolean {
 /** Reads a location hash. Null when it isn't an invite link, a word when it is one that can't be used. */
 export function readShareLink(hash: string): ShareLink | "expired" | "invalid" | null {
     const params = new URLSearchParams(hash.replace(/^#/, ""));
+    if (params.has("contact")) return readContact(params);
+
     const name = params.get("join");
     const room = params.get("call");
     if (name === null && room === null) return null;
@@ -55,6 +65,15 @@ export function readShareLink(hash: string): ShareLink | "expired" | "invalid" |
 
     const net = clean ? { name: clean, password: params.get("netkey") ?? "" } : null;
     return room && room.length <= ROOM_MAX && key ? { kind: "call", room, password: key, network: net } : "invalid";
+}
+
+function readContact(params: URLSearchParams): ShareLink | "invalid" {
+    const uid = params.get("contact") ?? "";
+    const name = (params.get("name") ?? "").trim();
+    const token = params.get("token") ?? "";
+    const color = params.get("color") ?? "";
+    if (!uid || uid.length > ROOM_MAX || !name || !token || token.length > TOKEN_MAX) return "invalid";
+    return { kind: "contact", contact: { uid, name: name.slice(0, NAME_MAX), color: COLOR.test(color) ? color : "", token } };
 }
 
 /** Joins the call behind a link: nobody rings, the people in it see you join. Null (plus a toast) when it's over. */
