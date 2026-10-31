@@ -4,10 +4,10 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ---
 
-## ▶ Resume here (refreshed 2026-10-29, late)
+## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 72/78 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed.
-- **Next, in order:** T7.17 share links (onboarding already has `joining` for it). The user asks for one task at a time: do one, report, stop.
+- **Done:** 73/92 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Waves 8 (rogue networks) and 9 (offline calling) are planned from `FINDINGS.md`.
+- **Next, in order:** T8.2, then the rest of wave 8, then T7.17 share links (onboarding already has `joining` for it; T9.6 needs it), then wave 9. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
@@ -574,8 +574,98 @@ Modelled on Teams (user screenshots 2026-10-29 20.41.26 / .45 / .52):
 
 ---
 
+## Wave 8: rogue networks (FINDINGS.md, 2026-10-31)
+
+A network goes rogue when its host loses the signal server while the peers stay linked. The socket retry and re-registering already live in `@papit/webrtc` 0.0.6 (`SocketLink` retries forever, `reregister` on a new socket id), so "keeps trying to reconnect" needs no work here. What's missing is everything after that: noticing a same-name network and merging. Only the host has a socket (`keepSocket: "host"`), so the host does the server work and tells the others over peer links. Calls and chats are rooms with their own `Client`, so a lobby merge doesn't touch them. Build order is T8.1 → T8.5. Checks are typecheck + build; the user tests live in T8.6.
+
+### [x] T8.1 Know our real server id · `opus` · needs —
+- **symptom:** after `reregister`, `client.network.id` keeps the old id and the real one sits in the private `serverNetwork`. `c.update()` doesn't help: it returns `this.network`, old id included. So `raceGuard` (`lobby.ts:402`) can see its own re-registered network as a different one, and if the new id sorts lower the host "moves" to itself and deletes it. Same `created`, so the id tie-break decides.
+- **do:** add one helper `serverId(c)` returning `c["serverNetwork"] ?? c.network?.id` (bracket access is the workaround), and use it wherever we compare or hand out network ids. In `raceGuard`, make no decision until our own id appears in the list: during a re-register it doesn't yet, so wait for the next check.
+- **also:** add a finding to `papit/PAPCHAT-FINDINGS.md` asking for a public server id, with the room invite case from T8.5 as evidence.
+- **files:** `core/src/lobby.ts`, `papit/PAPCHAT-FINDINGS.md`.
+- **done when:** nothing compares `c.network.id` to a listed network any more; typecheck + build pass.
+- Done: `serverId(c)` is exported from `lobby.ts`, and `raceGuard` finds itself in the list by that id and compares the listed entry. Papit finding is #23. A member who joins after a re-register gets the old id in the welcome, so `serverId` is stale for them: `raceGuard` then does nothing for that member, which is fine because T8.2 only checks on the host, and T8.5's broadcast has to cover those members. Typecheck + build pass; not run in a browser.
+
+### [ ] T8.2 The host keeps checking · `opus` · needs T8.1
+- **why:** `raceGuard` runs once, 2 s after joining. An older rogue group coming back wins on `meta.created`, but the newer group isn't looking and the rogue group doesn't check either, so they stay split forever.
+- **do:** while we're host and connected, run the canonical check on every status change to `connected`, then every `LIMITS.rogueScanMs` (60 s). Reuse `findLobbies` + `compare` and go through `serverCall` (the server strikes fast messages). Don't overlap a running guard. Stop on `stopClient`. Also listen for `error` type `host` ("could not register the network again"): today it's only logged and the group stays unlisted.
+- **files:** `core/src/lobby.ts`, `core/src/config.ts`.
+- **done when:** a check runs on reconnect and on the timer, only on the host; typecheck + build pass. Log lines say what was decided.
+
+### [ ] T8.3 Merge the whole group · `opus` · needs T8.2
+- **do:** when the check finds a more canonical network, the host broadcasts `lobby-merge` `{ network }` over peer links, then moves itself last (so the network it hosts stays up until the others have gone). Everyone moves by running the fresh-client path: `reconnect()` (`lobby.ts:287`). Webrtc no longer fires the `reconnect` error, so that code only runs from here now: rename it to `rejoin()` and delete the dead `detail?.type === "reconnect"` line at `lobby.ts:691`. `boot` then lands on the canonical lobby by itself.
+- **replaces today's move:** the `c.leave()` + `join` in `raceGuard` only moves the host and can't work for members without a socket.
+- **files:** `core/src/lobby.ts`.
+- **done when:** one code path for all moves; stale or duplicate `lobby-merge` messages are ignored (`epoch`); active rooms are untouched; typecheck + build pass.
+
+### [ ] T8.4 Stay separate on an unknown password · `opus` · needs T8.3
+- **symptom:** a wrong password today stops the client and closes the lobby (`lobby.ts:358`). For a rogue group that would kill a working group.
+- **do:** (1) Before a merge, if the target has `meta.locked`, the host tests our password with a throwaway `Client` (the pattern at `lobby.ts:200`): `join`, then `close`. It sends no profile, so `readMember` keeps it out of the member list. (2) Wrong password: stay in the group, remember the blocked network id, and don't retest that id until the id or the password changes. (3) Show it quietly: a status hint in `pc-connection-status` and Settings, not an error toast; en + sv. (4) Someone enters the right password in Settings: they send `lobby-merge` with the password over peer links before they move, so the group merges with them. (5) `boot`: on a wrong password for `lobbies[0]`, try the next same-name lobby before giving up, so a rogue member who reloads gets back to their group. A fresh visitor with no match keeps today's closed + toast.
+- **files:** `core/src/lobby.ts`, `core/src/state.ts`, `molecules/connection-status`, `organisms/settings`, page wiring.
+- **done when:** a blocked group keeps chatting and shows the hint; a correct password merges everyone; typecheck + build pass.
+
+### [ ] T8.5 Rooms keep a working id · `opus` · needs T8.1
+- **no merge for rooms:** a room's name is a random uuid and it's `private`, so it's never listed and nothing can have the same name. FINDINGS' same-name rule can't apply. The invite key isn't an issue either: every member has it. Partitioned rooms (each side re-registers separately) stay out of scope.
+- **symptom:** after `reregister`, `room.network` is the dead old id, and it goes out in invites (`room.ts:406`) and share links. Anyone invited to a rogue call gets "gone".
+- **do:** after a re-register, the host reads `serverId(c)`, updates `room.network` + `saveSession()`, and broadcasts it to members so their invites work too (keep `room.id`, the registry key, stable). Remove what's now unreachable: `rebuild()`, the line at `room.ts:1141`, and any of `awaitAdopt`/`reinvite`/`recreate` left with no caller. **Check first:** `adopt` (`room.ts:521`) still uses `invite.replaces`, so keep what it needs, and reload rejoin (`room.ts:1285`) stays.
+- **files:** `core/src/room.ts`.
+- **done when:** an invite from a re-registered room carries the live id on every member; typecheck + build pass.
+
+### [ ] T8.6 Wave 8 live check + README · `opus` · needs T8.2-T8.5
+- User test, with `npm run signal` restarted to force rogue: (1) two groups same name, restart server, both merge. (2) New person opens the network while the group is rogue, group returns, they merge. (3) Same, target has an unknown password: stays separate, hint shows, entering it merges everyone. (4) Invite someone to a call after the restart. (5) A call in progress survives a lobby merge.
+- Update the README's lobby and limits sections.
+
+---
+
+## Wave 9: calling offline contacts (FINDINGS.md, papit #157)
+
+Client side of web push. `@papit/signal-server` 0.0.5 on npm has it (Render not updated yet), and its README's "Web push" section is the API: `GET /push/key` → `{ key, persistent }`, `POST /push/subscribe` `{ subscription }` → `{ token }`, `POST /push/send` `{ token, payload, ttl?, urgency? }` → `{ status }`. `payload` is any JSON up to 3993 bytes, `ttl` defaults to 60 s, so offline calls need it to match `ringOfflineMs`. Bump the dependency in T9.2. T9.8 needs Render live.
+
+### [ ] T9.1 Service worker and PWA · `opus` · needs —
+- **do:** add `sw.js` to `views/github`, register it scoped to the GitHub Pages subpath, and confirm `@papit/static` ships it to the page root. Keep the existing `manifest.json` (no `.webmanifest`; it already has `scope` and `start_url`). Empty `push` / `notificationclick` handlers for now.
+- **files:** `pages/app/views/github/*`, `main.ts`.
+- **done when:** builds; the user confirms it registers on Pages. Don't run `npm run pages`.
+
+### [ ] T9.2 Enable call notifications · `opus` · needs T9.1
+- **do:** new `core/src/push.ts`. A button in Settings (the permission request must come from a tap on iOS) → `pushManager.subscribe` → `POST /push/subscribe` → store the returned token. Refresh on app load, because a subscription can change. HTTP base from `signalUrl()`. Handle a sleeping server: Render cold start is 30-60 s.
+- **files:** `core/src/push.ts`, `core/src/storage.ts`, `organisms/settings`, translations.
+- **done when:** token stored and refreshed; unsupported browsers hide the button; typecheck + build pass.
+
+### [ ] T9.3 Contacts · `opus` · needs —
+- **do:** add optional `push?: string` to `Profile`, and read it in `readMember` (it drops unknown fields). Save `{ uid, name, token }` to device storage for anyone met in a lobby, room or call. Show saved contacts as callable when they're offline, in `pc-invite-picker` / `pc-member-list`. Share by link and QR.
+- **check first:** the wire profile is capped at 1 KB. The server stores nothing, so the token probably encodes the whole subscription and may be long. If it doesn't fit, send it as its own message to each new peer.
+- **privacy:** per FINDINGS the token is in the profile, so everyone in the public lobby gets one and can ring that device. Mention it in the Settings copy.
+- **files:** `core/src/types.ts`, `core/src/lobby.ts`, `core/src/storage.ts`, `organisms/invite-picker`, `organisms/member-list`.
+- **done when:** a contact survives a reload with nobody online; typecheck + build pass.
+
+### [ ] T9.4 Calling offline · `opus` · needs T9.2, T9.3
+- **do:** in `placeCall`: if the contact is in the lobby, use the current invite. If not, `POST /push/send` with their token and the room id + key, and show the ringing UI. A `gone` status means the token is dead: drop it. Add `LIMITS.ringOfflineMs` (60 s) and use it for these calls only; `ringMs` stays for online calls. It's used on both ends (`invites.ts:183`, `:309`), so the callee needs the longer value too. Send a cancel push on hang-up.
+- **files:** `core/src/invites.ts`, `core/src/config.ts`, `core/src/push.ts`.
+- **done when:** typecheck + build pass; server call stubbed until T9.8.
+
+### [ ] T9.5 Notification in the service worker · `opus` · needs T9.1
+- **do:** `push` shows a notification with `tag: callId`; a cancel push closes it. `notificationclick` focuses an open tab or opens one on the `#call=` hash.
+- **files:** `pages/app/views/github/sw.js`.
+- **done when:** builds; live in T9.8.
+
+### [ ] T9.6 Join from the notification · `opus` · needs T9.5, T7.17
+- **careful:** FINDINGS writes `#call=<id>&from=<uid>`, but rooms need their invite key, and T7.17 already uses `#call=<room>&key=…`. So it's `#call=<id>&key=<key>&from=<uid>` on T7.17's parser. A present `from` means answer flow rather than a plain share link.
+- **do:** run the normal answer flow, or show "Missed call" if the room is gone or the ring expired.
+- **files:** `core/src/invites.ts`, page boot.
+- **done when:** typecheck + build pass.
+
+### [ ] T9.7 iOS install hint · `sonnet` · needs T9.2
+- **do:** Safari on iOS 16.4+ only pushes to installed PWAs. When not standalone, show an "Add to Home Screen" hint next to the button. en + sv.
+- **files:** `organisms/settings`, translations.
+
+### [ ] T9.8 Wave 9 server bump + live check · `opus` · needs T9.4-T9.7, push released
+- Render is the user's: bump `../signal` to 0.0.5+, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` once (new keys void every token; without them tokens die on each restart), add `--trust-proxy <hops>`. Replace the stubs. User test: phone with the app closed gets the call, answers, hang-up clears it, missed call, dead token. Update the README.
+
+---
+
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
+- **Webrtc 0.0.6 no longer emits the `reconnect` error (2026-10-31):** the list of `this.error` types in the bundle has none, so `lobby.ts:287` / `:691` and `room.ts:738` / `:1141` don't run, and the T1.1 gap note below is out of date. A dropped socket leaves links up and the host re-registers by itself. T8.3 and T8.5 clean this up.
 - **GIPHY key value (user OK'd committing it, 2026-10-29):** `c3UrFheIWGdoGysWX6NHR8DceD5pEc8W`. T7.16d can put it straight in `core/src/config.ts` instead of the build-secret setup below.
 - **GIPHY key (2026-10-29):** the user has a GIPHY key. GitHub Pages is static, so **any key the browser uses is visible in the shipped JS**. A GitHub secret only keeps it out of the repo. That's the normal model for GIPHY's browser keys, so it's acceptable. Setup: repo Settings → Secrets and variables → Actions → `GIPHY_KEY`. `pages.yml` passes `env: GIPHY_KEY: ${{ secrets.GIPHY_KEY }}` to the build, and the build writes it into a generated `config` module (git-ignored), which T7.16d defines. Locally: `GIPHY_KEY=… npm start` or a git-ignored `.env`. If abuse ever matters, put a tiny proxy on the signal server (render.com) that adds the key server-side, and the browser never sees it. GIPHY beta keys are rate-limited, so apply for a production key before sharing the app widely.
 - Don't run `npm run pages` / `npx @papit/static` locally until understood: a run ended with ~31 `node_modules/@papit/*` packages as symlinks into `packages/pages/app/dist/lib/@papit/` (deleting `dist` then broke them; fix was `npm install`). Cause not pinned down (static's source only copies with `cpSync`; the build step or an earlier run may be what linked them). CI is fine.

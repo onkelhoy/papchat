@@ -394,12 +394,16 @@ async function raceGuard(current: number) {
     {
         await wait(LIMITS.raceGuardMs);
         alive(current);
-        const mine = c.network;
-        if (!mine) return;
+        if (!c.network) return;
 
         const lobbies = await findLobbies(current, c);
+        // not listed yet (a re-register is still under way): our id and order aren't known, so decide nothing
+        const own = serverId(c);
+        const mine = lobbies.find(n => n.id === own);
+        if (!mine) return;
+
         const best = lobbies[0];
-        if (!best || best.id === mine.id || compare(best, mine) >= 0) return;
+        if (compare(best, mine) >= 0) return;
 
         log("lobby: a more canonical lobby exists, moving", mine.id, "→", best.id);
         booting = true;
@@ -459,6 +463,14 @@ async function join(current: number, c: Client, id: string) {
         if (/wrong password|forbidden/i.test(String((error as Error)?.message ?? error))) throw new WrongPassword();
         throw error;
     }
+}
+
+/**
+ * The id the server knows this network by. After a re-register that differs from `c.network.id`, which keeps
+ * the old one, and only `serverNetwork` has the new one: it's private, so read it around the type (papit gap).
+ */
+export function serverId(c: Client): string | null {
+    return c["serverNetwork"] ?? c.network?.id ?? null;
 }
 
 // canonical = smallest meta.created, then smallest id
