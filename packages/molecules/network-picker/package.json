@@ -55,11 +55,11 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/checkbox": "*",
-    "@papit/web-component": "*",
-    "@papit/translator": "*",
-    "@papit/button": "*",
-    "@papit/input": "*",
+    "@papit/checkbox": "0.0.9",
+    "@papit/web-component": "0.0.14",
+    "@papit/translator": "0.1.1",
+    "@papit/button": "0.1.10",
+    "@papit/input": "0.0.10",
     "@papchat/share-link": "*"
   },
   "peerDependencies": {
@@ -74,9 +74,9 @@
     "@playwright/test": "1.64.1",
     "playwright": "1.64.1",
     "typescript": "5.9.3",
-    "@papit/theme": "*",
-    "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/theme": "0.0.3",
+    "@papit/translator": "0.1.1",
+    "@papit/codeblock": "0.1.18"
   },
   "browserslist": [
     "defaults",

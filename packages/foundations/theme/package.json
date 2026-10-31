@@ -48,16 +48,16 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/theme": "*",
-    "@papit/icon": "*"
+    "@papit/theme": "0.0.3",
+    "@papit/icon": "0.1.13"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
     "playwright": "1.64.1",
     "typescript": "5.9.3",
-    "@papit/theme": "*",
-    "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/theme": "0.0.3",
+    "@papit/translator": "0.1.1",
+    "@papit/codeblock": "0.1.18"
   },
   "browserslist": [
     "defaults",

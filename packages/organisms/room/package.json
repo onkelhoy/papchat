@@ -55,12 +55,12 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*",
-    "@papit/translator": "*",
-    "@papit/splitter": "*",
-    "@papit/tabs": "*",
-    "@papit/button": "*",
-    "@papit/icon": "*",
+    "@papit/web-component": "0.0.14",
+    "@papit/translator": "0.1.1",
+    "@papit/splitter": "0.0.14",
+    "@papit/tabs": "0.1.10",
+    "@papit/button": "0.1.10",
+    "@papit/icon": "0.1.13",
     "@papchat/conversation": "*",
     "@papchat/call-stage": "*",
     "@papchat/call-controls": "*",
@@ -79,9 +79,9 @@
     "@playwright/test": "1.64.1",
     "playwright": "1.64.1",
     "typescript": "5.9.3",
-    "@papit/theme": "*",
-    "@papit/translator": "*",
-    "@papit/codeblock": "*",
+    "@papit/theme": "0.0.3",
+    "@papit/translator": "0.1.1",
+    "@papit/codeblock": "0.1.18",
     "@papchat/theme": "*"
   },
   "browserslist": [

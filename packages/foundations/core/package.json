@@ -54,14 +54,14 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/signals": "*",
-    "@papit/webrtc": "*",
+    "@papit/signals": "0.0.1",
+    "@papit/webrtc": "0.0.6",
     "@sapphi-red/web-noise-suppressor": "0.4.1"
   },
   "devDependencies": {
-    "@papit/codeblock": "*",
-    "@papit/theme": "*",
-    "@papit/translator": "*",
+    "@papit/codeblock": "0.1.18",
+    "@papit/theme": "0.0.3",
+    "@papit/translator": "0.1.1",
     "@playwright/test": "1.64.1",
     "playwright": "1.64.1",
     "typescript": "5.9.3"

@@ -55,8 +55,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*",
-    "@papit/translator": "*"
+    "@papit/web-component": "0.0.14",
+    "@papit/translator": "0.1.1"
   },
   "peerDependencies": {
     "react": "^19"
@@ -70,10 +70,10 @@
     "@playwright/test": "1.64.1",
     "playwright": "1.64.1",
     "typescript": "5.9.3",
-    "@papit/theme": "*",
+    "@papit/theme": "0.0.3",
     "@papchat/theme": "*",
-    "@papit/translator": "*",
-    "@papit/codeblock": "*"
+    "@papit/translator": "0.1.1",
+    "@papit/codeblock": "0.1.18"
   },
   "browserslist": [
     "defaults",

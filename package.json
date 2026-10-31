@@ -30,20 +30,20 @@
         "!packages/**/asset/**"
     ],
     "devDependencies": {
-        "@papit/analyse": "*",
-        "@papit/arguments": "*",
-        "@papit/build": "*",
-        "@papit/bundle-js": "*",
-        "@papit/bundle-ts": "*",
-        "@papit/create": "*",
-        "@papit/information": "*",
-        "@papit/react": "*",
-        "@papit/server": "*",
-        "@papit/signal-server": "^0.0.5",
-        "@papit/static": "*",
-        "@papit/svg-spritesheet": "*",
-        "@papit/terminal": "*",
-        "@papit/version": "*",
+        "@papit/analyse": "0.0.6",
+        "@papit/arguments": "0.0.2",
+        "@papit/build": "0.0.10",
+        "@papit/bundle-js": "0.0.4",
+        "@papit/bundle-ts": "0.0.3",
+        "@papit/create": "0.0.19",
+        "@papit/information": "0.0.11",
+        "@papit/react": "0.0.5",
+        "@papit/server": "1.0.15",
+        "@papit/signal-server": "0.0.5",
+        "@papit/static": "0.0.8",
+        "@papit/svg-spritesheet": "0.0.6",
+        "@papit/terminal": "0.0.3",
+        "@papit/version": "0.0.10",
         "esbuild": "0.27.2",
         "typescript": "5.9.3"
     },
@@ -55,6 +55,6 @@
         "url": "git+https://github.com/onkelhoy/papchat.git"
     },
     "dependencies": {
-        "@papit/theme": "^0.0.3"
+        "@papit/theme": "0.0.3"
     }
 }
