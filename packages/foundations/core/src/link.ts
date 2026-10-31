@@ -47,6 +47,7 @@ type Session = {
     client: Client;
     host: boolean;
     peer: string | null;
+    greeted: boolean;
     other: Hello | null;
     accepted: boolean;
     theyAccepted: boolean;
@@ -98,22 +99,29 @@ function send(target: Session, type: string, payload?: unknown) {
 function open(host: boolean): Session {
     if (session) close(session);
     const client = new Client({ url: signalUrl(), rtc: RTC, topology: "mesh", accept: (_newcomer, info) => info.size < 2 });
-    const target: Session = { client, host, peer: null, other: null, accepted: false, theyAccepted: false, finished: false, theirs: null, sync: null, early: [], timer: undefined };
+    const target: Session = { client, host, peer: null, greeted: false, other: null, accepted: false, theyAccepted: false, finished: false, theirs: null, sync: null, early: [], timer: undefined };
     session = target;
 
-    client.addEventListener("peer", (event) => {
-        const peer = (event as CustomEvent<string>).detail;
-        // one-time: whoever came first is the other device
-        if (target.peer && target.peer !== peer) return;
+    // one-time: whoever came first is the other device
+    const meet = (peer: string): boolean => {
+        if (target.peer && target.peer !== peer) return false;
         target.peer = peer;
-        void hello(target);
-    });
+        if (!target.greeted)
+        {
+            target.greeted = true;
+            void hello(target);
+        }
+        return true;
+    };
+
+    client.addEventListener("peer", (event) => { meet((event as CustomEvent<string>).detail); });
     client.addEventListener("peer-left", (event) => {
         if ((event as CustomEvent<string>).detail === target.peer) fail(target, "lost");
     });
     client.addEventListener("message", (event) => {
         const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
-        if (sender !== target.peer) return;
+        // their first message can get here before our side says the link is open
+        if (!meet(sender)) return;
         if (type.startsWith("sync."))
         {
             if (target.sync) target.sync.receive(type, payload);
