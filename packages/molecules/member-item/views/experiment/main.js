@@ -36,6 +36,7 @@ item("flags", profile("u-me", "Henry Pap", "available", "oklch(45% 0.2 300)"), {
 item("flags", profile("u-me2", "Henry Pap", "busy"), { self: true, incall: true });
 item("flags", profile("u-call", "Carla In-Call", "busy"), { incall: true });
 item("flags", profile("u-inv", "Ivan Invitable", "available"), { canInvite: true });
+item("flags", profile("u-muted", "Mona Muted", "available"), { muted: true });
 item("flags", profile("u-long", "Maximiliana Wilhelmina von Habsburg-Lothringen-Stuart", "away"), { incall: true, canInvite: true });
 
 // property changes after connect: status flips every 2 s

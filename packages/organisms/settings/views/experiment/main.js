@@ -28,7 +28,11 @@ const makeCanvasStream = () =>
 function setup(el)
 {
     el.profile = { v: 1, uid: "me", name: "Henry", color: "#4f46e5", status: "available" };
-    el.prefs = { v: 1, ringtone: "classic", volume: 0.6, language: "en", autoDeclineBusy: false, notifications: false, devices: {}, sidebarOpen: true };
+    el.prefs = { v: 1, ringtone: "classic", volume: 0.6, language: "en", autoDeclineBusy: false, notifications: false, devices: {}, sidebarOpen: true, saveChats: true };
+    el.linked = [
+        { uid: "me", key: "k1", label: "Mac, Chrome", self: true },
+        { uid: "phone", key: "k2", label: "iPhone, Safari", self: false },
+    ];
     el.tones = [{ id: "classic", label: "Classic" }, { id: "soft", label: "Soft" }];
     el.devices = {
         audioinput: [{ deviceId: "m1", label: "Built-in microphone" }],
@@ -36,7 +40,7 @@ function setup(el)
         audiooutput: [{ deviceId: "s1", label: "Speakers" }],
     };
 
-    for (const name of ["profile-change", "prefs-change", "language-change", "request-notifications", "preview-device", "preview", "preview-stop"])
+    for (const name of ["profile-change", "prefs-change", "language-change", "request-notifications", "preview-device", "preview", "preview-stop", "delete-chats", "link-device", "remove-device"])
     {
         el.addEventListener(name, (e) =>
         {

@@ -33,7 +33,11 @@ document.addEventListener("leave", (e) =>
 
 for (const list of document.querySelectorAll("pc-room-list[data-demo]"))
 {
-    list.rooms = rooms;
+    list.rooms = [
+        { id: "global", kind: "global", title: "Global chat", participants: [], unread: 0, incall: false, live: true, dot: true },
+        ...rooms,
+        { id: "dm:a:b", kind: "chat", title: "", participants: [anna], unread: 0, incall: false, live: false, saved: true },
+    ];
 }
 
 const created = document.createElement("pc-room-list");

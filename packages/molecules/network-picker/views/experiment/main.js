@@ -9,6 +9,7 @@ const networks = [
     { name: "", members: 12, locked: false },
     { name: "book club", members: 3, locked: false },
     { name: "team", members: 5, locked: true },
+    { name: "no saving", members: 2, locked: false, nosave: true },
 ];
 const log = document.getElementById("log");
 for (const id of ["picker", "private"])
