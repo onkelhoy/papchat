@@ -55,6 +55,7 @@ Text supports a small markdown subset: `**bold**`, `*italic*`, `__underline__`, 
 | `author`  | -         | `Profile`            | -                 | sender; avatar and name (avatar falls back to `message.uid`)              |
 | `mine`    | `mine`    | `boolean`            | `false`           | own message: right aligned, primary colour, no avatar or name (reflected) |
 | `grouped` | `grouped` | `boolean`            | `false`           | same author within 2 min: hides avatar, name and time (reflected)         |
+| `nostate` | `nostate` | `boolean` | - | hides the Sending / Sent / Not sent yet label, reflected |
 | `variant` | `variant` | `"text" \| "system"` | `message.variant` | `system` is a centred muted line; `file` is shown as text (reflected)     |
 
 No events. CSS: `--message-background`, `--message-color`, `--message-max-width`, `::part(bubble)`. Also exports the `Block` / `Inline` types of the parsed tree. Computing `grouped` is the parent's job.

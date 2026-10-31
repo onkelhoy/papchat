@@ -25,6 +25,7 @@ import type { MessageVariant } from "./types";
  *
  * @element pc-message
  *
+ * @property {boolean} nostate hides the Sending / Sent / Not sent yet label (reflected)
  * @property {ChatMessage} message the message (`text`, `at`, `uid`, `variant`; a `gif` message shows `gif` as an image)
  * @property {Profile} author the sender; falls back to `message.uid` for the avatar
  * @property {boolean} mine own message (reflected)
@@ -42,6 +43,7 @@ export class Message extends CustomElement {
     @property({ type: Object, rerender: true }) author?: Profile;
     @property({ type: Boolean, reflect: true, rerender: true }) mine?: boolean;
     @property({ type: Boolean, reflect: true, rerender: true }) grouped?: boolean;
+    @property({ type: Boolean, reflect: true, rerender: true }) nostate?: boolean;
     @property({ type: String, reflect: true, rerender: true }) variant?: MessageVariant;
 
     // message text goes in as DOM nodes (elements and text, never HTML), rebuilt only when it changed
@@ -81,7 +83,7 @@ export class Message extends CustomElement {
             <div class="body">
                 ${showMeta ? html`<div class="meta">${this.mine ? "" : html`<span class="name">${name}</span>`}<pc-time at="${message.at}"></pc-time></div>` : ""}
                 <div part="bubble" class="bubble"></div>
-                ${this.mine && message.state ? html`<span class="state" data-state="${message.state}">${this.t(message.state)}</span>` : ""}
+                ${this.mine && message.state && !this.nostate ? html`<span class="state" data-state="${message.state}">${this.t(message.state)}</span>` : ""}
             </div>
         `;
     }

@@ -123,6 +123,7 @@ export class Conversation extends CustomElement {
         if (!rows) return;
 
         const shown = this.shown();
+        const settled = this.settled(shown);
         rows.forEach((row, i) => {
             const message = shown[i];
             if (!message) return;
@@ -141,8 +142,23 @@ export class Conversation extends CustomElement {
             item.author = this.profiles[message.uid];
             item.mine = mine;
             item.grouped = this.isGrouped(shown, i);
+            item.nostate = settled.has(message.id);
             item.variant = message.variant === "system" ? "system" : "text";
         });
+    }
+
+    // "Sent" only on the last of a run: a sent message followed by another of yours that's sent says nothing new
+    private settled(shown: ChatMessage[]) {
+        const settled = new Set<string>();
+        let next: ChatMessage | undefined;
+        for (let i = shown.length - 1; i >= 0; i--)
+        {
+            const message = shown[i];
+            if (message.uid !== this.me || !message.state) continue;
+            if (message.state === "sent" && next?.state === "sent") settled.add(message.id);
+            next = message;
+        }
+        return settled;
     }
 
     private followBottom(height: number) {
