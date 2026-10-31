@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 77/104 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Wave 8 (rogue networks) is in, waiting for its live test. Waves 9 (offline calling) and 10 (identity, saved chats, linked devices, global chat) are planned; wave 10 opens with its decisions.
-- **Next, in order:** T10.1 live stream bug, T7.17 share links (onboarding already has `joining` for it; T9.6 and T10.8 need it), T10.2-T10.3 identity, then wave 9 (T9.3 needs T10.3), then the rest of wave 10. T10.11 global chat has no dependencies and can move earlier. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Done:** 78/104 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Wave 8 (rogue networks) is in, waiting for its live test. Waves 9 (offline calling) and 10 (identity, saved chats, linked devices, global chat) are planned; wave 10 opens with its decisions, and T10.1 is in, waiting for its live check.
+- **Next, in order:** T7.17 share links (onboarding already has `joining` for it; T9.6 and T10.8 need it), T10.2-T10.3 identity, then wave 9 (T9.3 needs T10.3), then the rest of wave 10. T10.11 global chat has no dependencies and can move earlier. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
@@ -681,12 +681,13 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### Phase A: bug
 
-### [ ] T10.1 Late joiners don't see live streams · `opus` · needs —
+### [x] T10.1 Late joiners don't see live streams · `opus` · needs —
 - **symptom:** a stage started before someone joined the lobby never shows for them. Not reproduced yet; this is from reading `stage.ts:460-492`.
 - **cause?:** the new member broadcasts `stage.query` once, right when status is `connected`, possibly before its links are up, so it can get lost. The fallback `listStages` runs 2 s later through `c.list()`, but non-hosts drop their socket once linked, and it skips presenters whose profile isn't known yet.
 - **do:** the user suggested the welcome message, but that belongs to `@papit/webrtc`. Same result from papchat: the presenter watches lobby `members`, and sends `stage.announce` to each uid it hasn't told yet. Keep `stage.query`. Fix `listStages` or remove it if the announce makes it redundant.
 - **files:** `core/src/stage.ts`.
 - **done when:** a presenter live before you join shows up without a reload; typecheck + build pass. User confirms live.
+- Done: confirmed by reading papit, not by a repro. `Client` goes `connected` on the socket welcome, before any peer link, so the one `stage.query` went out with no links and reached nobody. It now waits for the first `peer` event. A query from a sender the presenter doesn't know yet used to be ignored, and now gets a broadcast `stage.announce`. The presenter also tells each new member once, 3 s after they appear, tracked by peer because a reload keeps the uid. `listStages` is removed: it needed the socket non-hosts drop, and it could only list presenters already in the lobby, who now announce. Typecheck + build pass; not run in a browser.
 
 ### Phase B: identity
 

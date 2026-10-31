@@ -4,7 +4,7 @@ import { Client } from "@papit/webrtc";
 import { APP, LIMITS, RTC, signalUrl } from "./config";
 import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
-import { broadcast as lobbyBroadcast, lobbyClient, on, profileOf, readMember, send as lobbySend } from "./lobby";
+import { broadcast as lobbyBroadcast, lobbyClient, on, peerOf, profileOf, readMember, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { lobbyStatus, me, members, prefs, setStages, stages, toast } from "./state";
 import type { ChatMessage, Gif, Invite, Profile, StageSummary } from "./types";
@@ -26,6 +26,8 @@ const STAGE_PLAN: MediaPlan = {
 
 // viewer counts go out with a re-announce, at most this often
 const ANNOUNCE_GAP_MS = 5_000;
+// how long a new lobby member gets to open links before a presenter tells them about the stage
+const TELL_DELAY_MS = 3_000;
 
 /** Children per node in the multicast tree. Lower it in the console to test relaying: `papchat.setStageFanout(1)`. */
 let fanout = 3;
@@ -265,7 +267,7 @@ export class Stage {
         return { id: this.id, title: this.title, presenter: this.presenter, viewers: this.viewers(), mine: this.mine };
     }
 
-    /** Tells the lobby about this stage (all, or one uid when answering a `stage.query`). */
+    /** Tells the lobby about this stage (all, or one uid: a `stage.query` or a new member). */
     announce(to?: string) {
         if (!this.mine || this.ended) return;
         const payload = { stage: this.id, title: this.title, presenter: this.presenter.uid, viewers: this.viewers() };
@@ -454,42 +456,59 @@ on<unknown>("stage.end", (payload, from) => {
 
 on<unknown>("stage.query", (_payload, from) => {
     const stage = currentStage();
-    if (stage?.mine && from.uid) stage.announce(from.uid);
+    // a newcomer's query can beat the member list here, so an unknown sender gets the broadcast
+    if (stage?.mine) stage.announce(from.uid ?? undefined);
 });
 
-// once per lobby connection: ask who is live, and list stage networks for any announce we missed
+// once per lobby connection, as soon as a link is open: `connected` comes with the server's welcome,
+// before any peer link, and a broadcast sent then reaches nobody
 let asked = false;
 effect(() => {
-    const connected = lobbyStatus() === "connected";
-    if (!connected)
+    if (lobbyStatus() !== "connected")
     {
         asked = false;
         return;
     }
     if (asked) return;
     asked = true;
-    lobbyBroadcast("stage.query", {});
-    setTimeout(() => void listStages(), 2_000);
+
+    const c = lobbyClient();
+    if (c?.links.length) askWhoIsLive();
+    else c?.addEventListener("peer", askWhoIsLive, { once: true });
 });
 
-async function listStages() {
-    const c = lobbyClient();
-    if (!c) return;
-    try
+function askWhoIsLive() {
+    lobbyBroadcast("stage.query", {});
+}
+
+// a query can still get lost, so a presenter also tells each new member once, after their links have
+// had time to open. By peer, because a reload keeps the uid. Going live already told everyone present.
+let told = new Set<string>();
+let toldFor: Stage | null = null;
+effect(() => {
+    const list = members();
+    const stage = currentStage();
+    if (!stage?.mine)
     {
-        for (const info of await c.list())
+        told = new Set();
+        toldFor = null;
+        return;
+    }
+
+    const peers = new Map(list.map(p => [peerOf(p.uid), p.uid]));
+    if (toldFor === stage)
+    {
+        for (const [peer, uid] of peers)
         {
-            const meta = info.meta ?? {};
-            if (meta.app !== APP || meta.kind !== "stage" || stages().some(s => s.id === info.id)) continue;
-            const presenter = typeof meta.presenter === "string" ? profileOf(meta.presenter) : null;
-            if (!presenter || presenter.uid === me()?.uid) continue;
-            upsert({ id: info.id, title: typeof meta.title === "string" ? meta.title : "", presenter, viewers: Math.max(0, info.size - 1), mine: false });
+            if (peer && !told.has(peer)) setTimeout(() => tell(stage, uid, peer), TELL_DELAY_MS);
         }
     }
-    catch (error)
-    {
-        log("stage: list failed", error);
-    }
+    toldFor = stage;
+    told = new Set([...peers.keys()].filter(peer => peer !== null));
+});
+
+function tell(stage: Stage, uid: string, peer: string) {
+    if (currentStage() === stage && peerOf(uid) === peer) stage.announce(uid);
 }
 
 // a presenter who left the lobby has no stage any more
