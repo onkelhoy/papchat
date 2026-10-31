@@ -30,12 +30,17 @@ const UNREACHABLE_QUIET_MS = 3_000;
 // how long the host stays after telling the group to move, so nobody loses it mid-move
 const MERGE_HOST_DELAY_MS = 1_500;
 const PROBE_TIMEOUT_MS = 20_000;
+// a merge moves everyone: spread them out, so a big group doesn't hit the server all at once
+const MERGE_SPREAD_PER_PEER_MS = 20;
+const MERGE_SPREAD_MAX_MS = 10_000;
 // host → group: move to the more canonical network. Comes with the password once someone found it.
 const MERGE = "lobby-merge";
 // host → group: a same-name network exists that we can't get into
 const SEPARATED = "lobby-separated";
 // member → host: this password opens the network we're separated from
 const UNLOCK = "lobby-unlock";
+// host → member: that password didn't work
+const UNLOCK_REFUSED = "lobby-unlock-refused";
 
 class WrongPassword extends Error { }
 
@@ -52,6 +57,9 @@ let rebooting = false;
 let unregistered = false;
 // network + password pairs the host already tried, so a scan doesn't knock on the same door every minute
 const refused = new Set<string>();
+// passwords waiting for the host's test, with who sent each: however many people send one, it's tested once
+const unlocks = new Map<string, string[]>();
+let unlockQueue: Promise<void> = Promise.resolve();
 let retryMs = RETRY_MIN_MS;
 let nextServerSlot = 0;
 // when this client started: sent in the profile so "newest peer wins" is the same for everyone
@@ -200,41 +208,19 @@ export function profileOf(uid: string): Profile | null {
 
 /**
  * Tries a password on the network this group is separated from. True when that was handled here, so
- * the page must not switch network: a right password moves the whole group, a wrong one shows a toast.
- * False when we aren't separated, or `next` is another network: a normal switch.
+ * the page must not switch network: the host tests it and moves the group, or says it was wrong.
+ * False when this is a real change of network: a normal switch.
  */
 export async function unlockNetwork(next: Network | null): Promise<boolean> {
     const c = client;
-    const target = separated();
-    if (!c?.network || !target || !next || next.name !== network()?.name) return false;
+    const net = network();
+    if (!c?.network || !next || !net || next.name !== net.name) return false;
+    // someone else got there first: we already have it, and reloading would end our calls
+    if (next.password === net.password) return true;
+    if (!separated()) return false;
 
-    const current = epoch;
-    try
-    {
-        if (!await canEnter(target, next.password))
-        {
-            toast("warning", `That isn't the password for "${next.name}"`);
-            return true;
-        }
-        alive(current);
-        setNetwork(next);
-        setSeparated(null);
-        if (c.host === c.id)
-        {
-            await merge(current, c, target, next.password);
-            return true;
-        }
-        c.send(c.host!, UNLOCK, { password: next.password });
-        await wait(MERGE_HOST_DELAY_MS);
-        alive(current);
-        rejoin();
-    }
-    catch (error)
-    {
-        if (error instanceof Cancelled) return true;
-        log("lobby: unlock failed", error);
-        toast("error", `Couldn't reach "${next.name}"`);
-    }
+    if (c.host === c.id) queueUnlock(next.password, c.id);
+    else c.send(c.host!, UNLOCK, { password: next.password });
     return true;
 }
 
@@ -317,6 +303,7 @@ function stopClient() {
     guarding = false;
     unregistered = false;
     refused.clear();
+    unlocks.clear();
     setSeparated(null);
     for (const timer of timers)
     {
@@ -511,17 +498,21 @@ async function merge(current: number, c: Client, target: string, password?: stri
     if (c.members.length > 1)
     {
         broadcast(MERGE, { network: target, ...(password ? { password } : {}) });
-        await wait(MERGE_HOST_DELAY_MS);
+        await wait(MERGE_HOST_DELAY_MS + mergeSpread(c));
         alive(current);
     }
     rejoin();
+}
+
+function mergeSpread(c: Client): number {
+    return Math.min(c.members.length * MERGE_SPREAD_PER_PEER_MS, MERGE_SPREAD_MAX_MS);
 }
 
 async function mayEnter(current: number, target: NetworkInfo): Promise<boolean> {
     if (target.meta?.locked !== true) return true;
 
     const password = network()?.password ?? "";
-    const key = `${target.id}\n${password}`;
+    const key = refusedKey(target.id, password);
     if (refused.has(key)) return false;
 
     const open = await canEnter(target.id, password);
@@ -551,6 +542,10 @@ async function canEnter(id: string, password: string): Promise<boolean> {
     }
 }
 
+function refusedKey(id: string, password: string): string {
+    return `${id}\n${password}`;
+}
+
 function isWrongPassword(error: unknown): boolean {
     return /wrong password|forbidden/i.test(String((error as Error)?.message ?? error));
 }
@@ -569,8 +564,8 @@ function handleMerge(payload: { network?: unknown; password?: unknown }, from: L
     const net = network();
     if (net && typeof payload?.password === "string") setNetwork({ name: net.name, password: payload.password });
     log("lobby: the group is moving");
-    // rebuild outside the client's own event dispatch; a second message finds another client and stops
-    setTimeout(() => { if (client === c) rejoin(); }, 0);
+    // outside the client's own event dispatch; a second message finds another client and stops
+    setTimeout(() => { if (client === c) rejoin(); }, Math.random() * mergeSpread(c));
 }
 
 function handleSeparated(payload: { network?: unknown }, from: LobbyFrom) {
@@ -579,38 +574,85 @@ function handleSeparated(payload: { network?: unknown }, from: LobbyFrom) {
     setSeparated(typeof payload?.network === "string" ? payload.network : null);
 }
 
-// the host tests it too: anyone in the group can send this
-function handleUnlock(payload: { password?: unknown }) {
+function handleUnlock(payload: { password?: unknown }, from: LobbyFrom) {
+    const c = client;
+    if (!c?.network || c.host !== c.id || typeof payload?.password !== "string") return;
+    queueUnlock(payload.password, from.peer);
+}
+
+function handleUnlockRefused(_payload: unknown, from: LobbyFrom) {
+    if (from.peer === client?.host) wrongPassword();
+}
+
+function wrongPassword() {
+    toast("warning", `That isn't the password for "${network()?.name ?? ""}"`);
+}
+
+// one at a time: only the host tests, so a big group pressing at once costs one test per different password
+function queueUnlock(password: string, peer: string) {
     const c = client;
     const target = separated();
-    const net = network();
-    if (!c?.network || c.host !== c.id || !target || !net || typeof payload?.password !== "string") return;
+    if (!c?.network || !target) return;
+    if (refused.has(refusedKey(target, password)))
+    {
+        refuse(c, [peer]);
+        return;
+    }
 
+    const waiting = unlocks.get(password);
+    if (waiting)
+    {
+        waiting.push(peer);
+        return;
+    }
+    unlocks.set(password, [peer]);
     const current = epoch;
-    const password = payload.password;
-    void (async () => {
-        try
+    unlockQueue = unlockQueue.then(() => tryUnlock(current, c, password));
+}
+
+async function tryUnlock(current: number, c: Client, password: string) {
+    try
+    {
+        alive(current);
+        const target = separated();
+        const net = network();
+        // an earlier password in the queue already worked
+        if (!target || !net) return;
+
+        if (await canEnter(target, password))
         {
-            if (!await canEnter(target, password))
-            {
-                log("lobby: unlock refused");
-                return;
-            }
             alive(current);
             setNetwork({ name: net.name, password });
             setSeparated(null);
             await merge(current, c, target, password);
+            return;
         }
-        catch (error)
-        {
-            if (!(error instanceof Cancelled)) log("lobby: unlock failed", error);
-        }
-    })();
+        alive(current);
+        refused.add(refusedKey(target, password));
+        refuse(c, unlocks.get(password) ?? []);
+    }
+    catch (error)
+    {
+        if (!(error instanceof Cancelled)) log("lobby: unlock failed", error);
+    }
+    finally
+    {
+        unlocks.delete(password);
+    }
+}
+
+function refuse(c: Client, peers: string[]) {
+    for (const peer of peers)
+    {
+        if (peer === c.id) wrongPassword();
+        else c.send(peer, UNLOCK_REFUSED);
+    }
 }
 
 on(MERGE, handleMerge);
 on(SEPARATED, handleSeparated);
 on(UNLOCK, handleUnlock);
+on(UNLOCK_REFUSED, handleUnlockRefused);
 
 // the race guard runs once after joining, which misses a rogue group that comes back later: keep looking
 async function scan(current: number) {
