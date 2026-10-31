@@ -219,7 +219,7 @@ export async function unlockNetwork(next: Network | null): Promise<boolean> {
     if (next.password === net.password) return true;
     if (!separated()) return false;
 
-    if (c.host === c.id) queueUnlock(next.password, c.id);
+    if (c.host === c.id) queueUnlock(next.password, c.id!);
     else c.send(c.host!, UNLOCK, { password: next.password });
     return true;
 }
