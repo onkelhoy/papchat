@@ -635,10 +635,11 @@ Client side of web push. `@papit/signal-server` 0.0.5 on npm has it (Render not 
 - **done when:** builds; the user confirms it registers on Pages. Don't run `npm run pages`.
 - Done: `views/github/sw.js`, registered from boot with a relative URL and `scope: "./"`, so it works under `/papchat/`. `@papit/static` compiles any `.js` in the page folder and writes it at the same path, so it lands at the site root (read from its source, not run). The worker doesn't cache anything. Not run in a browser.
 
-### [~] T9.2 Enable call notifications · `opus` · needs T9.1
+### [x] T9.2 Enable call notifications · `opus` · needs T9.1
 - **do:** new `core/src/push.ts`. A button in Settings (the permission request must come from a tap on iOS) → `pushManager.subscribe` → `POST /push/subscribe` → store the returned token. Refresh on app load, because a subscription can change. HTTP base from `signalUrl()`. Handle a sleeping server: Render cold start is 30-60 s.
 - **files:** `core/src/push.ts`, `core/src/storage.ts`, `organisms/settings`, translations.
 - **done when:** token stored and refreshed; unsupported browsers hide the button; typecheck + build pass.
+- Done: `core/src/push.ts`: `enablePush` / `disablePush` / `refreshPush` / `sendPush`, `pushState`, `pushToken`. A refresh only posts when the subscription's endpoint changed; new server keys void a subscription, so that case subscribes again. HTTP calls wait up to `LIMITS.wakeMs` (90 s) and retry once, for a cold start. A token doesn't reach the UI yet: T9.3 shares it. Root dev dependency is now `@papit/signal-server` 0.0.5, and Render is live with persistent keys (checked `GET /push/key`), so nothing here is stubbed. Typecheck + build pass; not run in a browser.
 
 ### [ ] T9.3 Contacts · `opus` · needs T10.3
 - **do:** add optional `push?: string` to `Profile`, and read it in `readMember` (it drops unknown fields). Save `{ uid, name, token }` to device storage for anyone met in a lobby, room or call. Show saved contacts as callable when they're offline, in `pc-invite-picker` / `pc-member-list`. Share by link and QR.

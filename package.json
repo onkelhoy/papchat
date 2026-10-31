@@ -39,7 +39,7 @@
         "@papit/information": "*",
         "@papit/react": "*",
         "@papit/server": "*",
-        "@papit/signal-server": "*",
+        "@papit/signal-server": "^0.0.5",
         "@papit/static": "*",
         "@papit/svg-spritesheet": "*",
         "@papit/terminal": "*",

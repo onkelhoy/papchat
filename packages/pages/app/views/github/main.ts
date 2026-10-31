@@ -32,6 +32,10 @@ import {
     watch,
     audioBlocked,
     denoise,
+    disablePush,
+    enablePush,
+    pushState,
+    refreshPush,
     releaseDenoise,
     buzzed,
     constraints,
@@ -227,6 +231,7 @@ async function boot() {
 
     settings.sinkSupported = sinkSupported;
     startNotify();
+    void refreshPush();
     void ringtone.loadTones();
     void ringtone.loadDialtones();
     onboarding.colors = [...PALETTE];
@@ -534,6 +539,7 @@ effect(() => { settings.prefs = prefs(); });
 effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { settings.separated = separated() !== null; });
 effect(() => { settings.invitelink = networkLink(network()); });
+effect(() => { settings.pushstate = pushState(); });
 effect(() => { header.invitelink = me() ? networkLink(network()) : ""; });
 effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
@@ -633,6 +639,13 @@ settings.addEventListener("request-notifications", async () =>
 {
     if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
 });
+settings.addEventListener("push-enable", async () =>
+{
+    const result = await enablePush();
+    if (result === "denied") toast("warning", t("notificationsDenied"));
+    else if (result === "failed") toast("warning", t("pushFailed"));
+});
+settings.addEventListener("push-disable", () => void disablePush());
 settings.addEventListener("preview-device", (e) => void startTest((e as CustomEvent<{ kind: "camera" | "mic" }>).detail.kind));
 settings.addEventListener("preview", (e) => ringtone.preview((e as CustomEvent<{ id: string }>).detail.id));
 settings.addEventListener("preview-stop", () => ringtone.stop());

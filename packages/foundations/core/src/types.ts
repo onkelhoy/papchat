@@ -46,6 +46,11 @@ export type NetworkEntry = {
     locked: boolean;
 };
 
+export type PushRecord = {
+    token: string;
+    endpoint: string;
+};
+
 export type Debug = {
     signal?: string;
     log?: boolean;

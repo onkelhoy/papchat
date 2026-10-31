@@ -4,6 +4,7 @@ import * as invites from "./invites";
 import * as lobby from "./lobby";
 import * as devices from "./devices";
 import * as notify from "./notify";
+import * as push from "./push";
 import * as stage from "./stage";
 import * as ringtone from "./ringtone";
 import * as room from "./room";
@@ -25,6 +26,7 @@ export * from "./share";
 export * from "./devices";
 export * from "./denoise";
 export * from "./notify";
+export * from "./push";
 export * from "./transfer";
 export * from "./stage";
 export * from "./gif";
@@ -52,6 +54,7 @@ if (typeof window !== "undefined")
         ...invites,
         ...devices,
         ...notify,
+        ...push,
         ...stage,
         ringtone,
         lobby,

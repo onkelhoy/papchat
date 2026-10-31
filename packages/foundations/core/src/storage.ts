@@ -1,4 +1,4 @@
-import type { Debug, Network, Prefs, Profile, Session } from "./types";
+import type { Debug, Network, Prefs, Profile, PushRecord, Session } from "./types";
 
 const KEYS = {
     profile: "papchat:profile",
@@ -6,6 +6,7 @@ const KEYS = {
     debug: "papchat:debug",
     session: "papchat:session",
     network: "papchat:network",
+    push: "papchat:push",
 } as const;
 
 export const DEFAULT_PREFS: Prefs = {
@@ -114,6 +115,18 @@ export const storage = {
         },
         set(value: Network | null) {
             write(local, KEYS.network, value ?? undefined);
+        },
+    },
+    // this browser's push token, and the subscription it was made from
+    push: {
+        get(): PushRecord | null {
+            const value = read(local, KEYS.push);
+            return isObject(value) && typeof value.token === "string" && typeof value.endpoint === "string"
+                ? { token: value.token, endpoint: value.endpoint }
+                : null;
+        },
+        set(value: PushRecord | null) {
+            write(local, KEYS.push, value ?? undefined);
         },
     },
     debug: {

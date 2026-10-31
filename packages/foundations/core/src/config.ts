@@ -10,6 +10,8 @@ export const LIMITS = {
     roomSize: 8,
     fileBytes: 100 * 1024 * 1024,
     ringMs: 30_000,
+    // how long to wait for the signal server over HTTP: a cold start alone takes 30-60 s
+    wakeMs: 90_000,
     chunk: 16 * 1024,
     batch: 64,
     // the server strikes messages sent < 200 ms apart, keep our own calls well above that

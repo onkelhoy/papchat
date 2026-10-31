@@ -19,7 +19,7 @@ import "@papchat/level-meter";
 import sheet from "./style.css" with { type: "css" };
 import type {
     DeviceLists, LanguageChangeEvent, Prefs, PrefsChangeEvent, PreviewDeviceEvent,
-    NetworkEntry, Profile, ProfileChangeEvent, Shortcut, Status, Tone,
+    NetworkEntry, Profile, ProfileChangeEvent, PushState, Shortcut, Status, Tone,
 } from "./types";
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
@@ -52,6 +52,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {NetworkEntry[]} networks the networks on the server, for the Network tab (property only)
  * @property {boolean} separated a same-name network with an unknown password exists (property only)
  * @property {string} invitelink invite link for the network in use (property only)
+ * @property {PushState} pushstate calls while the app is closed: `unsupported` hides that section (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
@@ -60,6 +61,8 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @fires network-change `{ network }` from the Network tab's `pc-network-picker` (`null` = public); the page reconnects
  * @fires networks-refresh the Network tab wants a fresh `networks` list
  * @fires request-notifications switch turned on: the page asks for permission, then sets `prefs.notifications`
+ * @fires push-enable the call notifications button was pressed (a tap, so the page can ask for permission)
+ * @fires push-disable the button to turn them off was pressed
  * @fires preview-device `{ kind: "camera" | "mic" }` a test button was pressed
  * @fires preview-dial `{ id }` play was pressed on a dial tone (`preview-stop` passes through as for ringtones)
  * @fires close the dialog was dismissed (the page sets `open = false`)
@@ -89,6 +92,7 @@ export class Settings extends CustomElement {
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
     @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
     @property({ type: String, attribute: false, rerender: true }) invitelink: string = "";
+    @property({ type: String, attribute: false, rerender: true }) pushstate: PushState = "unsupported";
 
     @query("pc-ringtone-picker.ring") private ringtones?: Synced;
     @query("pc-ringtone-picker.dial") private dials?: Synced;
@@ -267,6 +271,31 @@ export class Settings extends CustomElement {
         else this.emitPrefs({ notifications: false });
     }
 
+    @bind
+    private handlePushEnable() {
+        this.emit("push-enable");
+    }
+
+    @bind
+    private handlePushDisable() {
+        this.emit("push-disable");
+    }
+
+    private renderPush() {
+        const on = this.pushstate === "on";
+        const busy = this.pushstate === "busy";
+
+        return html`
+            <div class="field push">
+                <span>${this.t("push")}</span>
+                <p class="hint">${this.t(on ? "push-on" : "push-hint")}</p>
+                ${on ? "" : html`<pap-button size="small" disabled="${busy && "true"}" @click="${this.handlePushEnable}">${this.t(busy ? "push-busy" : "push-enable")}</pap-button>`}
+                ${on ? html`<pap-button size="small" variant="clear" @click="${this.handlePushDisable}">${this.t("push-disable")}</pap-button>` : ""}
+                <p class="hint">${this.t("push-privacy")}</p>
+            </div>
+        `;
+    }
+
     render() {
         const profile = this.profile;
         const prefs = this.prefs;
@@ -384,6 +413,7 @@ export class Settings extends CustomElement {
                                 <span>${this.t("notify")}</span>
                             </label>
                             <p class="hint">${this.t("notify-hint")}</p>
+                            ${this.pushstate === "unsupported" ? "" : this.renderPush()}
                         </pap-tabpanel>
 
                         ${this.shortcuts?.length ? html`

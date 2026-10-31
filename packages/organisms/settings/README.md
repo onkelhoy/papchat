@@ -45,6 +45,7 @@ npm install @papchat/settings
 | `camerastream`  | `MediaStream \| null` | `null`  | camera test stream (property only)                                   |
 | `micstream`     | `MediaStream \| null` | `null`  | microphone test stream (property only)                               |
 | `sinkSupported` | `boolean`             | `true`  | browser can pick an output device (property only)                    |
+| `pushstate`     | `PushState`           | `"unsupported"` | call notifications: `unsupported` hides the section (property only) |
 | `shortcuts`     | `Shortcut[]`          | `[]`    | `{ keys, label }` rows for the Shortcuts tab, hidden when empty (property only) |
 
 ### Events
@@ -55,6 +56,7 @@ npm install @papchat/settings
 | `prefs-change`          | `{ partial }`                 | ringtone, volume, `devices` (whole object) or `autoDeclineBusy`       |
 | `language-change`       | `{ value }`                   | another language chosen                                               |
 | `request-notifications` | none                          | switch turned on; the page asks permission and sets `prefs.notifications`. Turning it off emits `prefs-change` |
+| `push-enable`, `push-disable` | none                    | the button for call notifications was pressed (a tap, so the page can ask for permission) |
 | `preview-device`        | `{ kind: "camera" \| "mic" }` | a test button was pressed; the page sets `camerastream` / `micstream` |
 | `preview-dial`          | `{ id }`                      | play was pressed on a dial tone; the page plays it and sets `playing` |
 | `preview`, `preview-stop` | `{ id }` / none             | pass through from the ringtone picker                                 |
