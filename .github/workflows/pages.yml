@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.versions.outputs.tag }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +41,12 @@ jobs:
         working-directory: packages/pages/app
         run: npx @papit/static -- --base /${{ github.event.repository.name }}/ --info
 
+      - name: Version log
+        id: versions
+        run: |
+          git fetch --unshallow --tags
+          node bin/version-log.mjs packages/pages/app/dist/version.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: packages/pages/app/dist
@@ -53,3 +61,10 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # only what went live gets a version
+      - name: Tag the release
+        if: needs.build.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/${{ needs.build.outputs.tag }}" -f sha="${{ github.sha }}"
