@@ -33,12 +33,14 @@ import {
     audioBlocked,
     addLinkedContact,
     contactLink,
+    contactOf,
     contactProfile,
     contacts,
     denoise,
     disablePush,
     enablePush,
     forgetContact,
+    peerOf,
     pushState,
     pushToken,
     refreshPush,
@@ -52,6 +54,7 @@ import {
     listNetworks,
     placeCall,
     requestNotifications,
+    ringContact,
     ringtone,
     sinkSupported,
     startNotify,
@@ -893,6 +896,11 @@ function invite(uid: string) {
     const room = current();
     let sent = false;
     if (stage) sent = stage.mine && stage.invite(uid);
+    else if (room && room.incall && !peerOf(uid) && contactOf(uid))
+    {
+        void ringContact(room, uid, room.captures().camera ? "video" : "call");
+        return;
+    }
     else if (room) sent = room.invite(uid, room.incall ? (room.captures().camera ? "video" : "call") : room.kind);
     else return;
     if (!sent) toast("warning", t("inviteFailed", { name: members().find(p => p.uid === uid)?.name ?? "?" }));

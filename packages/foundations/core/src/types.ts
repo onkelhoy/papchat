@@ -56,6 +56,28 @@ export type Contact = {
     at: number;
 };
 
+/** What a caller pushes to a closed app. `key` is the room's password; the rest proves who called. */
+export type CallPush = {
+    t: "call";
+    id: string;
+    key: string;
+    kind: "call" | "video";
+    direct: boolean;
+    from: string;
+    name: string;
+    at: number;
+    pub: string;
+    sig: string;
+};
+
+/** The caller stopped: the notification becomes a missed call. */
+export type CancelPush = {
+    t: "cancel";
+    id: string;
+    from: string;
+    name: string;
+};
+
 export type PushRecord = {
     token: string;
     endpoint: string;
@@ -92,6 +114,8 @@ export type Invite = {
     members: string[];
     // the room is the sender's 1:1 with you: you keep one 1:1 per person, so a second one gets merged
     direct?: boolean;
+    // came as a push, not over the lobby: rings for longer, and the caller can't be told no
+    offline?: boolean;
 };
 
 export type IncomingCall = {

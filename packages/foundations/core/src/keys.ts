@@ -113,7 +113,8 @@ export function deviceKey(): DeviceKey | null {
     return device;
 }
 
-async function signedBy(key: string, signature: string, text: string): Promise<boolean> {
+/** True when `signature` over `text` was made with the private half of `key`. */
+export async function signedBy(key: string, signature: string, text: string): Promise<boolean> {
     try
     {
         const publicKey = await crypto.subtle.importKey("raw", decode(key), CURVE, false, ["verify"]);

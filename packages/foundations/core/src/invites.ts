@@ -1,8 +1,10 @@
 import { effect } from "@papit/signals";
 
 import { LIMITS } from "./config";
+import { contactOf, forgetContact } from "./contacts";
 import { on, peerOf, profileOf, send } from "./lobby";
 import { log } from "./log";
+import { pushCall, pushCancel } from "./push";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
 import { directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
@@ -31,6 +33,8 @@ type Outgoing = {
     ringing: Set<string>;
     timer: ReturnType<typeof setTimeout>;
     watch: () => void;
+    // set when this call rang a closed app: that device still needs telling when it stops
+    token: string;
 };
 // rooms being joined from an invite right now, so a repeated invite doesn't join twice
 const joining = new Set<string>();
@@ -132,8 +136,10 @@ export function declineInvite(roomId: string, reason: DeclineReason = "declined"
 export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "video"> = "call"): Promise<Room | null> {
     const profile = me();
     if (!profile || uid === profile.uid) return null;
-    const name = profileOf(uid)?.name ?? "that person";
-    if (!peerOf(uid))
+    const name = nameOf(uid) ?? "that person";
+    // not in the lobby: their device can still be woken
+    const token = peerOf(uid) ? "" : contactOf(uid)?.token ?? "";
+    if (!peerOf(uid) && !token)
     {
         toast("warning", `Couldn't reach ${name}`);
         return null;
@@ -166,7 +172,7 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     }
     if (kind === "video") await room.start("camera");
 
-    if (!room.invite(uid, kind))
+    if (!token && !room.invite(uid, kind))
     {
         toast("warning", `Couldn't reach ${name}`);
         giveUp(room);
@@ -180,18 +186,46 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
         room,
         ringing: new Set([uid]),
         // the callee declines with `timeout` itself; this covers one that vanished
-        timer: setTimeout(() => expire(call), LIMITS.ringMs + 3_000),
+        timer: setTimeout(() => expire(call), (token ? LIMITS.ringOfflineMs : LIMITS.ringMs) + 3_000),
         watch: effect(() => {
             const here = target.participants().map(p => p.uid).filter(u => !before.has(u));
             if (here.length > 0) setTimeout(() => answered(call, here), 0);
             // hung up while ringing (the chat stays, so there's no `leave` to catch it)
             if (!target.oncall()) setTimeout(() => endCall(call, true), 0);
         }),
+        token,
     };
     outgoing.set(room.id, call);
     ringback();
     room.addEventListener("leave", () => endCall(call, true), { once: true });
+    if (token) void ringDevice(call, uid, kind);
     return room;
+}
+
+// the ringing UI is already up: the caller hears it while a sleeping server wakes
+async function ringDevice(call: Outgoing, uid: string, kind: Extract<RoomKind, "call" | "video">) {
+    const room = call.room;
+    const status = await pushCall(call.token, { id: room.network, password: room.password }, kind, true);
+    log("invites: pushed a call", uid, status);
+    if (status === "sent") return;
+    if (status === "gone") forgetContact(uid);
+    if (outgoing.get(room.id) !== call) return;
+
+    toast("warning", `Couldn't reach ${nameOf(uid) ?? "that person"}`);
+    call.token = "";
+    call.ringing.delete(uid);
+    finishIfEmpty(call);
+}
+
+/** Rings a saved contact into a running call. Nothing follows it: the ring just runs out. */
+export async function ringContact(room: Room, uid: string, kind: Extract<RoomKind, "call" | "video">) {
+    const contact = contactOf(uid);
+    if (!contact) return;
+    const status = await pushCall(contact.token, { id: room.network, password: room.password }, kind, false);
+    log("invites: pushed an invite", uid, status);
+    if (status === "sent") return;
+    if (status === "gone") forgetContact(uid);
+    toast("warning", `Couldn't reach ${contact.name}`);
 }
 
 /** Tells everyone still ringing for `roomId` to stop (caller hung up). */
@@ -323,11 +357,16 @@ function answered(call: Outgoing, uids: string[]) {
     if (call.ringing.size === 0) endCall(call, false);
 }
 
+function nameOf(uid: string): string | null {
+    return profileOf(uid)?.name ?? contactOf(uid)?.name ?? null;
+}
+
 function expire(call: Outgoing) {
     for (const uid of call.ringing)
     {
-        toast("info", `${profileOf(uid)?.name ?? "They"} didn't answer`);
+        toast("info", `${nameOf(uid) ?? "They"} didn't answer`);
     }
+    cancelDevice(call);
     call.ringing.clear();
     finishIfEmpty(call);
 }
@@ -359,7 +398,17 @@ function endCall(call: Outgoing, cancel: boolean) {
     clearTimeout(call.timer);
     call.watch();
     stopRinging();
-    if (cancel && call.ringing.size > 0) cancelInvite(call.room.id, [...call.ringing]);
+    if (cancel && call.ringing.size > 0)
+    {
+        cancelDevice(call);
+        cancelInvite(call.room.id, [...call.ringing]);
+    }
+}
+
+// a closed app has no lobby to hear `invite.cancel` on
+function cancelDevice(call: Outgoing) {
+    if (call.token) pushCancel(call.token, call.room.network);
+    call.token = "";
 }
 
 function unknownProfile(uid: string): Profile {

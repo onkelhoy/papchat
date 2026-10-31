@@ -1,8 +1,11 @@
 import { signal } from "@papit/signals";
 
 import { LIMITS, signalUrl } from "./config";
+import { deviceKey } from "./keys";
 import { log } from "./log";
+import { me } from "./state";
 import { storage } from "./storage";
+import type { CallPush, CancelPush } from "./types";
 
 // Web push through the signal server, which keeps nothing: it seals this browser's subscription
 // into a token and hands it back. Whoever holds the token can wake this browser, so the token is
@@ -181,4 +184,27 @@ export async function sendPush(token: string, payload: unknown, options: PushOpt
         // the server can't open it: its keys changed, so this token will never work again
         return error instanceof ServerError && error.status === 400 ? "gone" : "failed";
     }
+}
+
+/** What a device signs to say it's calling. A token only lets you wake a browser, not speak for anyone. */
+export function callText(call: Pick<CallPush, "id" | "key" | "kind" | "direct" | "from" | "at">): string {
+    return `papchat call\n${call.id}\n${call.key}\n${call.kind}\n${call.direct}\n${call.from}\n${call.at}`;
+}
+
+/** Rings the device behind `token` into a room. */
+export async function pushCall(token: string, room: { id: string; password: string }, kind: CallPush["kind"], direct: boolean): Promise<PushStatus> {
+    const profile = me();
+    const device = deviceKey();
+    if (!profile || !device) return "failed";
+
+    const call = { id: room.id, key: room.password, kind, direct, from: profile.uid, at: Date.now() };
+    const payload: CallPush = { t: "call", ...call, name: profile.name, pub: device.key, sig: await device.sign(callText(call)) };
+    return sendPush(token, payload, { ttl: LIMITS.ringOfflineMs / 1000 });
+}
+
+export function pushCancel(token: string, id: string) {
+    const profile = me();
+    if (!profile) return;
+    const payload: CancelPush = { t: "cancel", id, from: profile.uid, name: profile.name };
+    void sendPush(token, payload, { ttl: LIMITS.missedCallS });
 }

@@ -10,6 +10,10 @@ export const LIMITS = {
     roomSize: 8,
     fileBytes: 100 * 1024 * 1024,
     ringMs: 30_000,
+    // ringing someone whose app is closed: the phone wakes, and the server may be starting as well
+    ringOfflineMs: 60_000,
+    // a cancel still arrives this long after the call, and turns into a missed call
+    missedCallS: 24 * 60 * 60,
     // how long to wait for the signal server over HTTP: a cold start alone takes 30-60 s
     wakeMs: 90_000,
     contacts: 100,
