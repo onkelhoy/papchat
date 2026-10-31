@@ -83,13 +83,15 @@ import {
     unlockNetwork,
     GIPHY_KEY,
     callLink,
+    cancelRing,
     inAnyCall,
     joinSharedCall,
     networkLink,
     readShareLink,
+    receiveRing,
     sameNetwork,
 } from "@papchat/core";
-import type { CaptureName, Gif, Network, Prefs, Profile, Room, RoomSummary, ShareLink, Stage, Status } from "@papchat/core";
+import type { CaptureName, Gif, Network, Prefs, Profile, Ring, Room, RoomSummary, ShareLink, Stage, Status } from "@papchat/core";
 
 // languages with a file in asset/translations
 const LANGUAGES = ["en", "sv"];
@@ -261,7 +263,7 @@ async function boot() {
 // invite links: read once and taken out of the address bar, so a reload doesn't follow them again
 let waitingCall: Extract<ShareLink, { kind: "call" }> | null = null;
 
-type JoinLink = Exclude<ShareLink, { kind: "contact" }>;
+type JoinLink = Exclude<ShareLink, { kind: "contact" | "ring" }>;
 
 function receiveLink() {
     const hash = location.hash;
@@ -280,6 +282,11 @@ function receiveLink() {
         toast("info", t(added ? "contactSaved" : "contactKnown", { name: link.contact.name }));
         return;
     }
+    if (link.kind === "ring")
+    {
+        void takeRing(link.ring, true);
+        return;
+    }
     if (me())
     {
         openLink(link, hash);
@@ -289,6 +296,21 @@ function receiveLink() {
     waitingCall = link.kind === "call" ? link : null;
 }
 window.addEventListener("hashchange", receiveLink);
+
+// a notification: opened (the link above, or a message when a tab was already open), or an open tab
+// hearing the push
+async function takeRing(ring: Ring, tapped: boolean) {
+    if (!await receiveRing(ring, tapped) && tapped) toast("warning", t("linkInvalid"));
+}
+
+navigator.serviceWorker?.addEventListener("message", (e) =>
+{
+    const { type, hash, id, tapped } = e.data as { type?: string; hash?: string; id?: string; tapped?: boolean };
+    if (type === "cancel" && id) cancelRing(id);
+    if (type !== "ring" || !hash) return;
+    const link = readShareLink(hash);
+    if (link && typeof link === "object" && link.kind === "ring") void takeRing(link.ring, !!tapped);
+});
 
 function openLink(link: JoinLink, hash: string) {
     if (link.kind === "network" && sameNetwork(link.network, network()))

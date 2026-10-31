@@ -11,8 +11,8 @@ import type { CallPush, CancelPush } from "./types";
 // into a token and hands it back. Whoever holds the token can wake this browser, so the token is
 // what people save (contacts.ts). The server's API is in the @papit/signal-server README.
 
-/** `busy`: subscribing or unsubscribing right now. */
-export type PushState = "unsupported" | "off" | "busy" | "on";
+/** `install`: iOS, which only pushes to an app on the Home Screen. `busy`: subscribing or unsubscribing right now. */
+export type PushState = "unsupported" | "install" | "off" | "busy" | "on";
 export type PushStatus = "sent" | "gone" | "failed";
 export type PushOptions = {
     /** Seconds the push service keeps trying. */
@@ -40,7 +40,23 @@ function supported(): boolean {
         && typeof Notification !== "undefined";
 }
 
+// Safari on iOS 16.4+ has push, but only once installed: until then it doesn't even show the API
+function canInstall(): boolean {
+    if (typeof navigator === "undefined") return false;
+    // an iPad's Safari says it's a Mac
+    const ipad = /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
+    const version = ipad
+        ? /Version\/(\d+)\.(\d+)/.exec(navigator.userAgent)
+        : /(?:iPhone|iPad|iPod).* OS (\d+)_(\d+)/.exec(navigator.userAgent);
+    if (!version) return false;
+    const major = Number(version[1]);
+    const newEnough = major > 16 || (major === 16 && Number(version[2]) >= 4);
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    return newEnough && !standalone;
+}
+
 function startingState(): PushState {
+    if (canInstall()) return "install";
     return supported() ? "off" : "unsupported";
 }
 
@@ -168,6 +184,20 @@ export async function refreshPush() {
     catch (error)
     {
         log("push: refresh failed, keeping the token", error);
+    }
+}
+
+/** Takes a ringing notification away, once the call was answered or turned down here. */
+export async function closeNotification(tag: string) {
+    if (!supported()) return;
+    try
+    {
+        const registration = await navigator.serviceWorker.getRegistration();
+        for (const note of await registration?.getNotifications({ tag }) ?? []) note.close();
+    }
+    catch (error)
+    {
+        log("push: closing a notification failed", error);
     }
 }
 

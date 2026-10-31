@@ -45,7 +45,7 @@ npm install @papchat/settings
 | `camerastream`  | `MediaStream \| null` | `null`  | camera test stream (property only)                                   |
 | `micstream`     | `MediaStream \| null` | `null`  | microphone test stream (property only)                               |
 | `sinkSupported` | `boolean`             | `true`  | browser can pick an output device (property only)                    |
-| `pushstate`     | `PushState`           | `"unsupported"` | call notifications: `unsupported` hides the section (property only) |
+| `pushstate`     | `PushState`           | `"unsupported"` | call notifications: `unsupported` hides the section, `install` shows the Home Screen hint (property only) |
 | `contactlink`   | `string`              | `""`    | link that saves you as a contact, `""` hides it and its QR code (property only) |
 | `shortcuts`     | `Shortcut[]`          | `[]`    | `{ keys, label }` rows for the Shortcuts tab, hidden when empty (property only) |
 

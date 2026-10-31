@@ -288,12 +288,14 @@ export class Settings extends CustomElement {
     private renderPush() {
         const on = this.pushstate === "on";
         const busy = this.pushstate === "busy";
+        const install = this.pushstate === "install";
 
         return html`
             <div class="field push">
                 <span>${this.t("push")}</span>
                 <p class="hint">${this.t(on ? "push-on" : "push-hint")}</p>
-                ${on ? "" : html`<pap-button size="small" disabled="${busy && "true"}" @click="${this.handlePushEnable}">${this.t(busy ? "push-busy" : "push-enable")}</pap-button>`}
+                ${on || install ? "" : html`<pap-button size="small" disabled="${busy && "true"}" @click="${this.handlePushEnable}">${this.t(busy ? "push-busy" : "push-enable")}</pap-button>`}
+                ${install ? html`<p class="hint">${this.t("push-install")}</p>` : ""}
                 ${on ? html`<pap-button size="small" variant="clear" @click="${this.handlePushDisable}">${this.t("push-disable")}</pap-button>` : ""}
                 <p class="hint">${this.t("push-privacy")}</p>
                 ${on && this.contactlink ? html`

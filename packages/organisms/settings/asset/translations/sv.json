@@ -35,6 +35,7 @@
     "push-enable": "Aktivera samtalsnotiser",
     "push-busy": "Aktiverar … det kan ta en minut",
     "push-disable": "Stäng av",
+    "push-install": "På iPhone och iPad krävs den installerade appen: tryck på Dela, sedan Lägg till på hemskärmen, och öppna papchat därifrån.",
     "push-privacy": "Alla du träffar, även i den öppna lobbyn, får en kod som kan ringa den här enheten. Om du stänger av slutar koden fungera.",
     "notify-hint": "Webbläsaren frågar om tillåtelse.",
     "network": "Nätverk",

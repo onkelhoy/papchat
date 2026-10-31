@@ -34,6 +34,7 @@
     "push-enable": "Enable call notifications",
     "push-busy": "Turning on… this can take a minute",
     "push-disable": "Turn off",
+    "push-install": "On iPhone and iPad this needs the installed app: tap Share, then Add to Home Screen, and open papchat from there.",
     "push-privacy": "Everyone you meet, in the public lobby too, gets a code that can ring this device. Turning this off cancels it.",
     "contact-hint": "Share this with someone you haven't met here yet. Anyone who has it can ring this device.",
     "contact-qr": "QR code that saves you as a contact",

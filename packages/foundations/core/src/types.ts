@@ -70,6 +70,9 @@ export type CallPush = {
     sig: string;
 };
 
+/** A `CallPush` as a notification hands it to the page. */
+export type Ring = Omit<CallPush, "t">;
+
 /** The caller stopped: the notification becomes a missed call. */
 export type CancelPush = {
     t: "cancel";
@@ -116,6 +119,8 @@ export type Invite = {
     direct?: boolean;
     // came as a push, not over the lobby: rings for longer, and the caller can't be told no
     offline?: boolean;
+    // the caller's name when they aren't in the lobby
+    name?: string;
 };
 
 export type IncomingCall = {

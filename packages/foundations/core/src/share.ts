@@ -1,7 +1,7 @@
 import { log } from "./log";
 import { isRejected, Room, selectRoom } from "./room";
 import { network, toast } from "./state";
-import type { Contact, Network } from "./types";
+import type { Contact, Network, Ring } from "./types";
 
 // Invite links. Everything sits in the hash, so it never reaches a server or its logs. Anyone holding
 // a link can join: it carries the password.
@@ -9,7 +9,8 @@ import type { Contact, Network } from "./types";
 export type ShareLink =
     | { kind: "network"; network: Network | null }
     | { kind: "call"; room: string; password: string; network: Network | null }
-    | { kind: "contact"; contact: Omit<Contact, "at"> };
+    | { kind: "contact"; contact: Omit<Contact, "at"> }
+    | { kind: "ring"; ring: Ring };
 
 const NAME_MAX = 40;
 const ROOM_MAX = 200;
@@ -44,6 +45,7 @@ export function sameNetwork(a: Network | null, b: Network | null): boolean {
 export function readShareLink(hash: string): ShareLink | "expired" | "invalid" | null {
     const params = new URLSearchParams(hash.replace(/^#/, ""));
     if (params.has("contact")) return readContact(params);
+    if (params.has("from")) return readRing(params);
 
     const name = params.get("join");
     const room = params.get("call");
@@ -74,6 +76,30 @@ function readContact(params: URLSearchParams): ShareLink | "invalid" {
     const color = params.get("color") ?? "";
     if (!uid || uid.length > ROOM_MAX || !name || !token || token.length > TOKEN_MAX) return "invalid";
     return { kind: "contact", contact: { uid, name: name.slice(0, NAME_MAX), color: COLOR.test(color) ? color : "", token } };
+}
+
+// `from` tells it from a plain call link: this one rings you, and the service worker writes it
+function readRing(params: URLSearchParams): ShareLink | "invalid" {
+    const value = (name: string) => params.get(name) ?? "";
+    const kind = value("kind");
+    const at = Number(value("at"));
+    const fields = [value("call"), value("key"), value("from"), value("pub"), value("sig")];
+    if (fields.some(field => !field || field.length > ROOM_MAX)) return "invalid";
+    if ((kind !== "call" && kind !== "video") || !Number.isFinite(at)) return "invalid";
+    return {
+        kind: "ring",
+        ring: {
+            id: value("call"),
+            key: value("key"),
+            kind,
+            direct: value("direct") === "true",
+            from: value("from"),
+            name: value("name").trim().slice(0, NAME_MAX) || "Someone",
+            at,
+            pub: value("pub"),
+            sig: value("sig"),
+        },
+    };
 }
 
 /** Joins the call behind a link: nobody rings, the people in it see you join. Null (plus a toast) when it's over. */

@@ -14,6 +14,7 @@ A Teams-style chat, call and broadcast app that runs **entirely peer to peer** i
 - **Call** with mic, camera and screen share. Ringing, ringback, ringtone picker, incoming-call cards, and inviting more people mid-call.
 - **Share files** by dropping them on a conversation or on a person (up to 100 MB), with progress on both ends and previews for images, video and audio.
 - **Go live**: broadcast to anyone who clicks "Watch", with chat for the audience.
+- **Offline calls**: turn on call notifications and the people you meet can ring your device with the app closed. A notification opens the normal answer card. People can also save you from a link or QR code, and saved contacts stay in the sidebar.
 - **Settings**: profile, ringtone and volume, devices, theme (light, dark, system), language (English or Swedish, switched live), notifications and keyboard shortcuts (`M` mic, `V` camera, `S` screen, `Esc` closes dialogs).
 
 Everything about you lives in `localStorage` in your own browser.
@@ -123,10 +124,22 @@ packages/
 
 `PLAN.md` is the spec and `TASKS.md` the build log.
 
+## Calling someone whose app is closed
+
+The signal server can send web push without storing anything: it seals a browser's push subscription into a token and hands it back. That token is what gets shared.
+
+- **Contacts.** With call notifications on, the app sends its token to each person it meets, through the lobby or a room, in its own message because a token doesn't reliably fit the 1 KB profile. Tokens are saved on the device with the uid and name (the 100 most recent). A share link or QR code does the same for someone you haven't met; a link can add a person but never changes a saved token, because it proves nothing.
+- **Calling.** Someone in the lobby gets the normal invite. Otherwise the caller opens the room and pushes its id and password, signed with the device key. It rings for 60 s instead of 30. Hanging up or running out sends a cancel, which turns the notification into a missed call.
+- **Answering.** `sw.js` shows the notification, or a missed call if the push came late. A tap opens the app on a `#call=…&from=…` hash, the app checks the signature, and the usual incoming card rings for what's left of the 60 s.
+
+The worker only handles push, and nothing is cached. iOS 16.4+ only pushes to an app added to the Home Screen, so Settings shows a hint there. The installed app has its own storage and so its own key: on iOS it's a separate person from Safari until linked devices arrive.
+
 ## Known limits
 
 - **STUN only.** Some corporate and mobile NATs will not connect without a TURN relay.
 - **Mesh rooms are capped at 8 people.** Stages scale further, but each hop in the tree re-encodes.
+- **A push token can ring your device.** Whoever holds it can show you a notification, and everyone you meet gets it, in the public lobby too. It can't pretend to be someone else, because calls are signed. Turning call notifications off cancels the token.
+- **Declining from a closed app** can't reach a caller outside your lobby, so they ring out the 60 s. Someone still listed in the lobby with a locked phone gets a normal invite rather than a push until they go stale.
 - **Free hosting for the signal server.** The first connect after it has been idle takes about 30 to 60 s; the header shows "waking up the server…".
 - **No history, no accounts.** Rooms are ephemeral and peers trust each other. Names are self-chosen.
 - **Files:** 100 MB cap, late joiners do not get earlier files, and files cannot be shared on a stage.

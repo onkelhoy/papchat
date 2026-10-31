@@ -1,15 +1,16 @@
 import { effect } from "@papit/signals";
 
 import { LIMITS } from "./config";
-import { contactOf, forgetContact } from "./contacts";
+import { contactOf, contactProfile, forgetContact } from "./contacts";
+import { signedBy, uidOfKey } from "./keys";
 import { on, peerOf, profileOf, send } from "./lobby";
 import { log } from "./log";
-import { pushCall, pushCancel } from "./push";
+import { callText, closeNotification, pushCall, pushCancel } from "./push";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
 import { directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
 import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
-import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, RoomKind } from "./types";
+import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, Ring, RoomKind } from "./types";
 
 // Invites over the lobby (PLAN §2.4): `invite`, `invite.accept`, `invite.decline`, `invite.cancel`.
 // Chat invites auto-join (toast + unread, no ring). Call/video/stage invites are kept as pending
@@ -94,6 +95,7 @@ export async function acceptInvite(roomId: string, withVideo = false): Promise<R
     const invite = pending.get(roomId);
     if (!invite) return null;
     stopRing(roomId);
+    if (invite.offline) void closeNotification(callTag(roomId));
     send(invite.from, "invite.accept", { room: invite.room });
 
     // a stage invite: watch it (stages aren't rooms)
@@ -125,6 +127,7 @@ export function declineInvite(roomId: string, reason: DeclineReason = "declined"
     const invite = pending.get(roomId);
     if (!invite) return false;
     stopRing(roomId);
+    if (invite.offline) void closeNotification(callTag(roomId));
     return send(invite.from, "invite.decline", { room: invite.room, reason });
 }
 
@@ -228,6 +231,50 @@ export async function ringContact(room: Room, uid: string, kind: Extract<RoomKin
     toast("warning", `Couldn't reach ${contact.name}`);
 }
 
+/**
+ * A call that arrived as a push: `tapped` when the person opened its notification, otherwise an open
+ * tab heard about it. It goes through the normal answer flow, or counts as missed when it's over.
+ * False when it isn't from who it says.
+ */
+export async function receiveRing(call: Ring, tapped: boolean): Promise<boolean> {
+    const proven = await uidOfKey(call.pub).catch(() => null) === call.from && await signedBy(call.pub, call.sig, callText(call));
+    if (!proven)
+    {
+        log("invites: a push that doesn't prove its caller", call.from);
+        return false;
+    }
+
+    const name = contactOf(call.from)?.name ?? call.name;
+    if (!me() || pending.has(call.id) || getRoom(call.id)?.incall) return true;
+
+    const left = LIMITS.ringOfflineMs - (Date.now() - call.at);
+    if (left <= 0)
+    {
+        toast("info", `Missed call from ${name}`);
+        return true;
+    }
+
+    // a tap is a choice, an open tab goes by your status
+    if (!tapped && (me()?.status === "dnd" || (inAnyCall() && prefs().autoDeclineBusy))) return true;
+    ring({
+        room: call.id,
+        password: call.key,
+        kind: call.kind,
+        title: "",
+        from: call.from,
+        members: [],
+        offline: true,
+        name,
+        ...(call.direct ? { direct: true } : {}),
+    }, left);
+    return true;
+}
+
+/** The caller of a pushed call stopped. */
+export function cancelRing(roomId: string) {
+    missRing(roomId);
+}
+
 /** Tells everyone still ringing for `roomId` to stop (caller hung up). */
 export function cancelInvite(roomId: string, uids: string[]) {
     const room = getRoom(roomId);
@@ -277,13 +324,7 @@ on<unknown>("invite", (payload, from) => {
 
 on<unknown>("invite.cancel", (payload) => {
     const room = readId(payload);
-    if (!room) return;
-    const invite = pending.get(room);
-    if (!invite) return;
-    stopRing(room);
-    const name = profileOf(invite.from)?.name ?? "Someone";
-    toast("info", `Missed call from ${name}`);
-    log("invites: cancelled", room);
+    if (room) missRing(room);
 });
 
 on<unknown>("invite.accept", (payload, from) => {
@@ -327,12 +368,34 @@ effect(() => {
 
 // ---------------------------------------------------------------- ringing
 
-function ring(invite: Invite) {
+const callTag = (roomId: string) => `call:${roomId}`;
+
+function missRing(roomId: string) {
+    const invite = pending.get(roomId);
+    if (!invite) return;
+    stopRing(roomId);
+    toast("info", `Missed call from ${callerName(invite)}`);
+    log("invites: cancelled", roomId);
+}
+
+function callerName(invite: Invite): string {
+    return profileOf(invite.from)?.name ?? invite.name ?? "Someone";
+}
+
+function callerProfile(invite: Invite): Profile {
+    const contact = contactOf(invite.from);
+    return profileOf(invite.from) ?? (contact ? contactProfile(contact) : { ...unknownProfile(invite.from), name: callerName(invite) });
+}
+
+function ring(invite: Invite, ms: number = LIMITS.ringMs) {
     pending.set(invite.room, { ...invite, at: Date.now() });
-    const from = profileOf(invite.from) ?? unknownProfile(invite.from);
+    const from = callerProfile(invite);
     const call: IncomingCall = { id: invite.room, from, kind: invite.kind, title: invite.title, at: Date.now() };
     setIncoming(list => [...list.filter(c => c.id !== call.id), call]);
-    ringTimers.set(invite.room, setTimeout(() => declineInvite(invite.room, "timeout"), LIMITS.ringMs));
+    ringTimers.set(invite.room, setTimeout(() => {
+        declineInvite(invite.room, "timeout");
+        if (invite.offline) toast("info", `Missed call from ${callerName(invite)}`);
+    }, ms));
     play(prefs().ringtone, { loop: true });
 }
 
@@ -445,7 +508,7 @@ async function joinChat(invite: Invite) {
 async function joinFromInvite(invite: Invite, announce: boolean): Promise<Room | null> {
     if (joining.has(invite.room)) return null;
     joining.add(invite.room);
-    const name = profileOf(invite.from)?.name ?? "Someone";
+    const name = callerName(invite);
 
     try
     {
@@ -463,7 +526,9 @@ async function joinFromInvite(invite: Invite, announce: boolean): Promise<Room |
     catch (error)
     {
         log("invites: join failed", invite.room, error);
-        toast("warning", isRejected(error) ? "The room is full" : `Couldn't join ${name}'s chat`);
+        // the room is gone: the caller stopped before this person got here
+        if (invite.offline && !isRejected(error)) toast("info", `Missed call from ${name}`);
+        else toast("warning", isRejected(error) ? "The room is full" : `Couldn't join ${name}'s chat`);
         return null;
     }
     finally
