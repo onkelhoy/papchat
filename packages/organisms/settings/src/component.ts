@@ -51,6 +51,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {string} network name of the private network in use, "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server, for the Network tab (property only)
  * @property {boolean} separated a same-name network with an unknown password exists (property only)
+ * @property {string} invitelink invite link for the network in use, "" on the public one (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
@@ -87,6 +88,7 @@ export class Settings extends CustomElement {
     @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
     @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
+    @property({ type: String, attribute: false, rerender: true }) invitelink: string = "";
 
     @query("pc-ringtone-picker.ring") private ringtones?: Synced;
     @query("pc-ringtone-picker.dial") private dials?: Synced;
@@ -122,6 +124,7 @@ export class Settings extends CustomElement {
         {
             this.picker.networks = this.networks;
             this.picker.separated = this.separated;
+            this.picker.link = this.invitelink;
         }
 
         if (this.languages) this.languages.value = this.language;

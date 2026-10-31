@@ -36,6 +36,7 @@ The component never connects. It fires `network-change` and the page decides: Se
 | --- | --- | --- | --- |
 | `network` | `string` | `""` | Name of the network in use (or picked); `""` = the public papchat one. Marked "Current" in the list. |
 | `networks` | `NetworkEntry[]` | `[]` | Property only. `{ name, members, locked }`, the public one has `name: ""`. |
+| `link` | `string` | `""` | Property only. Invite link for the network in use; shows a copy button, `""` hides it. |
 
 ### events
 

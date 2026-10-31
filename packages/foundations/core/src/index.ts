@@ -20,6 +20,7 @@ export * from "./identity";
 export * from "./lobby";
 export * from "./room";
 export * from "./invites";
+export * from "./share";
 export * from "./devices";
 export * from "./denoise";
 export * from "./notify";

@@ -839,6 +839,7 @@ export class Room extends EventTarget {
                 else
                 {
                     this.system(`${profile.name} joined`, uid);
+                    if (this.oncall()) toast("info", `${profile.name} joined`);
                 }
             }
             for (const [uid, profile] of this.present)

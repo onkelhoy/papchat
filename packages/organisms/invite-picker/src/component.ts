@@ -21,11 +21,14 @@ import type { InviteEvent } from "./types";
  *
  * @property {boolean} open whether the dialog is shown
  * @property {Profile[]} members who can be invited (property only)
+ * @property {string} link invite link for the call, "" hides the copy button (property only)
  *
  * @fires invite `CustomEvent<{ uids }>` the invite button was pressed (bubbles, composed)
  * @fires close `CustomEvent<void>` the dialog was dismissed by the user (bubbles, composed)
  * @csspart dialog the `pap-dialog`
  */
+const COPIED_MS = 2_000;
+
 export class InvitePicker extends CustomElement {
     static sheet = sheet;
 
@@ -41,6 +44,9 @@ export class InvitePicker extends CustomElement {
         }
     }) open: boolean = false;
     @property({ type: Array, attribute: false, rerender: true }) members: Profile[] = [];
+    @property({ type: String, attribute: false, rerender: true }) link: string = "";
+    @property({ type: Boolean, attribute: false, rerender: true }) private copied: boolean = false;
+    private copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
     @property({ type: String, attribute: false, rerender: true }) private query: string = "";
     @property({ attribute: false, rerender: true }) private selected: Set<string> = new Set();
@@ -102,6 +108,28 @@ export class InvitePicker extends CustomElement {
         }));
     }
 
+    @bind
+    private async handleCopy() {
+        try
+        {
+            await navigator.clipboard.writeText(this.link);
+        }
+        catch
+        {
+            // no clipboard (plain http on a phone, or refused): show it to copy by hand
+            window.prompt(this.t("copy"), this.link);
+            return;
+        }
+        this.copied = true;
+        clearTimeout(this.copiedTimer);
+        this.copiedTimer = setTimeout(() => { this.copied = false; }, COPIED_MS);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        clearTimeout(this.copiedTimer);
+    }
+
     render() {
         const list = this.filtered;
         const count = this.picked.length;
@@ -142,6 +170,13 @@ export class InvitePicker extends CustomElement {
                     </ul>
 
                     <p class="empty" role="status">${list.length === 0 ? this.t(this.members.length === 0 ? "none" : "no-results") : ""}</p>
+
+                    ${this.link ? html`
+                        <div class="share">
+                            <pap-button size="small" variant="outline" type="button" @click="${this.handleCopy}">${this.t(this.copied ? "copied" : "copy")}</pap-button>
+                            <p class="hint">${this.t("link-hint")}</p>
+                        </div>
+                    ` : ""}
                 </div>
 
                 <div slot="footer" class="footer">

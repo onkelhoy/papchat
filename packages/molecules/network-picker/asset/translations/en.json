@@ -17,6 +17,9 @@
     "join-or-create": "Join or create",
     "name": "Network name",
     "password": "Password",
-    "hint": "Joins the network with this name, or creates it if there is none. Leave the password empty for an open network."
+    "hint": "Joins the network with this name, or creates it if there is none. Leave the password empty for an open network.",
+    "copy": "Copy invite link",
+    "copied": "Copied",
+    "link-hint": "Anyone with this link can join. It contains the network's password."
   }
 }

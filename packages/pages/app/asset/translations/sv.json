@@ -17,6 +17,11 @@
     "shortcutClose": "Stäng en dialogruta",
     "filesOnStage": "Filer kan inte delas på en scen",
     "buzzWait": "Vänta {seconds} s innan du buzzar igen",
-    "dialSynth": "Klassiskt pip"
+    "dialSynth": "Klassiskt pip",
+    "linkExpired": "Inbjudningslänken har gått ut",
+    "linkInvalid": "Inbjudningslänken fungerar inte",
+    "linkHere": "Du är redan på det här nätverket",
+    "linkConfirm": "Du är i ett samtal. Öppna inbjudningslänken?",
+    "linkConfirmAction": "Öppna"
   }
 }

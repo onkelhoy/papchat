@@ -34,6 +34,7 @@ npm install @papchat/invite-picker
 | --------- | --------- | ----------- | ------- | ------------------------------------------------------------------------------------ |
 | `open`    | `open`    | `boolean`   | `false` | whether the dialog is shown; reset (selection, search) on every change               |
 | `members` | -         | `Profile[]` | `[]`    | people who can be invited (already filtered to those not in the room); property only |
+| `link`    | -         | `string`    | `""`    | invite link for the call; shows a copy button, `""` hides it; property only          |
 
 | Event    | Detail               | Description                                                                                       |
 | -------- | -------------------- | ------------------------------------------------------------------------------------------------- |

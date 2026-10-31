@@ -17,6 +17,9 @@
     "join-or-create": "Gå med eller skapa",
     "name": "Nätverksnamn",
     "password": "Lösenord",
-    "hint": "Går med i nätverket med det här namnet, eller skapar det om det inte finns. Lämna lösenordet tomt för ett öppet nätverk."
+    "hint": "Går med i nätverket med det här namnet, eller skapar det om det inte finns. Lämna lösenordet tomt för ett öppet nätverk.",
+    "copy": "Kopiera inbjudningslänk",
+    "copied": "Kopierad",
+    "link-hint": "Alla som har länken kan gå med. Den innehåller nätverkets lösenord."
   }
 }

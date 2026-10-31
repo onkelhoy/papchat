@@ -17,6 +17,11 @@
     "shortcutClose": "Close a dialog",
     "filesOnStage": "Files can't be shared on a stage",
     "buzzWait": "Wait {seconds} s before buzzing again",
-    "dialSynth": "Classic beep"
+    "dialSynth": "Classic beep",
+    "linkExpired": "This invite link has expired",
+    "linkInvalid": "This invite link doesn't work",
+    "linkHere": "You're already on this network",
+    "linkConfirm": "You're in a call. Open this invite link?",
+    "linkConfirmAction": "Open"
   }
 }

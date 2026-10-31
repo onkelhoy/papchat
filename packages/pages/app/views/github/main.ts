@@ -68,8 +68,13 @@ import {
     switchNetwork,
     unlockNetwork,
     GIPHY_KEY,
+    callLink,
+    inAnyCall,
+    joinSharedCall,
+    networkLink,
+    readShareLink,
 } from "@papchat/core";
-import type { CaptureName, Gif, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
+import type { CaptureName, Gif, Network, Prefs, Profile, Room, RoomSummary, ShareLink, Stage, Status } from "@papchat/core";
 
 // languages with a file in asset/translations
 const LANGUAGES = ["en", "sv"];
@@ -208,6 +213,51 @@ async function boot() {
         onboarding.color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
         onboarding.open = true;
     }
+    receiveLink();
+}
+
+// invite links: read once and taken out of the address bar, so a reload doesn't follow them again
+let waitingCall: Extract<ShareLink, { kind: "call" }> | null = null;
+
+function receiveLink() {
+    const link = readShareLink(location.hash);
+    if (!link) return;
+    history.replaceState(null, "", location.pathname + location.search);
+
+    if (link === "expired" || link === "invalid")
+    {
+        toast("warning", t(link === "expired" ? "linkExpired" : "linkInvalid"));
+        return;
+    }
+    if (me()) openLink(link);
+    else if (link.kind === "network") onboarding.joining = link.network;
+    else waitingCall = link;
+}
+window.addEventListener("hashchange", receiveLink);
+
+function openLink(link: ShareLink) {
+    const here = network();
+    if (link.kind === "network" && here?.name === link.network.name && here.password === link.network.password)
+    {
+        toast("info", t("linkHere"));
+        return;
+    }
+    if (!inAnyCall() && !currentStage())
+    {
+        followLink(link);
+        return;
+    }
+    toast("info", t("linkConfirm"), { action: t("linkConfirmAction"), duration: 0, onAction: () => followLink(link) });
+}
+
+function followLink(link: ShareLink) {
+    if (link.kind === "call") void joinSharedCall(link.room, link.password);
+    else void moveTo(link.network);
+}
+
+// the password for a network we're separated from moves the group, with no reload
+async function moveTo(next: Network | null) {
+    if (!await unlockNetwork(next)) switchNetwork(next);
 }
 
 // state → components
@@ -439,6 +489,11 @@ effect(() => { settings.profile = me() ?? undefined; });
 effect(() => { settings.prefs = prefs(); });
 effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { settings.separated = separated() !== null; });
+effect(() =>
+{
+    const net = network();
+    settings.invitelink = net ? networkLink(net) : "";
+});
 effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
 // the files first (the first is the default), then the built-in beep they fall back to
@@ -526,12 +581,7 @@ settings.addEventListener("prefs-change", (e) =>
     if (partial.noiseReduction && partial.noiseReduction !== noise) restartMic();
 });
 settings.addEventListener("networks-refresh", () => void refreshNetworks());
-settings.addEventListener("network-change", async (e) =>
-{
-    const next = (e as CustomEvent<{ network: { name: string; password: string } | null }>).detail.network;
-    // the password for a network we're separated from moves the group, with no reload
-    if (!await unlockNetwork(next)) switchNetwork(next);
-});
+settings.addEventListener("network-change", (e) => void moveTo((e as CustomEvent<{ network: Network | null }>).detail.network));
 settings.addEventListener("language-change", (e) =>
 {
     const { value } = (e as CustomEvent<{ value: string }>).detail;
@@ -741,6 +791,7 @@ view.addEventListener("invite", () =>
     if (!stage?.mine && !room) return;
     const here = new Set(stage ? [] : room!.participants().map(p => p.uid));
     picker.members = members().filter(p => !here.has(p.uid) && p.uid !== me()?.uid);
+    picker.link = !stage && room?.incall ? callLink(room) : "";
     picker.open = true;
 });
 view.addEventListener("devices", openSettings);
@@ -819,6 +870,8 @@ onboarding.addEventListener("submit", (e) =>
     createProfile(name, color);
     onboarding.open = false;
     startLobby();
+    if (waitingCall) followLink(waitingCall);
+    waitingCall = null;
 });
 
 boot();

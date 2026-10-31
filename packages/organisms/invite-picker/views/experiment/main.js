@@ -28,6 +28,7 @@ function wire(picker) {
 
 document.querySelectorAll("pc-invite-picker").forEach(wire);
 document.getElementById("many").members = members;
+document.getElementById("many").link = "https://example.com/papchat/#call=demo&key=demo";
 document.getElementById("empty").members = [];
 
 document.querySelectorAll("[data-open]").forEach((button) => {
