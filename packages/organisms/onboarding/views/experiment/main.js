@@ -26,11 +26,3 @@ document.querySelectorAll("[data-open]").forEach((button) => {
 });
 
 document.getElementById("custom").colors = ["#111827", "#6b7280", "#0ea5e9", "#f43f5e"];
-
-const created = document.createElement("pc-onboarding");
-created.name = "Created";
-wire(created);
-document.getElementById("created").append(created);
-document.getElementById("open-created").addEventListener("click", () => {
-    created.open = true;
-});

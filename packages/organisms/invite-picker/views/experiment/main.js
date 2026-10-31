@@ -36,11 +36,3 @@ document.querySelectorAll("[data-open]").forEach((button) => {
         document.getElementById(button.dataset.open).open = true;
     });
 });
-
-const created = document.createElement("pc-invite-picker");
-created.members = members.slice(0, 3);
-wire(created);
-document.getElementById("created").append(created);
-document.getElementById("open-created").addEventListener("click", () => {
-    created.open = true;
-});

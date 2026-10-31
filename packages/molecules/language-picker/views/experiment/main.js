@@ -12,10 +12,6 @@ document.addEventListener("change", (e) =>
     log.textContent = `change → ${e.detail.value}`;
 });
 
-const created = document.createElement("pc-language-picker");
-created.value = "sv";
-document.getElementById("created").append(created);
-
 const custom = document.getElementById("custom");
 custom.languages = [
     { code: "en", label: "English", flag: "/icons/flags/en.svg" },

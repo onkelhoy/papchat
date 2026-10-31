@@ -63,7 +63,3 @@ document.getElementById("incoming").onclick = () => {
 document.getElementById("typing").onclick = () => {
     live.typing = live.typing.length ? [] : [anna.uid, bob.uid];
 };
-
-const created = document.createElement("pc-conversation");
-setup(created, { typing: [anna.uid] });
-document.getElementById("created").append(created);

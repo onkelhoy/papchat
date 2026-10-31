@@ -39,8 +39,3 @@ for (const list of document.querySelectorAll("pc-room-list[data-demo]"))
         { id: "dm:a:b", kind: "chat", title: "", participants: [anna], unread: 0, incall: false, live: false, saved: true },
     ];
 }
-
-const created = document.createElement("pc-room-list");
-created.rooms = rooms.slice(0, 2);
-created.active = "r2";
-document.getElementById("created").append(created);

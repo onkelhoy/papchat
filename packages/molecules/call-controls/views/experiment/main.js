@@ -23,8 +23,3 @@ document.addEventListener("toggle", (e) => {
 document.addEventListener("invite", () => write("invite"));
 document.addEventListener("devices", () => write("devices"));
 document.addEventListener("hangup", () => write("hangup"));
-
-const created = document.createElement("pc-call-controls");
-created.mic = true;
-created.screen = true;
-document.getElementById("created").append(created);

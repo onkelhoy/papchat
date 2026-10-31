@@ -40,10 +40,4 @@ const single = document.getElementById("single");
 single.tones = tones.slice(0, 1);
 single.volume = 1;
 
-const created = document.createElement("pc-ringtone-picker");
-created.tones = tones;
-created.value = "classic";
-created.volume = 0.4;
-document.getElementById("created").append(created);
-
 document.querySelectorAll("pc-ringtone-picker").forEach(wire);

@@ -59,9 +59,5 @@ function setup(el)
 const light = document.getElementById("light");
 setup(light);
 
-const created = document.createElement("pc-settings");
-setup(created);
-document.body.append(created);
 
 document.getElementById("open-light").onclick = () => { light.open = true; };
-document.getElementById("open-created").onclick = () => { created.open = true; };

@@ -37,12 +37,6 @@ for (const picker of document.querySelectorAll(".fake"))
     picker.devices = picker.kind === "audioinput" ? mics : cams;
 }
 
-const created = document.createElement("pc-device-picker");
-created.kind = "audiooutput";
-created.devices = speakers;
-created.value = "spk-2";
-$("created").append(created);
-
 document.addEventListener("change", (e) =>
 {
     if (e.target.localName !== "pc-device-picker") return;

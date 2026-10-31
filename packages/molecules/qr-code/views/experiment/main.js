@@ -15,7 +15,7 @@ window.onload = () => {
     document.querySelector("#toolong").value = "x".repeat(3000);
 
     const code = document.createElement("pc-qr-code");
-    code.value = "made with createElement";
+    code.value = "https://example.com";
     document.querySelector("#created").append(code);
 }
 

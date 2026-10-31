@@ -29,9 +29,3 @@ for (const type of ["status-change", "language-change", "open-settings", "go-liv
         }
     });
 }
-
-// created in code
-const created = document.createElement("pc-app-header");
-created.me = { ...me, name: "Bob Lind", uid: "u2", color: "#0f766e", status: "busy" };
-created.status = "reconnecting";
-document.getElementById("created").append(created);

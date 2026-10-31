@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 // core
 import { translator } from '@papit/translator';
 

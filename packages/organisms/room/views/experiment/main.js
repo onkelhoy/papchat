@@ -46,9 +46,3 @@ function fill(room)
 }
 
 document.querySelectorAll("pc-room").forEach(fill);
-
-const created = document.createElement("pc-room");
-created.className = "demo";
-created.setAttribute("incall", "");
-fill(created);
-document.getElementById("created").append(created);

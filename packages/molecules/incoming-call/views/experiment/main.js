@@ -21,7 +21,3 @@ for (const [id, call] of Object.entries(calls)) document.getElementById(id).call
 const log = document.getElementById("log");
 document.addEventListener("accept", (e) => { log.textContent = `accept ${JSON.stringify(e.detail)}`; });
 document.addEventListener("decline", (e) => { log.textContent = `decline ${JSON.stringify(e.detail)}`; });
-
-const created = document.createElement("pc-incoming-call");
-created.call = { id: "c6", from: { uid: "u3", name: "Created Cleo", color: "#b3261e", status: "available" }, kind: "video", title: "", at };
-document.getElementById("created").append(created);

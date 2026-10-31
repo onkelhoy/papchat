@@ -18,10 +18,6 @@ document.addEventListener("typing", () => write("typing"));
 document.addEventListener("emoji", (e) => write(`emoji → ${e.detail.emoji}`));
 document.addEventListener("files", (e) => write(`files → ${e.detail.files.map(f => f.name).join(", ")}`));
 
-const created = document.createElement("pc-composer");
-created.placeholder = "Created with createElement";
-document.getElementById("created").append(created);
-
 // the host keeps the recent list (the app stores it in prefs)
 const recent = ["🎉", "👍"];
 document.querySelectorAll("pc-composer").forEach(composer => { composer.recent = recent; });

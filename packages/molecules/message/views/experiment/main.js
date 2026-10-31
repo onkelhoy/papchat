@@ -36,16 +36,12 @@ for (const el of document.querySelectorAll("pc-message[data-demo]"))
     });
 }
 
-const created = document.createElement("pc-message");
-fill(created, msg(anna.uid, "I was made with document.createElement https://example.org", 5000), anna);
-document.getElementById("created").append(created);
-
 // where your own message got to: Sending, Sent, Not sent yet
 for (const state of ["sending", "sent", "failed"])
 {
     const el = document.createElement("pc-message");
     fill(el, { ...msg(me.uid, `A message that is ${state}`, 1000), state }, me, { mine: true });
-    document.getElementById("created").append(el);
+    document.getElementById("states").append(el);
 }
 
 window.onload = () => {

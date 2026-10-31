@@ -4,11 +4,6 @@ import "@papchat/level-meter";
 const toggle = document.getElementById("toggle");
 const speaking = document.getElementById("speaking");
 
-const created = document.createElement("pc-level-meter");
-created.bars = 6;
-created.classList.add("demo");
-document.getElementById("created").append(created);
-
 const meters = () => document.querySelectorAll("pc-level-meter.demo");
 
 document.addEventListener("speaking", (e) => {

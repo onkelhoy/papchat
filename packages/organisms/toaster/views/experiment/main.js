@@ -39,8 +39,3 @@ document.getElementById("add").addEventListener("click", () =>
 {
     basic.toasts = [...basic.toasts, make({ duration: 4000 })];
 });
-
-// createElement
-const created = document.createElement("pc-toaster");
-created.toasts = [make({ text: "Created with createElement", duration: 0 })];
-document.getElementById("created").append(created);

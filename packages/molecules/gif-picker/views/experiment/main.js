@@ -1,3 +1,4 @@
+import "@papit/codeblock";
 import '@papchat/gif-picker';
 import { translator } from '@papit/translator';
 
@@ -11,10 +12,6 @@ const gifs = [
     { id: "3", url: "https://media.giphy.com/media/26u4cqiYI30juCOGY/200w.webp", width: 200, height: 112, title: "Wow" },
 ];
 document.querySelectorAll(".sample").forEach(picker => { picker.gifs = gifs; });
-
-const created = document.createElement("pc-gif-picker");
-created.gifs = gifs.slice(0, 2);
-document.getElementById("created").append(created);
 
 document.addEventListener("gif-pick", (e) =>
 {

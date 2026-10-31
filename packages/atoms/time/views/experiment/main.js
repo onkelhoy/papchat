@@ -23,7 +23,6 @@ function fill(id, offsetList) {
 }
 
 fill("past", offsets);
-fill("created", [3 * MINUTE, 2 * HOUR]);
 
 document.getElementById("future").at = Date.now() + 2 * HOUR;
 document.getElementById("live").at = Date.now();
