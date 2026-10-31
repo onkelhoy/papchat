@@ -629,12 +629,13 @@ A network goes rogue when its host loses the signal server while the peers stay 
 
 Client side of web push. `@papit/signal-server` 0.0.5 on npm has it (Render not updated yet), and its README's "Web push" section is the API: `GET /push/key` → `{ key, persistent }`, `POST /push/subscribe` `{ subscription }` → `{ token }`, `POST /push/send` `{ token, payload, ttl?, urgency? }` → `{ status }`. `payload` is any JSON up to 3993 bytes, `ttl` defaults to 60 s, so offline calls need it to match `ringOfflineMs`. Bump the dependency in T9.2. T9.8 needs Render live.
 
-### [ ] T9.1 Service worker and PWA · `opus` · needs —
+### [x] T9.1 Service worker and PWA · `opus` · needs —
 - **do:** add `sw.js` to `views/github`, register it scoped to the GitHub Pages subpath, and confirm `@papit/static` ships it to the page root. Keep the existing `manifest.json` (no `.webmanifest`; it already has `scope` and `start_url`). Empty `push` / `notificationclick` handlers for now.
 - **files:** `pages/app/views/github/*`, `main.ts`.
 - **done when:** builds; the user confirms it registers on Pages. Don't run `npm run pages`.
+- Done: `views/github/sw.js`, registered from boot with a relative URL and `scope: "./"`, so it works under `/papchat/`. `@papit/static` compiles any `.js` in the page folder and writes it at the same path, so it lands at the site root (read from its source, not run). The worker doesn't cache anything. Not run in a browser.
 
-### [ ] T9.2 Enable call notifications · `opus` · needs T9.1
+### [~] T9.2 Enable call notifications · `opus` · needs T9.1
 - **do:** new `core/src/push.ts`. A button in Settings (the permission request must come from a tap on iOS) → `pushManager.subscribe` → `POST /push/subscribe` → store the returned token. Refresh on app load, because a subscription can change. HTTP base from `signalUrl()`. Handle a sleeping server: Render cold start is 30-60 s.
 - **files:** `core/src/push.ts`, `core/src/storage.ts`, `organisms/settings`, translations.
 - **done when:** token stored and refreshed; unsupported browsers hide the button; typecheck + build pass.

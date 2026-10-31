@@ -195,7 +195,22 @@ async function changeLanguage(code: string) {
     ];
 }
 
+// next to the page, so its scope is the GitHub Pages subpath. Calls and notifications are the only
+// thing it's for: without it the app works as before
+async function registerWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    try
+    {
+        await navigator.serviceWorker.register("sw.js", { scope: "./" });
+    }
+    catch (error)
+    {
+        log("worker: not registered", error);
+    }
+}
+
 async function boot() {
+    void registerWorker();
     for (const id of LANGUAGES) translator.add({ id, url: `/translations/${id}.json` });
     await changeLanguage(pickLanguage());
 
