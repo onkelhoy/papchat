@@ -5,12 +5,14 @@ import { log } from "./log";
 import { getRoom } from "./room";
 import { buzzed, incoming, me, prefs, rooms, setPrefs } from "./state";
 
-// While the tab is hidden (PLAN §2.8, §6.9): a `Notification` for incoming calls and new messages
-// (when the user allowed it in settings), a flashing title while something rings, and `away`
-// after 5 minutes, restored on return. `startNotify()` once at boot.
+// While you're not looking at papchat (PLAN §2.8, §6.9): a `Notification` for incoming calls and new
+// messages (when the user allowed it in settings). While the tab is hidden: a flashing title while
+// something rings, and `away` after 5 minutes, restored on return. `startNotify()` once at boot.
 
 const AWAY_MS = 5 * 60_000;
 const FLASH_MS = 1_000;
+// a message this old came from history, not from someone writing now
+const FRESH_MS = 2 * 60_000;
 
 let started = false;
 let awayTimer: ReturnType<typeof setTimeout> | undefined;
@@ -52,10 +54,12 @@ export function startNotify() {
 }
 
 function show(title: string, body: string, tag: string) {
-    if (!document.hidden || !canNotify()) return;
+    // a window behind another app isn't `hidden`, only unfocused
+    if ((!document.hidden && document.hasFocus()) || !canNotify()) return;
     try
     {
-        const note = new Notification(title, { body, tag});
+        // `renotify`: the next message with this tag alerts too, instead of quietly replacing the last
+        const note = new Notification(title, { body, tag, renotify: true } as NotificationOptions);
         note.onclick = () => {
             window.focus();
             note.close();
@@ -107,7 +111,7 @@ function stopFlash() {
 // ---------------------------------------------------------------- messages
 
 function watchMessages() {
-    // last message id per room, so only new ones notify (not a room's history on join)
+    // last message id per room, "" for one with none yet: only new ones notify, including a chat's first
     const last = new Map<string, string>();
     effect(() => {
         const mine = me()?.uid;
@@ -117,11 +121,10 @@ function watchMessages() {
             if (!room) continue;
             const list = room.messages();
             const newest = list[list.length - 1];
-            if (!newest) continue;
-
             const before = last.get(room.id);
-            last.set(room.id, newest.id);
-            if (before === undefined || before === newest.id) continue;
+            last.set(room.id, newest?.id ?? "");
+            if (!newest || before === newest.id) continue;
+            if (Date.now() - newest.at > FRESH_MS) continue;
             if (newest.uid === mine || newest.variant !== "text") continue;
 
             const from = room.participants().find(p => p.uid === newest.uid)?.name ?? "Someone";
