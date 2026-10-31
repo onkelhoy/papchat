@@ -30,6 +30,8 @@
     "globalChat": "Global chatt",
     "globalFiles": "Global chatt är bara text",
     "globalWait": "Ta det lite lugnare",
-    "globalOffline": "Du är inte ansluten till nätverket än"
+    "globalOffline": "Du är inte ansluten till nätverket än",
+    "cantQueue": "Chattar sparas inte på den här enheten, så det här kan inte vänta tills de är tillbaka",
+    "savedFiles": "Filer kan bara skickas när någon är online"
   }
 }

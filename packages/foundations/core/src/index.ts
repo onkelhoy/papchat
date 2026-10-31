@@ -33,6 +33,9 @@ export * from "./transfer";
 export * from "./stage";
 export * from "./gif";
 export * from "./global";
+export * from "./people";
+export * from "./history";
+export * from "./chats";
 export * as ringtone from "./ringtone";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …

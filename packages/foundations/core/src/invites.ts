@@ -45,14 +45,14 @@ const joining = new Set<string>();
 /**
  * Opens the 1:1 chat with `uid`: reuses the open one (inviting them again when they left it),
  * else creates a room and invites them. Makes it the `activeRoom`. Null (plus a toast) when it
- * couldn't be created.
+ * couldn't be created. `quiet` leaves the screen alone: it's for delivering messages in the background.
  */
-export async function openChat(uid: string): Promise<Room | null> {
+export async function openChat(uid: string, options: { quiet?: boolean } = {}): Promise<Room | null> {
     const existing = directRoom(uid);
     if (existing)
     {
         if (!existing.participants().some(p => p.uid === uid)) existing.invite(uid, "chat");
-        selectRoom(existing.id);
+        if (!options.quiet) selectRoom(existing.id);
         return existing;
     }
     if (!me() || uid === me()?.uid) return null;
@@ -60,18 +60,18 @@ export async function openChat(uid: string): Promise<Room | null> {
     try
     {
         const room = await Room.create("chat", "", { direct: uid });
-        if (!room.invite(uid, "chat"))
+        if (!room.invite(uid, "chat") && !options.quiet)
         {
             const name = profileOf(uid)?.name;
             toast("warning", name ? `Couldn't reach ${name}` : "Couldn't reach that person");
         }
-        selectRoom(room.id);
+        if (!options.quiet) selectRoom(room.id);
         return room;
     }
     catch (error)
     {
         log("invites: openChat failed", error);
-        toast("error", "Couldn't start the chat");
+        if (!options.quiet) toast("error", "Couldn't start the chat");
         return null;
     }
 }

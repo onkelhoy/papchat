@@ -31,6 +31,8 @@ export type Prefs = {
     sidebarOpen: boolean;
     // emoji picked in the composer, newest first (at most 24)
     recentEmoji: string[];
+    // keep chats on this device (history.ts)
+    saveChats: boolean;
 };
 
 /** A private network: its own lobby, found by name and locked with the password. `null` = the public papchat lobby. */
@@ -131,6 +133,9 @@ export type IncomingCall = {
     at: number;
 };
 
+/** Where one of your messages got to: `failed` shows as "not sent" and goes out again when someone's back. */
+export type MessageState = "sending" | "sent" | "failed";
+
 export type ChatMessage = {
     id: string;
     uid: string;
@@ -140,6 +145,26 @@ export type ChatMessage = {
     text: string;
     fid?: string;
     gif?: Gif;
+    // only on your own messages
+    state?: MessageState;
+};
+
+/** Someone in a saved conversation, as they were last seen. */
+export type ConversationMember = {
+    uid: string;
+    name: string;
+    color: string;
+};
+
+/** A chat kept on this device (history.ts). It belongs to people, and outlives its rooms. */
+export type Conversation = {
+    id: string;
+    // the other person of a 1:1, null for a group
+    direct: string | null;
+    title: string;
+    members: ConversationMember[];
+    // last message
+    at: number;
 };
 
 /** A GIPHY GIF, shown straight from GIPHY's CDN. `title` is the alt text. */
@@ -178,6 +203,10 @@ export type RoomSummary = {
     live: boolean;
     // something new, with no count: global chat
     dot?: boolean;
+    // the saved conversation this room writes to
+    conversation?: string;
+    // a saved conversation with no room: `id` is the conversation's
+    saved?: boolean;
 };
 
 export type StageSummary = {

@@ -16,6 +16,7 @@ import type { FilesEvent, SendEvent } from "./types";
 
 const GROUP_WINDOW = 2 * 60 * 1000;
 const BOTTOM_THRESHOLD = 24;
+const TOP_THRESHOLD = 80;
 
 /**
  * A chat room's message list, typing line and composer.
@@ -47,6 +48,7 @@ const BOTTOM_THRESHOLD = 24;
  * @fires gif-search `CustomEvent<{ query: string }>` from the composer (bubbles, composed)
  * @fires gif `CustomEvent<{ gif: Gif }>` from the composer: send this GIF (bubbles, composed)
  * @fires cancel `CustomEvent<{ fid }>` from a file card (bubbles, composed)
+ * @fires older the list was scrolled to the top: prepend older `messages` if there are any (bubbles, composed)
  *
  * @csspart header the heading
  * @csspart list the scrolling message list
@@ -78,6 +80,9 @@ export class Conversation extends CustomElement {
 
     private stuck = true;
     private lastId?: string;
+    private firstId?: string;
+    // the length `older` last asked at: one request per page
+    private asked = -1;
     private count = 0;
     private depth = 0;
 
@@ -99,6 +104,7 @@ export class Conversation extends CustomElement {
 
     // scroll to the bottom after the DOM has been patched
     update() {
+        const height = this.list?.scrollHeight ?? 0;
         super.update();
         this.syncMessages();
         if (this.composer)
@@ -107,7 +113,7 @@ export class Conversation extends CustomElement {
             this.composer.gifs = this.textonly ? null : this.gifs;
             this.composer.textonly = this.textonly;
         }
-        this.followBottom();
+        this.followBottom(height);
         return undefined;
     }
 
@@ -139,16 +145,25 @@ export class Conversation extends CustomElement {
         });
     }
 
-    private followBottom() {
+    private followBottom(height: number) {
         const list = this.list;
         if (!list) return;
 
+        const first = this.messages[0];
         const last = this.messages[this.messages.length - 1];
         const changed = last?.id !== this.lastId || this.messages.length !== this.count;
+        // older messages came in above: what you're reading stays where it is
+        const prepended = !!this.lastId && last?.id === this.lastId && first?.id !== this.firstId;
         this.lastId = last?.id;
+        this.firstId = first?.id;
         this.count = this.messages.length;
 
         if (!changed) return;
+        if (prepended && !this.stuck)
+        {
+            list.scrollTop += list.scrollHeight - height;
+            return;
+        }
 
         if (this.stuck || last?.uid === this.me)
         {
@@ -174,6 +189,11 @@ export class Conversation extends CustomElement {
         const list = this.list;
         this.stuck = list.scrollHeight - list.scrollTop - list.clientHeight <= BOTTOM_THRESHOLD;
         if (this.stuck && this.unseen) this.unseen = false;
+        if (list.scrollTop <= TOP_THRESHOLD && this.messages.length !== this.asked)
+        {
+            this.asked = this.messages.length;
+            this.dispatchEvent(new CustomEvent("older", { bubbles: true, composed: true }));
+        }
     }
 
     @bind

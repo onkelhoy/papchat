@@ -3,5 +3,10 @@
     "region": "SE",
     "language": "sv"
   },
-  "message": "message"
+  "message": "message",
+  "pc-message": {
+    "sending": "Skickar…",
+    "sent": "Skickat",
+    "failed": "Inte skickat än"
+  }
 }

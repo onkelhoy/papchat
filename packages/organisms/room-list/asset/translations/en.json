@@ -12,6 +12,7 @@
     "unread": "{count} unread",
     "options": "Options for {title}",
     "leave": "Leave",
-    "new": "New posts"
+    "new": "New posts",
+    "delete": "Delete chat"
   }
 }

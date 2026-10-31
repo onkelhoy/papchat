@@ -4,15 +4,17 @@ import { Client } from "@papit/webrtc";
 import { APP, LIMITS, RTC, signalUrl } from "./config";
 import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
+import { canSave, conversations, directId, hasMessage, loadMessages, markSent, messageIds, messagesById, networkSaves, readMessage, saveConversation, saveMessages, setViewing, unsent, viewing } from "./history";
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { PROOF, Verifier } from "./keys";
-import { readMember, send as lobbySend, serverId, type Member } from "./lobby";
+import { profileOf, readMember, send as lobbySend, serverId, type Member } from "./lobby";
 import { log } from "./log";
+import { personOf, samePerson } from "./people";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
 import { Transfers } from "./transfer";
-import type { ChatMessage, FileEntry, Gif, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
+import type { ChatMessage, Conversation, ConversationMember, FileEntry, Gif, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
 import { cleanGif } from "./gif";
 
 // A room (PLAN §2.5): one private mesh network with its own Client. Chat over `client.broadcast`,
@@ -55,6 +57,8 @@ export type RoomOptions = {
     direct?: string;
     // start with this many unread (a chat invite counts as one)
     unread?: number;
+    // a group chat that already exists: its saved conversation
+    conversation?: string;
 };
 
 // a re-register takes a moment after the socket is back, and tells nobody: look a few times
@@ -82,6 +86,14 @@ export class Room extends EventTarget {
     title: string;
     /** The other uid for a 1:1 chat, null for a group (or once a third person joins). */
     direct: string | null;
+    /** The conversation this room writes to while it's a group. Rooms carry it in `meta`. */
+    group: string;
+    // the network's creator asked for no saving
+    private saves = true;
+    // messages came from the store, so the list is no longer capped
+    private paged = false;
+    private olderLeft = false;
+    private ackTimer: ReturnType<typeof setTimeout> | null = null;
 
     readonly messages: () => ChatMessage[];
     /** Everyone else in the room, one entry per uid, sorted by name. */
@@ -145,6 +157,7 @@ export class Room extends EventTarget {
         this.password = password;
         this.title = title;
         this.direct = direct;
+        this.group = "";
 
         [this.messages, this.setMessages] = signal<ChatMessage[]>([]);
         [this.participants, this.setParticipants] = signal<Profile[]>([]);
@@ -159,6 +172,10 @@ export class Room extends EventTarget {
         this.onMessage("chat", this.handleChat);
         this.onMessage("buzz", this.handleBuzz);
         this.onMessage("room-id", this.handleRoomId);
+        this.onMessage("ack", this.handleAck);
+        this.onMessage("history.offer", this.handleOffer);
+        this.onMessage("history.want", this.handleWant);
+        this.onMessage("history.fill", this.handleFill);
         this.onState("typing", this.handleTyping);
         this.onState("flags", this.handleFlags);
         this.addEventListener("client", this.handleClientMedia);
@@ -173,11 +190,15 @@ export class Room extends EventTarget {
         if (!profile) throw new Error("a room needs a profile");
 
         const direct = options.direct && options.direct !== profile.uid ? options.direct : null;
-        const meta: Record<string, unknown> = { app: APP, kind: "room", room: kind, title: cleanTitle(title) };
+        const group = options.conversation ?? crypto.randomUUID();
+        const meta: Record<string, unknown> = { app: APP, kind: "room", room: kind, title: cleanTitle(title), conversation: group };
         if (direct) meta.direct = [profile.uid, direct];
+        if (!networkSaves()) meta.history = false;
 
         const password = randomPassword();
         const draft = new Room("", kind, password, cleanTitle(title), direct, options.unread ?? 0);
+        draft.group = group;
+        draft.saves = networkSaves();
         const info = await draft.connect(c => c.create({
             name: `papchat:room:${crypto.randomUUID()}`,
             private: true,
@@ -244,10 +265,10 @@ export class Room extends EventTarget {
         const c = this._client;
         if (!clean || !profile || !c?.network) return false;
 
-        const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: sent ? "gif" : "text", text: clean, ...(sent ? { gif: sent } : {}) };
+        const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: sent ? "gif" : "text", text: clean, state: "sending", ...(sent ? { gif: sent } : {}) };
         try
         {
-            c.broadcast("chat", { id: message.id, text: message.text, at: message.at, uid: message.uid, ...(sent ? { gif: sent } : {}) });
+            c.broadcast("chat", wireMessage(message));
         }
         catch (error)
         {
@@ -257,7 +278,26 @@ export class Room extends EventTarget {
 
         this.lastTypingSent = 0;
         this.push(message);
+        this.persist([message], true);
+        this.awaitReceipts();
         return true;
+    }
+
+    /** The saved conversation this room writes to right now. */
+    get conversationId(): string {
+        const mine = me()?.uid;
+        return this.direct && mine ? directId(mine, this.direct) : this.group;
+    }
+
+    /** Pages older saved messages in. False when there are none left. */
+    async loadOlder(): Promise<boolean> {
+        if (!this.saving || !this.olderLeft) return false;
+        const first = this.messages().find(message => message.variant !== "system");
+        if (!first) return false;
+        const page = await loadMessages(this.conversationId, LIMITS.historyPage, first.at);
+        this.olderLeft = page.length >= LIMITS.historyPage;
+        this.addSaved(page);
+        return this.olderLeft;
     }
 
     /**
@@ -486,14 +526,17 @@ export class Room extends EventTarget {
     }
 
     summary(): RoomSummary {
+        const here = this.participants();
         return {
             id: this.id,
             kind: this.kind,
             title: this.title,
-            participants: this.participants(),
+            // nobody here yet: who this chat is with, as last seen
+            participants: here.length > 0 ? here : this.lastSeen(),
             unread: this.unread(),
             incall: this.incall,
             live: false,
+            conversation: this.conversationId,
         };
     }
 
@@ -526,7 +569,7 @@ export class Room extends EventTarget {
         {
             this.setMessages(list => {
                 const next = [...moved, ...list].sort((a, b) => a.at - b.at);
-                return next.length > LIMITS.messagesKept ? next.slice(next.length - LIMITS.messagesKept) : next;
+                return !this.paged && next.length > LIMITS.messagesKept ? next.slice(next.length - LIMITS.messagesKept) : next;
             });
         }
         if (other.unread() > 0 && activeRoom() !== this.id) this.setUnread(n => n + other.unread());
@@ -657,6 +700,9 @@ export class Room extends EventTarget {
         if (this.direct) setDirect(this.direct, this);
         saveSession();
         this.sync();
+        void this.openHistory();
+        // the chat on screen just got a room
+        if (viewing()?.conversation.id === this.conversationId) selectRoom(id);
         return this;
     }
 
@@ -757,6 +803,8 @@ export class Room extends EventTarget {
         this.leaving.clear();
         if (this.typingTimer) clearInterval(this.typingTimer);
         this.typingTimer = null;
+        if (this.ackTimer) clearTimeout(this.ackTimer);
+        this.ackTimer = null;
         this.typingUntil.clear();
         this.setTyping([]);
         this.setStatus("closed");
@@ -819,13 +867,16 @@ export class Room extends EventTarget {
     private readMeta(info: NetworkInfo) {
         const meta = info.meta ?? {};
         if (typeof meta.title === "string") this.title = cleanTitle(meta.title);
+        this.group = typeof meta.conversation === "string" && meta.conversation ? meta.conversation : info.id;
+        this.saves = meta.history !== false;
 
+        // by person: a chat started with your other device is still yours
         const mine = me()?.uid;
         const direct = Array.isArray(meta.direct) ? meta.direct.filter((u): u is string => typeof u === "string") : [];
-        this.direct = mine && direct.length === 2 && direct.includes(mine)
-            ? direct.find(u => u !== mine) ?? null
+        this.direct = mine && direct.length === 2 && direct.some(u => samePerson(u, mine))
+            ? direct.find(u => !samePerson(u, mine)) ?? null
             : null;
-        if (this.direct && [...this.present.keys()].some(uid => uid !== this.direct)) this.direct = null;
+        if (this.direct && [...this.present.keys()].some(uid => !samePerson(uid, this.direct!))) this.direct = null;
     }
 
     // ------------------------------------------------------------ members → participants + system messages
@@ -901,14 +952,18 @@ export class Room extends EventTarget {
         }
         // nobody who was already here counts as joining, however long their proof takes
         if (!this.verifier?.pending) this.baseline = true;
+        const arrived = [...next.keys()].filter(uid => !this.present.has(uid));
         this.present = next;
 
-        // a third person turns a 1:1 into a group: openChat makes a new 1:1 after that
-        if (this.direct && [...next.keys()].some(uid => uid !== this.direct))
+        // a third person turns a 1:1 into a group: openChat makes a new 1:1 after that, and what
+        // the group says from here on is kept apart from the 1:1
+        if (this.direct && [...next.keys()].some(uid => !samePerson(uid, this.direct!)))
         {
             unsetDirect(this.direct, this);
             this.direct = null;
+            if (this.saving) void saveConversation(this.record());
         }
+        if (arrived.length > 0) setTimeout(() => this.welcome(arrived), 0);
 
         this.setParticipants(
             [...next.values()].sort((a, b) => a.name.localeCompare(b.name) || (a.uid < b.uid ? -1 : 1)),
@@ -918,35 +973,212 @@ export class Room extends EventTarget {
 
     // ------------------------------------------------------------ messages, typing
 
+    // in time order: a message sent again, or filled in, can be older than what's on screen
     private push(message: ChatMessage) {
         this.setMessages(list => {
-            const next = [...list, message];
-            return next.length > LIMITS.messagesKept ? next.slice(next.length - LIMITS.messagesKept) : next;
+            const index = list.findLastIndex(other => other.at <= message.at) + 1;
+            const next = [...list.slice(0, index), message, ...list.slice(index)];
+            return !this.paged && next.length > LIMITS.messagesKept ? next.slice(next.length - LIMITS.messagesKept) : next;
         });
+    }
+
+    private get saving(): boolean {
+        return this.saves && canSave();
+    }
+
+    private persist(messages: ChatMessage[], replace = false) {
+        if (this.saving) void saveMessages(this.record(), messages, { replace });
+    }
+
+    // what the store should know about this chat
+    private record(): Conversation {
+        const people = this.participants().map(toMember);
+        const other = this.direct ? profileOf(this.direct) : null;
+        if (other && !people.some(p => samePerson(p.uid, other.uid))) people.push(toMember(other));
+        return {
+            id: this.conversationId,
+            direct: this.direct ? personOf(this.direct) : null,
+            title: this.title,
+            members: people,
+            at: Date.now(),
+        };
+    }
+
+    private lastSeen(): Profile[] {
+        const members = conversations().find(entry => entry.id === this.conversationId)?.members ?? [];
+        return members.map(member => ({ v: 2, uid: member.uid, key: "", name: member.name, color: member.color, status: "available" }));
+    }
+
+    // the chat so far, and what we still have to send
+    private async openHistory() {
+        if (!this.saving) return;
+        const id = this.conversationId;
+        const [recent, waiting] = await Promise.all([loadMessages(id), unsent(id)]);
+        if (this.closed) return;
+        this.paged = true;
+        this.olderLeft = recent.length >= LIMITS.historyPage;
+        this.addSaved([...recent, ...waiting]);
+        this.sync();
+        this.flush();
+    }
+
+    // messages from the store or another member: only the ones not on screen yet
+    private addSaved(list: ChatMessage[]) {
+        const known = new Set(this.messages().map(message => message.id));
+        const fresh = list.filter(message => {
+            if (known.has(message.id)) return false;
+            known.add(message.id);
+            return true;
+        });
+        if (fresh.length === 0) return;
+        this.paged = true;
+        this.setMessages(current => [...current, ...fresh].sort((a, b) => a.at - b.at));
+    }
+
+    // someone new is here: they get what's waiting, and both sides compare notes
+    private welcome(uids: string[]) {
+        if (this.closed) return;
+        this.flush();
+        for (const uid of uids) void this.offer(uid);
+    }
+
+    // sends everything of ours nobody has confirmed, in order
+    private flush() {
+        const c = this._client;
+        const mine = me()?.uid;
+        if (!c?.network || !mine || this.present.size === 0) return;
+
+        const unconfirmed = this.messages().filter(message => message.uid === mine && (message.state === "sending" || message.state === "failed"));
+        if (unconfirmed.length === 0) return;
+        try
+        {
+            for (const message of unconfirmed) c.broadcast("chat", wireMessage(message));
+        }
+        catch (error)
+        {
+            log("room: sending again failed", error);
+            return;
+        }
+        this.setMessages(list => list.map(message => message.state === "failed" ? { ...message, state: "sending" as const } : message));
+        this.awaitReceipts();
+    }
+
+    private awaitReceipts() {
+        if (this.ackTimer) clearTimeout(this.ackTimer);
+        this.ackTimer = setTimeout(() => {
+            this.ackTimer = null;
+            const late = this.messages().filter(message => message.state === "sending");
+            if (late.length === 0) return;
+            const failed = late.map(message => ({ ...message, state: "failed" as const }));
+            const byId = new Map(failed.map(message => [message.id, message]));
+            this.setMessages(list => list.map(message => byId.get(message.id) ?? message));
+            this.persist(failed, true);
+        }, LIMITS.ackMs);
+    }
+
+    private handleAck: RoomHandler<{ ids?: unknown }> = (payload) => {
+        const ids = Array.isArray(payload?.ids) ? payload.ids.filter((id): id is string => typeof id === "string") : [];
+        if (ids.length === 0) return;
+        const confirmed = new Set(ids);
+        this.setMessages(list => list.map(message => confirmed.has(message.id) && message.state && message.state !== "sent" ? { ...message, state: "sent" as const } : message));
+        void markSent(this.conversationId, ids);
+    };
+
+    // a group's past only goes to someone it's already saved with, so an invite doesn't hand over the backlog
+    private async offer(uid: string) {
+        if (!this.saving) return;
+        const id = this.conversationId;
+        const known = conversations().find(entry => entry.id === id);
+        if (!this.direct && !known?.members.some(member => samePerson(member.uid, uid))) return;
+        const ids = await messageIds(id, Date.now() - LIMITS.historyFillMs, LIMITS.historyOffer);
+        if (ids.length > 0) this.sendTo(uid, "history.offer", { conversation: id, ids });
+    }
+
+    private handleOffer: RoomHandler<{ conversation?: unknown; ids?: unknown }> = async (payload, from) => {
+        const id = this.conversationId;
+        if (!this.saving || !from.uid || payload?.conversation !== id || !Array.isArray(payload.ids)) return;
+        const known = new Set(await messageIds(id, Date.now() - LIMITS.historyFillMs));
+        const missing = payload.ids.filter((other): other is string => typeof other === "string" && !known.has(other)).slice(0, LIMITS.historyOffer);
+        if (missing.length > 0) this.sendTo(from.uid, "history.want", { conversation: id, ids: missing });
+    };
+
+    private handleWant: RoomHandler<{ conversation?: unknown; ids?: unknown }> = async (payload, from) => {
+        const id = this.conversationId;
+        if (!this.saving || !from.uid || payload?.conversation !== id || !Array.isArray(payload.ids)) return;
+        const ids = payload.ids.filter((other): other is string => typeof other === "string").slice(0, LIMITS.historyOffer);
+        for (const messages of chunks(await messagesById(id, ids)))
+        {
+            this.sendTo(from.uid, "history.fill", { conversation: id, messages });
+        }
+    };
+
+    private handleFill: RoomHandler<{ conversation?: unknown; messages?: unknown }> = (payload, from) => {
+        const id = this.conversationId;
+        const mine = me()?.uid;
+        if (!this.saving || !from.uid || !mine || payload?.conversation !== id || !Array.isArray(payload.messages)) return;
+
+        // the original author and time stay, but only someone from this conversation can be the author
+        const saved = conversations().find(entry => entry.id === id)?.members ?? [];
+        const allowed = [mine, from.uid, ...this.present.keys(), ...saved.map(member => member.uid)];
+        const fresh = payload.messages
+            .map(readMessage)
+            .filter((message): message is ChatMessage => !!message && allowed.some(uid => samePerson(uid, message.uid)));
+        if (fresh.length === 0) return;
+
+        const known = new Set(this.messages().map(message => message.id));
+        const added = fresh.filter(message => !known.has(message.id));
+        this.addSaved(fresh);
+        this.persist(fresh);
+        const news = added.filter(message => !samePerson(message.uid, mine)).length;
+        if (news > 0 && activeRoom() !== this.id)
+        {
+            this.setUnread(n => n + news);
+            this.sync();
+        }
+    };
+
+    private receipt(peer: string, id: string) {
+        try
+        {
+            this._client?.send(peer, "ack", { ids: [id] });
+        }
+        catch (error)
+        {
+            log("room: receipt failed", error);
+        }
     }
 
     private system(text: string, uid: string) {
         this.push({ id: crypto.randomUUID(), uid, at: Date.now(), variant: "system", text });
     }
 
-    private handleChat = (payload: unknown, from: RoomFrom) => {
+    private handleChat = async (payload: unknown, from: RoomFrom) => {
         if (typeof payload !== "object" || payload === null) return;
         const value = payload as Record<string, unknown>;
         if (typeof value.text !== "string") return;
         const text = value.text.trim().slice(0, LIMITS.messageChars);
         if (!text) return;
 
-        // trust the sender's room profile over what the payload says
-        const uid = from.uid ?? (typeof value.uid === "string" ? value.uid : "");
-        if (!uid) return;
+        // trust the sender's room profile over what the payload says; your other device is you
+        const sender = from.uid ?? (typeof value.uid === "string" ? value.uid : "");
+        if (!sender) return;
+        const mine = me()?.uid;
+        const uid = mine && samePerson(sender, mine) ? mine : sender;
         const at = typeof value.at === "number" && Number.isFinite(value.at) ? Math.min(value.at, Date.now()) : Date.now();
         const id = typeof value.id === "string" && value.id ? value.id.slice(0, 64) : crypto.randomUUID();
+
+        // confirmed either way: a message sent twice means they never heard the first receipt
+        this.receipt(from.peer, id);
+        if (this.messages().some(m => m.id === id)) return;
+        if (this.saving && await hasMessage(this.conversationId, id)) return;
         if (this.messages().some(m => m.id === id)) return;
 
         this.stopTyping(uid);
         const gif = cleanGif(value.gif);
-        this.push(gif ? { id, uid, at, variant: "gif", text, gif } : { id, uid, at, variant: "text", text });
-        if (uid === me()?.uid) return;
+        const message: ChatMessage = gif ? { id, uid, at, variant: "gif", text, gif } : { id, uid, at, variant: "text", text };
+        this.push(message);
+        this.persist([message]);
+        if (uid === mine) return;
         if (activeRoom() !== this.id)
         {
             this.setUnread(n => n + 1);
@@ -1166,9 +1398,10 @@ export function allRooms(): Room[] {
     return [...registry.values()];
 }
 
-/** Sets `activeRoom` and marks it read. Null clears it. */
+/** Sets `activeRoom` and marks it read. Null clears it. Either way a saved chat on screen makes way. */
 export function selectRoom(id: string | null) {
     const room = id ? findRoom(id) : null;
+    setViewing(null);
     setActiveRoom(room ? room.id : null);
     room?.markRead();
 }
@@ -1183,21 +1416,21 @@ export function isRejected(error: unknown): boolean {
     return error instanceof Error && error.message.startsWith("rejected");
 }
 
-// 1:1 chats: uid → room, in memory (PLAN §2.5)
+// 1:1 chats: person → room, in memory (PLAN §2.5)
 const directs = new Map<string, Room>();
 
-/** The open 1:1 room with `uid`, if any. */
+/** The open 1:1 room with `uid`, or any device of theirs. */
 export function directRoom(uid: string): Room | null {
-    const room = directs.get(uid);
+    const room = directs.get(personOf(uid));
     return room && room.status() !== "closed" ? room : null;
 }
 
 function setDirect(uid: string, room: Room) {
-    directs.set(uid, room);
+    directs.set(personOf(uid), room);
 }
 
 function unsetDirect(uid: string, room: Room) {
-    if (directs.get(uid) === room) directs.delete(uid);
+    if (directs.get(personOf(uid)) === room) directs.delete(personOf(uid));
 }
 
 function findRoom(id: string): Room | null {
@@ -1256,6 +1489,36 @@ export async function restoreRooms(): Promise<Room[]> {
 }
 
 // ---------------------------------------------------------------- helpers
+
+// the same id and time every time it's sent, so a repeat is recognised
+function wireMessage(message: ChatMessage): Record<string, unknown> {
+    return { id: message.id, text: message.text, at: message.at, uid: message.uid, ...(message.gif ? { gif: message.gif } : {}) };
+}
+
+function toMember(profile: Profile): ConversationMember {
+    return { uid: profile.uid, name: profile.name, color: profile.color };
+}
+
+// history in pieces small enough for one message, without what only this device knows
+function chunks(messages: ChatMessage[]): ChatMessage[][] {
+    const pieces: ChatMessage[][] = [];
+    let piece: ChatMessage[] = [];
+    let size = 0;
+    for (const { state: _state, ...message } of messages)
+    {
+        const length = JSON.stringify(message).length;
+        if (piece.length > 0 && size + length > LIMITS.historyChunk)
+        {
+            pieces.push(piece);
+            piece = [];
+            size = 0;
+        }
+        piece.push(message);
+        size += length;
+    }
+    if (piece.length > 0) pieces.push(piece);
+    return pieces;
+}
 
 function subscribe(map: Map<string, Set<RoomHandler>>, type: string, handler: RoomHandler): () => void {
     let set = map.get(type);

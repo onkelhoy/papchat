@@ -26,6 +26,7 @@ const MAX_AVATARS = 3;
  * @property {string} active id of the open room, gets `aria-current`
  * @property {boolean} compact one avatar per row (collapsed sidebar): title in a tooltip, unread as a dot (reflected)
  *
+ * A `saved` row is a conversation with no room right now: its menu deletes it instead of leaving.
  * A row of kind `global` stays put: a broadcast icon instead of avatars, no menu, and a dot for `dot`.
  *
  * @fires select `CustomEvent<{ id: string }>` when a row is chosen
@@ -92,7 +93,7 @@ export class RoomList extends CustomElement {
                             <span aria-hidden="true">⋯</span>
                         </button>
                         <pap-menu id="${`menu-${index}`}" placement="bottom-right">
-                            <pap-menuitem @click="${(e: Event) => this.handleLeave(room, e)}">${this.t("leave")}</pap-menuitem>
+                            <pap-menuitem @click="${(e: Event) => this.handleLeave(room, e)}">${this.t(room.saved ? "delete" : "leave")}</pap-menuitem>
                         </pap-menu>
                     </span>
                 `}

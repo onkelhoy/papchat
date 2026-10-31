@@ -12,6 +12,7 @@
     "unread": "{count} olästa",
     "options": "Alternativ för {title}",
     "leave": "Lämna",
-    "new": "Nya inlägg"
+    "new": "Nya inlägg",
+    "delete": "Ta bort chatten"
   }
 }

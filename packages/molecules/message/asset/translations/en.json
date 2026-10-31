@@ -3,5 +3,10 @@
     "region": "GB",
     "language": "en"
   },
-  "message": "message"
+  "message": "message",
+  "pc-message": {
+    "sending": "Sending…",
+    "sent": "Sent",
+    "failed": "Not sent yet"
+  }
 }

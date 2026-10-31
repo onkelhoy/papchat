@@ -25,8 +25,17 @@ export const LIMITS = {
     // the host checks this often for a more canonical lobby: a rogue group coming back only shows up later
     rogueScanMs: 60_000,
     messageChars: 4_000,
-    // messages kept per room (no history: this is only what this tab saw)
+    // messages kept per room when chats aren't saved
     messagesKept: 500,
+    // saved messages loaded at a time
+    historyPage: 100,
+    // no receipt by now: the message shows as not sent, and stays in the outbox
+    ackMs: 8_000,
+    // what members offer each other when they meet, to fill gaps
+    historyFillMs: 7 * 24 * 60 * 60_000,
+    historyOffer: 1_000,
+    // history goes in pieces of about this many characters
+    historyChunk: 12_000,
     typingSendMs: 1_000,
     typingMs: 4_000,
     // a "left" system message waits this long, so a quick reconnect doesn't show left + joined

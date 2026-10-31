@@ -153,3 +153,13 @@ a:focus-visible {
     block-size: auto;
     border-radius: inherit;
 }
+
+/* how far your own message got */
+.state {
+    font-size: 0.75rem;
+    color: var(--text-secondary, inherit);
+}
+
+.state[data-state="failed"] {
+    color: var(--error, inherit);
+}

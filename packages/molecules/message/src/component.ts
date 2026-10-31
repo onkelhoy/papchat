@@ -1,5 +1,6 @@
 // system
 import { CustomElement, html, property } from "@papit/web-component";
+import { translate, useTranslator } from "@papit/translator";
 import "@papchat/avatar";
 import "@papchat/time";
 
@@ -19,7 +20,8 @@ import type { MessageVariant } from "./types";
  * renders as before, newlines kept.
  * `mine` aligns the bubble right in the primary colour; `grouped` (same author
  * within 2 minutes) hides the avatar and name; the `system` variant is a centred
- * muted line ("Anna joined").
+ * muted line ("Anna joined"). Your own messages show how far they got under the bubble, from
+ * `message.state`: sending, sent, or not sent.
  *
  * @element pc-message
  *
@@ -33,6 +35,8 @@ import type { MessageVariant } from "./types";
  */
 export class Message extends CustomElement {
     static sheet = sheet;
+
+    @translate t = useTranslator("pc-message");
 
     @property({ type: Object, rerender: true }) message?: ChatMessage;
     @property({ type: Object, rerender: true }) author?: Profile;
@@ -77,6 +81,7 @@ export class Message extends CustomElement {
             <div class="body">
                 ${showMeta ? html`<div class="meta">${this.mine ? "" : html`<span class="name">${name}</span>`}<pc-time at="${message.at}"></pc-time></div>` : ""}
                 <div part="bubble" class="bubble"></div>
+                ${this.mine && message.state ? html`<span class="state" data-state="${message.state}">${this.t(message.state)}</span>` : ""}
             </div>
         `;
     }

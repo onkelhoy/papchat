@@ -83,6 +83,16 @@ import {
     unlockNetwork,
     GIPHY_KEY,
     GLOBAL_ID,
+    conversations,
+    deleteConversation,
+    devicesOf,
+    loadOlderViewing,
+    memberProfile,
+    openConversation,
+    sendSaved,
+    startHistory,
+    titleOf,
+    viewing,
     globalAuthors,
     globalMessages,
     globalOpen,
@@ -194,7 +204,7 @@ const current = (): Room | null => activeRoom() ? getRoom(activeRoom()!) : null;
 const [stageView, setStageView] = signal(false);
 const shownStage = (): Stage | null => stageView() ? currentStage() : null;
 // something else than a room fills the main area
-const elsewhere = () => !!shownStage() || globalOpen();
+const elsewhere = () => !!shownStage() || globalOpen() || !!viewing();
 
 // language: stored choice → browser language → en
 function pickLanguage(): string {
@@ -253,6 +263,7 @@ async function boot() {
     }
 
     settings.sinkSupported = sinkSupported;
+    void startHistory();
     startNotify();
     void refreshPush();
     void ringtone.loadTones();
@@ -384,9 +395,16 @@ effect(() =>
     const stage = currentStage();
     const fixed: RoomSummary[] = [{ id: GLOBAL_ID, kind: "global", title: t("globalChat"), participants: [], unread: 0, incall: false, live: false, dot: globalUnseen() }];
     if (stage) fixed.push({ id: stage.id, kind: "stage", title: stage.title, participants: [stage.presenter], unread: 0, incall: false, live: true });
-    roomList.rooms = [...fixed, ...rooms()];
+
+    // saved conversations with no room right now come last, latest first
+    const live = rooms();
+    const open = new Set(live.map(r => r.conversation));
+    const saved = conversations()
+        .filter(c => !open.has(c.id))
+        .map((c): RoomSummary => ({ id: c.id, kind: "chat", title: c.title, participants: c.members.map(memberProfile), unread: 0, incall: false, live: false, saved: true }));
+    roomList.rooms = [...fixed, ...live, ...saved];
 });
-effect(() => { roomList.active = globalOpen() ? GLOBAL_ID : shownStage()?.id ?? activeRoom() ?? ""; });
+effect(() => { roomList.active = globalOpen() ? GLOBAL_ID : viewing()?.conversation.id ?? shownStage()?.id ?? activeRoom() ?? ""; });
 effect(() => { toaster.toasts = toasts(); });
 
 // the open room: messages, typing and who is who
@@ -399,10 +417,13 @@ effect(() =>
     list.canInvite = !!room;
     if (!room) return;
 
+    // people who have left can still have messages in the history
     const profiles: Record<string, Profile> = {};
     const mine = me();
+    const saved = conversations().find(c => c.id === room.conversationId);
+    for (const member of saved?.members ?? []) addProfile(profiles, memberProfile(member));
+    for (const p of room.participants()) addProfile(profiles, p);
     if (mine) profiles[mine.uid] = mine;
-    for (const p of room.participants()) profiles[p.uid] = p;
 
     view.profiles = profiles;
     view.me = mine?.uid ?? "";
@@ -410,7 +431,7 @@ effect(() =>
     view.messages = room.messages();
     view.typing = room.typing();
     view.files = room.files();
-    view.heading = room.title || room.participants().map(p => p.name).join(", ");
+    view.heading = room.title || room.participants().map(p => p.name).join(", ") || (saved ? titleOf(saved) : "");
     view.canbuzz = !!room.direct;
     view.nocall = false;
     view.textonly = false;
@@ -493,6 +514,41 @@ function showStage() {
     setGlobalOpen(false);
     setStageView(true);
 }
+
+// a person's messages can come from any of their devices
+function addProfile(profiles: Record<string, Profile>, profile: Profile) {
+    for (const uid of devicesOf(profile.uid)) profiles[uid] = profile;
+}
+
+// a saved conversation with no room: its history, and what you write waits until someone's back
+effect(() =>
+{
+    const saved = viewing();
+    if (!saved || shownStage() || globalOpen()) return;
+
+    view.hidden = false;
+    empty.hidden = true;
+    list.canInvite = false;
+
+    const mine = me();
+    const profiles: Record<string, Profile> = {};
+    for (const member of saved.conversation.members) addProfile(profiles, memberProfile(member));
+    if (mine) profiles[mine.uid] = mine;
+
+    view.profiles = profiles;
+    view.me = mine?.uid ?? "";
+    view.participants = [];
+    view.messages = saved.messages;
+    view.typing = [];
+    view.files = [];
+    view.heading = titleOf(saved.conversation);
+    view.canbuzz = false;
+    view.nocall = !saved.conversation.direct;
+    view.textonly = false;
+    view.incall = false;
+    view.viewer = false;
+    view.tiles = [];
+});
 
 function showGlobal() {
     selectRoom(null);
@@ -778,13 +834,15 @@ roomList.addEventListener("select", (e) =>
     const { id } = (e as CustomEvent<{ id: string }>).detail;
     if (id === GLOBAL_ID) showGlobal();
     else if (id === currentStage()?.id) showStage();
-    else selectRoom(id);
+    else if (getRoom(id)) selectRoom(id);
+    else void openConversation(id);
 });
 roomList.addEventListener("leave", (e) =>
 {
     const { id } = (e as CustomEvent<{ id: string }>).detail;
     if (id === currentStage()?.id) leaveStage();
-    else getRoom(id)?.leave();
+    else if (getRoom(id)) getRoom(id)!.leave();
+    else void deleteConversation(id);
 });
 
 view.addEventListener("send", (e) =>
@@ -796,6 +854,10 @@ view.addEventListener("send", (e) =>
         if (!postGlobal(text)) toast("info", t(lobbyStatus() === "connected" ? "globalWait" : "globalOffline"));
     }
     else if (stage) stage.send(text);
+    else if (viewing())
+    {
+        if (!sendSaved(text)) toast("warning", t("cantQueue"));
+    }
     else if (text.trim().toLowerCase() === "/buzz") sendBuzz();
     else current()?.send(text);
 });
@@ -849,6 +911,7 @@ view.addEventListener("gif", (e) =>
     const { gif } = (e as CustomEvent<{ gif: Gif }>).detail;
     const stage = shownStage();
     if (stage) stage.send("", gif);
+    else if (viewing()) sendSaved("", gif);
     else current()?.send("", gif);
 });
 
@@ -873,11 +936,21 @@ effect(() =>
     shell.animate(frames, { duration: calm.matches ? 500 : 600, easing: "ease-in-out" });
 });
 view.addEventListener("typing", () => { if (!elsewhere()) current()?.notifyTyping(); });
+view.addEventListener("older", () =>
+{
+    if (viewing()) void loadOlderViewing();
+    else if (!elsewhere()) void current()?.loadOlder();
+});
 view.addEventListener("files", (e) =>
 {
     if (globalOpen())
     {
         toast("info", t("globalFiles"));
+        return;
+    }
+    if (viewing())
+    {
+        toast("info", t("savedFiles"));
         return;
     }
     if (shownStage())
@@ -893,6 +966,12 @@ view.addEventListener("cancel", (e) => current()?.cancelFile((e as CustomEvent<{
 view.addEventListener("call", async (e) =>
 {
     const { kind } = (e as CustomEvent<{ kind: "call" | "video" }>).detail;
+    const person = viewing()?.conversation.direct;
+    if (person)
+    {
+        void placeCall(person, kind);
+        return;
+    }
     const room = current();
     if (!room) return;
     if (room.direct)

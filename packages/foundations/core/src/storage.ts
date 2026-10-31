@@ -9,6 +9,7 @@ const KEYS = {
     push: "papchat:push",
     contacts: "papchat:contacts",
     muted: "papchat:muted",
+    people: "papchat:people",
 } as const;
 
 export const DEFAULT_PREFS: Prefs = {
@@ -23,6 +24,7 @@ export const DEFAULT_PREFS: Prefs = {
     devices: {},
     sidebarOpen: true,
     recentEmoji: [],
+    saveChats: true,
 };
 
 function read(area: () => Storage, key: string): unknown {
@@ -147,6 +149,17 @@ export const storage = {
         },
         set(value: Contact[]) {
             write(local, KEYS.contacts, value);
+        },
+    },
+    // uid → the uid standing for that person, see people.ts
+    people: {
+        get(): Record<string, string> {
+            const value = read(local, KEYS.people);
+            if (!isObject(value)) return {};
+            return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+        },
+        set(value: Record<string, string>) {
+            write(local, KEYS.people, value);
         },
     },
     // people you've muted in global chat

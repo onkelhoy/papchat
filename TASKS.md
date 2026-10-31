@@ -718,17 +718,19 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### Phase C: saved chats
 
-### [ ] T10.4 Conversations belong to people · `opus` · needs T10.3
+### [x] T10.4 Conversations belong to people · `opus` · needs T10.3
 - **why:** a chat is tied to a room today, and rooms disappear, so nothing can come back the next day.
 - **do:** a conversation is keyed by the two uids for a 1:1, or by a uuid kept in the room's `meta` for a group. The room just carries messages. New `core/src/history.ts` stores conversations and messages in IndexedDB (text and GIFs, no files), loads them on open, and lists them in the sidebar with nobody online. Opening an old 1:1 starts a new room with that person. Move past `LIMITS.messagesKept` by paging older messages from the store. Call `navigator.storage.persist()`, because Safari can evict data from sites that aren't installed.
 - **files:** `core/src/history.ts`, `core/src/room.ts`, `core/src/invites.ts`, `organisms/room-list`, `organisms/conversation`, page.
 - **done when:** a chat is still there after a reload the next day with nobody online; typecheck + build pass.
+- Done: `core/src/history.ts` (own database `papchat-history`, stores `conversations` and `messages`), `core/src/chats.ts`, and `core/src/people.ts`, which T10.7 fills. A 1:1 is `dm:<person>:<person>`, a group a uuid in `meta.conversation`; a 1:1 that gains a third person carries on as that group id. Rooms load the last `LIMITS.historyPage` messages and page older ones on `older`. A chat with no room is a `saved` row: it opens in a room when the person is online, else as `viewing`, which shows the history and lets you write. A room's Leave keeps the chat as a saved row; the row's menu deletes it. Checked outside the repo against fake-indexeddb, which caught a merge bug. Typecheck + build pass; not run in a browser.
 
-### [ ] T10.5 Delivery receipts and unsent messages · `opus` · needs T10.4
+### [x] T10.5 Delivery receipts and unsent messages · `opus` · needs T10.4
 - **do:** receivers confirm each message by id, and `pc-message` shows sending / sent / not sent. Unconfirmed messages stay in the store as an outbox and go out when that person next connects, in order. Receivers drop duplicates by id. Groups: when a member joins, each side offers ids from the last 7 days and fills the gaps from whoever has them, keeping the original author and time. Accept a message only if its author is someone in that conversation.
 - **limit:** delivery needs both people online at once. Offline wake by push is not part of this.
 - **files:** `core/src/history.ts`, `core/src/room.ts`, `molecules/message`, translations.
 - **done when:** a message sent while the other person is away arrives when they return, once; typecheck + build pass.
+- Done: in `room.ts`. Receivers answer `ack` by id, and a repeat is acked again but dropped. No receipt in `LIMITS.ackMs` shows "Not sent yet". The outbox is an index on the message store, and `chats.ts` opens a quiet room when someone with waiting messages comes online. On meeting, members trade ids from the last 7 days (`history.offer` / `want` / `fill`). **Decision:** a group's past is only offered to someone already in that saved conversation, so an invite doesn't hand a newcomer the backlog. **Limit:** a filled message's author is checked against the conversation's members, but it isn't signed, so a member could fake a line from another member. A group message counts as sent on its first receipt. Typecheck + build pass; not run in a browser.
 
 ### [ ] T10.6 History settings · `sonnet` · needs T10.4
 - **do:** "Save chats on this device" in Settings, on by default, plus "Delete saved chats". A new network can ask for no saving with `meta.history: false`, chosen when it's created. It's a request, not enforcement, because any device can keep what it receives; say so in the copy. Meta is readable by anyone listing networks: flags only, never messages. The server's only limit is its 256 KB frame.
