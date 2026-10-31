@@ -655,12 +655,13 @@ Client side of web push. `@papit/signal-server` 0.0.5 on npm has it (Render not 
 - **done when:** typecheck + build pass; server call stubbed until T9.8.
 - Done, no stub: Render already runs 0.0.5. `placeCall` pushes when the person isn't in the lobby and has a saved token; the caller's ring waits `ringOfflineMs` + 3 s. `gone` drops the contact. A cancel goes out on hang-up and when the ring runs out, with a 1 day TTL, so a phone that was off learns about the missed call. `ringContact` adds a saved contact to a running call (fire and forget). The push is signed with the device key (`callText`): a token lets anyone wake a device, so the callee checks who really called. A callee who declines from a closed app can't tell the caller, who rings out the 60 s. Typecheck + build pass; not run in a browser.
 
-### [ ] T9.5 Notification in the service worker · `opus` · needs T9.1
+### [x] T9.5 Notification in the service worker · `opus` · needs T9.1
 - **do:** `push` shows a notification with `tag: callId`; a cancel push closes it. `notificationclick` focuses an open tab or opens one on the `#call=` hash.
 - **files:** `pages/app/views/github/sw.js`.
 - **done when:** builds; live in T9.8.
+- Done: tag `call:<id>`. A cancel replaces the notification with "Missed call" rather than closing it, because every push must show one (Safari ends the subscription otherwise), and a push arriving after 60 s does the same. An open tab also gets a `ring` / `cancel` message, so it rings without a tap. Strings are in `sw.js` (en, sv by browser language), because the worker can't reach the translator. Not run in a browser.
 
-### [ ] T9.6 Join from the notification · `opus` · needs T9.5, T7.17
+### [~] T9.6 Join from the notification · `opus` · needs T9.5, T7.17
 - **careful:** FINDINGS writes `#call=<id>&from=<uid>`, but rooms need their invite key, and T7.17 already uses `#call=<room>&key=…`. So it's `#call=<id>&key=<key>&from=<uid>` on T7.17's parser. A present `from` means answer flow rather than a plain share link.
 - **do:** run the normal answer flow, or show "Missed call" if the room is gone or the ring expired.
 - **files:** `core/src/invites.ts`, page boot.
