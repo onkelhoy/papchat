@@ -18,6 +18,8 @@
       "away": "Borta",
       "dnd": "Stör ej",
       "offline": "Offline"
-    }
+    },
+    "mute": "Tysta i global chatt",
+    "unmute": "Sluta tysta i global chatt"
   }
 }

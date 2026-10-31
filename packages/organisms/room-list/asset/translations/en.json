@@ -11,6 +11,7 @@
     "live": "Live",
     "unread": "{count} unread",
     "options": "Options for {title}",
-    "leave": "Leave"
+    "leave": "Leave",
+    "new": "New posts"
   }
 }

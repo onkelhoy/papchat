@@ -1,5 +1,5 @@
 /** what the user picked for a member: from the ⋯ menu, or `chat` on click / Enter */
-export type MemberAction = "chat" | "call" | "video" | "invite" | "remove";
+export type MemberAction = "chat" | "call" | "video" | "invite" | "remove" | "mute" | "unmute";
 
 export type MemberFilesEvent = {
     /** the member's `profile.uid` */

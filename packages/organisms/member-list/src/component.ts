@@ -31,6 +31,7 @@ const ORDER: Status[] = ["available", "busy", "away", "dnd"];
  * @property {Profile[]} contacts saved people who aren't here, listed under the others as offline; property only
  * @property {StageSummary[]} stages live broadcasts, shown above the list in a "Live now" section (hidden when empty); property only
  * @property {boolean} compact   avatars only (collapsed sidebar): no heading, search or live section (reflected)
+ * @property {string[]} muted    uids hidden in global chat; property only
  * @property {boolean} canInvite adds "Invite to current room" to each row menu (attribute `caninvite`)
  *
  * @fires member-action `CustomEvent<{ uid, action }>` from a row (bubbles, composed)
@@ -52,6 +53,7 @@ export class MemberList extends CustomElement {
     @property({ type: Array, attribute: false, rerender: true }) incall: string[] = [];
     @property({ type: Array, attribute: false, rerender: true }) stages: StageSummary[] = [];
     @property({ type: Array, attribute: false, rerender: true }) contacts: Profile[] = [];
+    @property({ type: Array, attribute: false, rerender: true }) muted: string[] = [];
     @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) compact: boolean = false;
 
@@ -110,6 +112,7 @@ export class MemberList extends CustomElement {
             item.self = row.self;
             item.offline = row.offline;
             item.incall = (this.incall ?? []).includes(row.profile.uid);
+            item.muted = (this.muted ?? []).includes(row.profile.uid);
             item.canInvite = this.canInvite;
             item.compact = this.compact;
         });

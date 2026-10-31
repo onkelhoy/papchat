@@ -26,6 +26,10 @@
     "linkHere": "Du är redan på det här nätverket",
     "linkConfirm": "Du är i ett samtal. Öppna inbjudningslänken?",
     "linkConfirmAction": "Öppna",
-    "identityFailed": "papchat behöver en säker anslutning (https) för att starta"
+    "identityFailed": "papchat behöver en säker anslutning (https) för att starta",
+    "globalChat": "Global chatt",
+    "globalFiles": "Global chatt är bara text",
+    "globalWait": "Ta det lite lugnare",
+    "globalOffline": "Du är inte ansluten till nätverket än"
   }
 }

@@ -82,6 +82,7 @@ type PickTab = "emoji" | "gifs";
  * @property {boolean} formatting the toolbar and preview are open (reflected)
  * @property {string[]} recent recently used emoji, newest first (property only; the host keeps the list)
  * @property {GifState | null} gifs `{ items, loading }` GIF results from the host; null hides GIFs (property only)
+ * @property {boolean} textonly no attach button, for a chat that can't carry files (reflected)
  *
  * @fires send `CustomEvent<{ text: string }>` trimmed text, the field is cleared afterwards
  * @fires typing `CustomEvent<void>` at most once per second while the user types
@@ -111,6 +112,7 @@ export class Composer extends CustomElement {
 
     @property({ type: Array, attribute: false, rerender: true }) recent: string[] = [];
     @property({ type: Object, attribute: false, rerender: true }) gifs: GifState | null = null;
+    @property({ type: Boolean, reflect: true, rerender: true }) textonly: boolean = false;
 
     // only tracks "is there something to send", rerenders the send button state
     @property({ type: Boolean, attribute: false, rerender: true }) private filled: boolean = false;

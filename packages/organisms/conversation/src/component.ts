@@ -38,6 +38,7 @@ const BOTTOM_THRESHOLD = 24;
  * @property {string} heading optional header text (not `title`: that would add a native tooltip)
  * @property {string[]} recentEmoji recently used emoji, newest first, for the composer's picker (property only)
  * @property {GifState | null} gifs GIF results for the composer's picker, null hides GIFs (property only)
+ * @property {boolean} textonly the composer offers no files or GIFs
  *
  * @fires send `CustomEvent<{ text: string }>` re-dispatched from the composer
  * @fires typing `CustomEvent<void>` re-dispatched from the composer
@@ -65,6 +66,7 @@ export class Conversation extends CustomElement {
     @property({ type: String, rerender: true }) heading: string = "";
     @property({ type: Array, attribute: false, rerender: true }) recentEmoji: string[] = [];
     @property({ type: Object, attribute: false, rerender: true }) gifs: GifState | null = null;
+    @property({ type: Boolean, rerender: true }) textonly: boolean = false;
 
     // shown while there are messages below the viewport
     @property({ type: Boolean, attribute: false, rerender: true }) private unseen: boolean = false;
@@ -102,7 +104,8 @@ export class Conversation extends CustomElement {
         if (this.composer)
         {
             this.composer.recent = this.recentEmoji;
-            this.composer.gifs = this.gifs;
+            this.composer.gifs = this.textonly ? null : this.gifs;
+            this.composer.textonly = this.textonly;
         }
         this.followBottom();
         return undefined;

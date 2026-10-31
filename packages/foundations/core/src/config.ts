@@ -41,6 +41,8 @@ export const LIMITS = {
     resendGapMs: 1_500,
     // a buzz (shake + sound) at most this often per sender, checked on both ends
     buzzGapMs: 10_000,
+    // global chat: posts from one sender closer together than this are dropped by everyone
+    globalGapMs: 1_000,
 } as const;
 
 export const LOBBY_NAME = "papchat";

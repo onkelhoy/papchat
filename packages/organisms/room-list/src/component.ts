@@ -26,6 +26,8 @@ const MAX_AVATARS = 3;
  * @property {string} active id of the open room, gets `aria-current`
  * @property {boolean} compact one avatar per row (collapsed sidebar): title in a tooltip, unread as a dot (reflected)
  *
+ * A row of kind `global` stays put: a broadcast icon instead of avatars, no menu, and a dot for `dot`.
+ *
  * @fires select `CustomEvent<{ id: string }>` when a row is chosen
  * @fires leave `CustomEvent<{ id: string }>` when "Leave" is chosen in a row menu
  * @csspart list the `pap-group` holding the rows
@@ -68,25 +70,32 @@ export class RoomList extends CustomElement {
     private renderRow(room: RoomSummary, index: number) {
         const title = this.labelOf(room);
         const current = room.id === this.active;
+        const fixed = room.kind === "global";
 
         return html`
             <div part="row" class="row" role="listitem" data-current="${String(current)}">
                 <button type="button" class="select" aria-current="${current ? "true" : "false"}" title="${this.compact ? title : ""}" @click="${() => this.handleSelect(room)}">
                     <span class="avatars" aria-hidden="true">
+                        ${fixed ? html`<span class="icon"><pap-icon name="/icons/broadcast.svg"></pap-icon></span>` : ""}
                         ${room.participants.slice(0, MAX_AVATARS).map(p => html`<pc-avatar size="s" name="${p.name}" color="${p.color}" uid="${p.uid}"></pc-avatar>`)}
-                        ${room.participants.length ? "" : html`<pc-avatar size="s" name="${title}"></pc-avatar>`}
+                        ${room.participants.length || fixed ? "" : html`<pc-avatar size="s" name="${title}"></pc-avatar>`}
                     </span>
                     <span class="title">${title}</span>
                     ${room.incall ? html`<pap-icon class="call" name="/icons/phone.svg" role="img" aria-label="${this.t("incall")}"></pap-icon>` : ""}
                     ${room.live ? html`<pc-badge variant="live">${this.t("live")}</pc-badge>` : ""}
+                    ${room.dot ? html`<span class="dot" role="img" aria-label="${this.t("new")}"></span>` : ""}
                     ${room.unread > 0 ? html`<pc-badge variant="primary" count="${room.unread}" role="img" aria-label="${this.t("unread", { count: room.unread })}"></pc-badge>` : ""}
                 </button>
-                <button type="button" class="more" popovertarget="${`menu-${index}`}" aria-haspopup="menu" aria-label="${this.t("options", { title })}">
-                    <span aria-hidden="true">⋯</span>
-                </button>
-                <pap-menu id="${`menu-${index}`}" placement="bottom-right">
-                    <pap-menuitem @click="${(e: Event) => this.handleLeave(room, e)}">${this.t("leave")}</pap-menuitem>
-                </pap-menu>
+                ${fixed ? "" : html`
+                    <span class="actions">
+                        <button type="button" class="more" popovertarget="${`menu-${index}`}" aria-haspopup="menu" aria-label="${this.t("options", { title })}">
+                            <span aria-hidden="true">⋯</span>
+                        </button>
+                        <pap-menu id="${`menu-${index}`}" placement="bottom-right">
+                            <pap-menuitem @click="${(e: Event) => this.handleLeave(room, e)}">${this.t("leave")}</pap-menuitem>
+                        </pap-menu>
+                    </span>
+                `}
             </div>
         `;
     }

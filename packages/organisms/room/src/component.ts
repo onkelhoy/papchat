@@ -42,6 +42,8 @@ const NARROW = "(max-width: 40rem)";
  * @property {boolean} screen you are sharing your screen
  * @property {boolean} canscreen the browser can share a screen (default true)
  * @property {boolean} canbuzz show the Buzz button in the header (1:1 chats)
+ * @property {boolean} nocall no Call and Video buttons in the header
+ * @property {boolean} textonly the composer offers no files or GIFs
  * @property {string} sinkid output device id for remote audio
  * @property {string[]} recentEmoji recently used emoji for the composer's picker (property only)
  * @property {GifState | null} gifs GIF results for the composer's picker, null hides GIFs (property only)
@@ -61,6 +63,8 @@ export class Room extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) incall: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) viewer: boolean = false;
     @property({ type: Boolean, rerender: true }) canbuzz: boolean = false;
+    @property({ type: Boolean, rerender: true }) nocall: boolean = false;
+    @property({ type: Boolean, rerender: true }) textonly: boolean = false;
     @property({ type: String, rerender: true }) heading: string = "";
     @property({ type: String, rerender: true }) me: string = "";
     @property({ type: Array, attribute: false, rerender: true }) messages: ChatMessage[] = [];
@@ -81,7 +85,7 @@ export class Room extends CustomElement {
     // chat panel next to the stage, toggled from the controls
     @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
-    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[]; gifs: GifState | null };
+    @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[]; gifs: GifState | null; textonly: boolean };
     @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
 
     @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean };
@@ -119,6 +123,7 @@ export class Room extends CustomElement {
             conversation.files = this.files;
             conversation.recentEmoji = this.recentEmoji;
             conversation.gifs = this.gifs;
+            conversation.textonly = this.textonly;
         }
 
         const stage = this.stage;
@@ -230,14 +235,18 @@ export class Room extends CustomElement {
                             ${this.t("buzz")}
                         </pap-button>
                     ` : ""}
-                    <pap-button size="small" variant="clear" type="button" data-kind="call" @click="${this.handleCall}">
-                        <pap-icon name="/icons/phone.svg" width="16" height="16" aria-hidden="true"></pap-icon>
-                        ${this.t("call")}
-                    </pap-button>
-                    <pap-button size="small" variant="clear" type="button" data-kind="video" @click="${this.handleCall}">
-                        <pap-icon name="/icons/camera.svg" width="16" height="16" aria-hidden="true"></pap-icon>
-                        ${this.t("video")}
-                    </pap-button>
+                    ${this.nocall ? "" : html`
+                        <span class="calls">
+                            <pap-button size="small" variant="clear" type="button" data-kind="call" @click="${this.handleCall}">
+                                <pap-icon name="/icons/phone.svg" width="16" height="16" aria-hidden="true"></pap-icon>
+                                ${this.t("call")}
+                            </pap-button>
+                            <pap-button size="small" variant="clear" type="button" data-kind="video" @click="${this.handleCall}">
+                                <pap-icon name="/icons/camera.svg" width="16" height="16" aria-hidden="true"></pap-icon>
+                                ${this.t("video")}
+                            </pap-button>
+                        </span>
+                    `}
                 </div>
                 ${this.renderConversation()}
             `;

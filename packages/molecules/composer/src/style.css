@@ -319,3 +319,7 @@ pc-gif-picker.full {
 .giphy a {
     color: var(--primary);
 }
+
+:host([textonly]) [part="attach"] {
+    display: none;
+}

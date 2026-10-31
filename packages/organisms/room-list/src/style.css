@@ -80,6 +80,33 @@ button:focus-visible {
     white-space: nowrap;
 }
 
+.actions {
+    display: contents;
+}
+
+.icon {
+    display: grid;
+    place-items: center;
+    inline-size: var(--avatar-size-s, 1.75rem);
+    block-size: var(--avatar-size-s, 1.75rem);
+    border-radius: 50%;
+    background-color: var(--secondary);
+    color: var(--text);
+}
+
+.icon pap-icon {
+    inline-size: 1rem;
+    block-size: 1rem;
+}
+
+.dot {
+    flex: none;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: 50%;
+    background-color: var(--primary);
+}
+
 .call {
     flex: none;
     inline-size: 1rem;
@@ -124,6 +151,7 @@ pc-badge {
 }
 
 :host([compact]) pc-badge,
+:host([compact]) .dot,
 :host([compact]) .call {
     position: absolute;
     inset-block-start: 0;

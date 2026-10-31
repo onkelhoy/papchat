@@ -762,10 +762,11 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### Phase E: global chat
 
-### [ ] T10.11 Global chat · `opus` · needs —
+### [x] T10.11 Global chat · `opus` · needs —
 - **do:** a chat everyone in the current network is in: a fixed sidebar row, reusing `pc-conversation`, with lobby broadcasts. Each network has its own. Never notifies by push, no sound by default, and no unread badge beyond a dot. Client-side: rate limit (drop senders over 1 message per second), the `messageChars` cap, and a local mute per person, because nobody can moderate the public lobby. Text only, kept in memory: late joiners see nothing earlier.
 - **files:** `core/src/global.ts`, `organisms/room-list`, page, translations.
 - **done when:** two tabs chat with no room created, and muting hides someone; typecheck + build pass.
+- Done: `core/src/global.ts`. `postGlobal(text)` is one lobby `broadcast`, so it goes over chord and its relays. A post is dropped by every receiver when that sender posted under `LIMITS.globalGapMs` ago, and `global` messages use the lobby's proof check like everything else. Mutes are `storage.muted`, per device, set from the member menu (`mute` / `unmute` actions). No notification, sound, unread count or storage: `globalUnseen` only draws a dot on the fixed `GLOBAL_ID` row. `pc-room` gained `nocall` and `textonly`, `pc-composer` `textonly`. Typecheck + build pass; not run in a browser.
 
 ### [ ] T10.12 Wave 10 live check + README · `opus` · needs T10.1-T10.11
 - User test: late joiner sees a stream; a day-old chat is still there; an offline message arrives on return; phone links by QR and a second browser by link; both get the chats; others see one person; removing a device works; global chat works. Update the README's identity, limits and trust sections.

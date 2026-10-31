@@ -26,6 +26,10 @@
     "linkHere": "You're already on this network",
     "linkConfirm": "You're in a call. Open this invite link?",
     "linkConfirmAction": "Open",
-    "identityFailed": "papchat needs a secure (https) connection to start"
+    "identityFailed": "papchat needs a secure (https) connection to start",
+    "globalChat": "Global chat",
+    "globalFiles": "Global chat is text only",
+    "globalWait": "Slow down a little",
+    "globalOffline": "You're not connected to the network yet"
   }
 }

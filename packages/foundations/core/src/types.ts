@@ -170,12 +170,14 @@ export type FileEntry = FileInfo & TransferState;
 
 export type RoomSummary = {
     id: string;
-    kind: RoomKind;
+    kind: RoomKind | "global";
     title: string;
     participants: Profile[];
     unread: number;
     incall: boolean;
     live: boolean;
+    // something new, with no count: global chat
+    dot?: boolean;
 };
 
 export type StageSummary = {

@@ -11,6 +11,7 @@
     "live": "Live",
     "unread": "{count} olästa",
     "options": "Alternativ för {title}",
-    "leave": "Lämna"
+    "leave": "Lämna",
+    "new": "Nya inlägg"
   }
 }

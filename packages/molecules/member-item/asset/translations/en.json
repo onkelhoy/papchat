@@ -18,6 +18,8 @@
       "away": "Away",
       "dnd": "Do not disturb",
       "offline": "Offline"
-    }
+    },
+    "mute": "Mute in global chat",
+    "unmute": "Unmute in global chat"
   }
 }

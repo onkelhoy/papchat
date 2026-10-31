@@ -32,11 +32,12 @@ import type { MemberAction, MemberActionEvent, MemberFilesEvent } from "./types"
  * @property {boolean} compact  avatar only (collapsed sidebar): name and status move to a tooltip, ⋯ menu via right-click (reflected)
  * @property {boolean} incall   shows a small phone icon (reflected)
  * @property {boolean} canInvite shows "Invite to current room" in the menu (attribute `caninvite`)
+ * @property {boolean} muted hidden in global chat: the menu offers to unmute (reflected)
  * @property {boolean} offline a saved contact who isn't here: shows Offline, the menu has Call / Video call / Remove, and a click opens it (reflected)
  *
  * Files dragged onto a row (not your own) highlight it (`:state(drop)`); dropping them fires `member-files`.
  *
- * @fires member-action `CustomEvent<{ uid, action: "chat" | "call" | "video" | "invite" | "remove" }>` (bubbles, composed)
+ * @fires member-action `CustomEvent<{ uid, action: "chat" | "call" | "video" | "invite" | "remove" | "mute" | "unmute" }>` (bubbles, composed)
  * @fires member-files `CustomEvent<{ uid, files: File[] }>` files dropped on the row (bubbles, composed)
  *
  * @csspart avatar  the `pc-avatar`
@@ -56,6 +57,7 @@ export class MemberItem extends CustomElement {
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) self: boolean = false;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) incall: boolean = false;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); }, rerender: true }) offline: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) muted: boolean = false;
     @property({ type: Boolean, attribute: "caninvite", rerender: true }) canInvite: boolean = false;
     @property({ type: Boolean, reflect: true, after: function (this: MemberItem) { this.updateLabel(); } }) compact: boolean = false;
 
@@ -296,6 +298,11 @@ export class MemberItem extends CustomElement {
                         <span>${this.t("invite")}</span>
                     </pap-menuitem>
                 ` : ""}
+                ${this.offline ? "" : html`
+                    <pap-menuitem data-action="${this.muted ? "unmute" : "mute"}" @click="${this.handleSelect}">
+                        <span>${this.t(this.muted ? "unmute" : "mute")}</span>
+                    </pap-menuitem>
+                `}
                 ${this.offline ? html`
                     <pap-menuitem data-action="remove" @click="${this.handleSelect}">
                         <span>${this.t("remove")}</span>

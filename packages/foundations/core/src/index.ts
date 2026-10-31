@@ -1,4 +1,5 @@
 import { LIMITS, signalUrl } from "./config";
+import * as global from "./global";
 import * as identity from "./identity";
 import * as invites from "./invites";
 import * as lobby from "./lobby";
@@ -31,6 +32,7 @@ export * from "./push";
 export * from "./transfer";
 export * from "./stage";
 export * from "./gif";
+export * from "./global";
 export * as ringtone from "./ringtone";
 
 // console handle for manual checks: papchat.state.prefs(), papchat.setLogging(true), …
@@ -57,6 +59,7 @@ if (typeof window !== "undefined")
         ...notify,
         ...push,
         ...stage,
+        ...global,
         ringtone,
         lobby,
         identity,

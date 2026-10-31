@@ -82,6 +82,15 @@ import {
     switchNetwork,
     unlockNetwork,
     GIPHY_KEY,
+    GLOBAL_ID,
+    globalAuthors,
+    globalMessages,
+    globalOpen,
+    globalUnseen,
+    muted,
+    postGlobal,
+    setGlobalOpen,
+    toggleMute,
     callLink,
     cancelRing,
     inAnyCall,
@@ -184,6 +193,8 @@ const current = (): Room | null => activeRoom() ? getRoom(activeRoom()!) : null;
 // the stage (presented or watched) takes the main area instead of a room until a room is picked
 const [stageView, setStageView] = signal(false);
 const shownStage = (): Stage | null => stageView() ? currentStage() : null;
+// something else than a room fills the main area
+const elsewhere = () => !!shownStage() || globalOpen();
 
 // language: stored choice → browser language → en
 function pickLanguage(): string {
@@ -202,6 +213,7 @@ async function changeLanguage(code: string) {
     settings.language = code;
     onboarding.language = code;
     empty.textContent = t("empty");
+    setLanguage(code);
     settings.shortcuts = [
         { keys: "M", label: t("shortcutMic") },
         { keys: "V", label: t("shortcutCamera") },
@@ -362,22 +374,25 @@ effect(() =>
 });
 effect(() => { header.live = !!currentStage()?.mine; });
 
-// the stage you're on sits first in the room list, with a Live badge
+effect(() => { list.muted = muted(); });
+
+// global chat is always first, then the stage you're on with a Live badge, then the rooms
+const [language, setLanguage] = signal("");
 effect(() =>
 {
+    language();
     const stage = currentStage();
-    const row: RoomSummary[] = stage
-        ? [{ id: stage.id, kind: "stage", title: stage.title, participants: [stage.presenter], unread: 0, incall: false, live: true }]
-        : [];
-    roomList.rooms = [...row, ...rooms()];
+    const fixed: RoomSummary[] = [{ id: GLOBAL_ID, kind: "global", title: t("globalChat"), participants: [], unread: 0, incall: false, live: false, dot: globalUnseen() }];
+    if (stage) fixed.push({ id: stage.id, kind: "stage", title: stage.title, participants: [stage.presenter], unread: 0, incall: false, live: true });
+    roomList.rooms = [...fixed, ...rooms()];
 });
-effect(() => { roomList.active = shownStage()?.id ?? activeRoom() ?? ""; });
+effect(() => { roomList.active = globalOpen() ? GLOBAL_ID : shownStage()?.id ?? activeRoom() ?? ""; });
 effect(() => { toaster.toasts = toasts(); });
 
 // the open room: messages, typing and who is who
 effect(() =>
 {
-    if (shownStage()) return;
+    if (elsewhere()) return;
     const room = current();
     view.hidden = !room;
     empty.hidden = !!room;
@@ -397,12 +412,14 @@ effect(() =>
     view.files = room.files();
     view.heading = room.title || room.participants().map(p => p.name).join(", ");
     view.canbuzz = !!room.direct;
+    view.nocall = false;
+    view.textonly = false;
 });
 
 // the open room: call stage and controls
 effect(() =>
 {
-    if (shownStage()) return;
+    if (elsewhere()) return;
     const room = current();
     if (!room) return;
 
@@ -469,11 +486,49 @@ effect(() =>
     else setStageView(false);
 });
 effect(() => { if (activeRoom()) setStageView(false); });
+effect(() => { if (activeRoom() || stageView()) setTimeout(() => setGlobalOpen(false), 0); });
 
 function showStage() {
     selectRoom(null);
+    setGlobalOpen(false);
     setStageView(true);
 }
+
+function showGlobal() {
+    selectRoom(null);
+    setStageView(false);
+    setGlobalOpen(true);
+}
+
+// global chat in the room view: everyone in the network, text only, no calls
+effect(() =>
+{
+    if (!globalOpen()) return;
+    language();
+
+    view.hidden = false;
+    empty.hidden = true;
+    list.canInvite = false;
+
+    const mine = me();
+    const profiles: Record<string, Profile> = { ...globalAuthors() };
+    for (const p of members()) profiles[p.uid] = p;
+    if (mine) profiles[mine.uid] = mine;
+
+    view.profiles = profiles;
+    view.me = mine?.uid ?? "";
+    view.participants = [];
+    view.messages = globalMessages();
+    view.typing = [];
+    view.files = [];
+    view.heading = t("globalChat");
+    view.canbuzz = false;
+    view.nocall = true;
+    view.textonly = true;
+    view.incall = false;
+    view.viewer = false;
+    view.tiles = [];
+});
 
 // the stage in the room view: presenter gets capture controls, viewers the presenter's tile and chat
 effect(() =>
@@ -499,6 +554,8 @@ effect(() =>
     view.files = [];
     view.heading = stage.title;
     view.canbuzz = false;
+    view.nocall = false;
+    view.textonly = false;
     view.incall = true;
     view.viewer = !stage.mine;
 
@@ -719,7 +776,8 @@ effect(() =>
 roomList.addEventListener("select", (e) =>
 {
     const { id } = (e as CustomEvent<{ id: string }>).detail;
-    if (id === currentStage()?.id) showStage();
+    if (id === GLOBAL_ID) showGlobal();
+    else if (id === currentStage()?.id) showStage();
     else selectRoom(id);
 });
 roomList.addEventListener("leave", (e) =>
@@ -733,7 +791,11 @@ view.addEventListener("send", (e) =>
 {
     const { text } = (e as CustomEvent<{ text: string }>).detail;
     const stage = shownStage();
-    if (stage) stage.send(text);
+    if (globalOpen())
+    {
+        if (!postGlobal(text)) toast("info", t(lobbyStatus() === "connected" ? "globalWait" : "globalOffline"));
+    }
+    else if (stage) stage.send(text);
     else if (text.trim().toLowerCase() === "/buzz") sendBuzz();
     else current()?.send(text);
 });
@@ -810,9 +872,14 @@ effect(() =>
         : [0, -12, 12, -10, 10, -6, 6, 0].map(x => ({ transform: `translateX(${x}px)` }));
     shell.animate(frames, { duration: calm.matches ? 500 : 600, easing: "ease-in-out" });
 });
-view.addEventListener("typing", () => { if (!shownStage()) current()?.notifyTyping(); });
+view.addEventListener("typing", () => { if (!elsewhere()) current()?.notifyTyping(); });
 view.addEventListener("files", (e) =>
 {
+    if (globalOpen())
+    {
+        toast("info", t("globalFiles"));
+        return;
+    }
     if (shownStage())
     {
         toast("info", t("filesOnStage"));
@@ -960,6 +1027,7 @@ document.addEventListener("member-action", (e) =>
     else if (action === "call" || action === "video") void placeCall(uid, action);
     else if (action === "invite") invite(uid);
     else if (action === "remove") forgetContact(uid);
+    else if (action === "mute" || action === "unmute") toggleMute(uid);
 });
 
 // files dropped on a member (sidebar or People tab): open their chat, then send

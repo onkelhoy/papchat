@@ -8,6 +8,7 @@ const KEYS = {
     network: "papchat:network",
     push: "papchat:push",
     contacts: "papchat:contacts",
+    muted: "papchat:muted",
 } as const;
 
 export const DEFAULT_PREFS: Prefs = {
@@ -146,6 +147,16 @@ export const storage = {
         },
         set(value: Contact[]) {
             write(local, KEYS.contacts, value);
+        },
+    },
+    // people you've muted in global chat
+    muted: {
+        get(): string[] {
+            const value = read(local, KEYS.muted);
+            return Array.isArray(value) ? value.filter((uid): uid is string => typeof uid === "string") : [];
+        },
+        set(value: string[]) {
+            write(local, KEYS.muted, value);
         },
     },
     debug: {
