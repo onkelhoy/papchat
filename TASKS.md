@@ -6,8 +6,9 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 77/92 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Waves 8 (rogue networks) and 9 (offline calling) are planned from `FINDINGS.md`.
-- **Next, in order:** T7.17 share links (onboarding already has `joining` for it; T9.6 needs it), then wave 9. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Done:** 77/104 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Wave 8 (rogue networks) is in, waiting for its live test. Waves 9 (offline calling) and 10 (identity, saved chats, linked devices, global chat) are planned; wave 10 opens with its decisions.
+- **Next, in order:** T10.1 live stream bug, T7.17 share links (onboarding already has `joining` for it; T9.6 and T10.8 need it), T10.2-T10.3 identity, then wave 9 (T9.3 needs T10.3), then the rest of wave 10. T10.11 global chat has no dependencies and can move earlier. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
@@ -636,7 +637,7 @@ Client side of web push. `@papit/signal-server` 0.0.5 on npm has it (Render not 
 - **files:** `core/src/push.ts`, `core/src/storage.ts`, `organisms/settings`, translations.
 - **done when:** token stored and refreshed; unsupported browsers hide the button; typecheck + build pass.
 
-### [ ] T9.3 Contacts · `opus` · needs —
+### [ ] T9.3 Contacts · `opus` · needs T10.3
 - **do:** add optional `push?: string` to `Profile`, and read it in `readMember` (it drops unknown fields). Save `{ uid, name, token }` to device storage for anyone met in a lobby, room or call. Show saved contacts as callable when they're offline, in `pc-invite-picker` / `pc-member-list`. Share by link and QR.
 - **check first:** the wire profile is capped at 1 KB. The server stores nothing, so the token probably encodes the whole subscription and may be long. If it doesn't fit, send it as its own message to each new peer.
 - **privacy:** per FINDINGS the token is in the profile, so everyone in the public lobby gets one and can ring that device. Mention it in the Settings copy.
@@ -665,6 +666,95 @@ Client side of web push. `@papit/signal-server` 0.0.5 on npm has it (Render not 
 
 ### [ ] T9.8 Wave 9 server bump + live check · `opus` · needs T9.4-T9.7, push released
 - Render is the user's: bump `../signal` to 0.0.5+, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` once (new keys void every token; without them tokens die on each restart), add `--trust-proxy <hops>`. Replace the stubs. User test: phone with the app closed gets the call, answers, hang-up clears it, missed call, dead token. Update the README.
+
+---
+
+## Wave 10: device identity, saved chats, linked devices, global chat (user, 2026-10-31)
+
+Ideas from the user, planned in this order because each phase needs the one before. Decisions already made, don't reopen them:
+- **Identity is a key on the device**, not a name, not a MAC (browsers never expose one). The name is only a label.
+- **Everyone becomes a new person once** when this ships: almost nothing is saved yet, so this is the cheapest time. Keep the name and colour.
+- **An account is an array of device keys.** Linking two devices keeps both identities, so links other people already have stay valid.
+- **Linking is one click:** "Link my profile" shows a QR code and a link. Everything stays free: no new service, the existing signal server is enough.
+- **Chats and history live only on the devices,** in IndexedDB, files excluded. On by default, with a per-device switch.
+- **Global chat never pushes** and is per network.
+
+### Phase A: bug
+
+### [ ] T10.1 Late joiners don't see live streams · `opus` · needs —
+- **symptom:** a stage started before someone joined the lobby never shows for them. Not reproduced yet; this is from reading `stage.ts:460-492`.
+- **cause?:** the new member broadcasts `stage.query` once, right when status is `connected`, possibly before its links are up, so it can get lost. The fallback `listStages` runs 2 s later through `c.list()`, but non-hosts drop their socket once linked, and it skips presenters whose profile isn't known yet.
+- **do:** the user suggested the welcome message, but that belongs to `@papit/webrtc`. Same result from papchat: the presenter watches lobby `members`, and sends `stage.announce` to each uid it hasn't told yet. Keep `stage.query`. Fix `listStages` or remove it if the announce makes it redundant.
+- **files:** `core/src/stage.ts`.
+- **done when:** a presenter live before you join shows up without a reload; typecheck + build pass. User confirms live.
+
+### Phase B: identity
+
+### [ ] T10.2 A key on the device · `opus` · needs —
+- **do:** new `core/src/keys.ts`. On first run create an ECDSA P-256 pair with WebCrypto, `extractable: false` for the private key, and keep the `CryptoKey`s in IndexedDB (P-256 because Ed25519 isn't in every browser). `uid` becomes base64url of the first 16 bytes of SHA-256 of the public key. Add `key` (the public key) to `Profile`, read it in `readMember`, and bump `Profile.v`. Old stored profiles keep name and colour and get a new uid. If IndexedDB is unavailable (some private windows), use an in-memory pair for that session.
+- **check first:** the new uid fits `ID_MAX` (`invites.ts`), and the wire profile stays under the 1 KB limit. A raw key is about 88 chars in base64.
+- **files:** `core/src/keys.ts`, `core/src/identity.ts`, `core/src/types.ts`, `core/src/lobby.ts`, `core/src/storage.ts`.
+- **done when:** a uid survives a reload and two tabs agree; a stored profile migrates; typecheck + build pass.
+
+### [ ] T10.3 Prove who you are · `opus` · needs T10.2
+- **why:** today anyone can copy a uid: everyone in the lobby sees it, and `readMember` believes it.
+- **do:** when a member with a key appears: check `hash(key) === uid`, send a random challenge, and verify the signature over challenge + both peer ids. The signature can't be forged by peers relaying in chord. Do it in the lobby and in rooms. A member who fails or doesn't answer in time is dropped from the list and can't be messaged as that uid.
+- **limit:** chord can relay lobby messages, so proving the key doesn't sign each later lobby message. Rooms are mesh with direct links. If `client.send` turns out to be spoofable by a relay, write a papit finding.
+- **files:** `core/src/keys.ts`, `core/src/lobby.ts`, `core/src/room.ts`.
+- **done when:** a client faking someone's uid is rejected; typecheck + build pass.
+
+### Phase C: saved chats
+
+### [ ] T10.4 Conversations belong to people · `opus` · needs T10.3
+- **why:** a chat is tied to a room today, and rooms disappear, so nothing can come back the next day.
+- **do:** a conversation is keyed by the two uids for a 1:1, or by a uuid kept in the room's `meta` for a group. The room just carries messages. New `core/src/history.ts` stores conversations and messages in IndexedDB (text and GIFs, no files), loads them on open, and lists them in the sidebar with nobody online. Opening an old 1:1 starts a new room with that person. Move past `LIMITS.messagesKept` by paging older messages from the store. Call `navigator.storage.persist()`, because Safari can evict data from sites that aren't installed.
+- **files:** `core/src/history.ts`, `core/src/room.ts`, `core/src/invites.ts`, `organisms/room-list`, `organisms/conversation`, page.
+- **done when:** a chat is still there after a reload the next day with nobody online; typecheck + build pass.
+
+### [ ] T10.5 Delivery receipts and unsent messages · `opus` · needs T10.4
+- **do:** receivers confirm each message by id, and `pc-message` shows sending / sent / not sent. Unconfirmed messages stay in the store as an outbox and go out when that person next connects, in order. Receivers drop duplicates by id. Groups: when a member joins, each side offers ids from the last 7 days and fills the gaps from whoever has them, keeping the original author and time. Accept a message only if its author is someone in that conversation.
+- **limit:** delivery needs both people online at once. Offline wake by push is not part of this.
+- **files:** `core/src/history.ts`, `core/src/room.ts`, `molecules/message`, translations.
+- **done when:** a message sent while the other person is away arrives when they return, once; typecheck + build pass.
+
+### [ ] T10.6 History settings · `sonnet` · needs T10.4
+- **do:** "Save chats on this device" in Settings, on by default, plus "Delete saved chats". A new network can ask for no saving with `meta.history: false`, chosen when it's created. It's a request, not enforcement, because any device can keep what it receives; say so in the copy. Meta is readable by anyone listing networks: flags only, never messages. The server's only limit is its 256 KB frame.
+- **files:** `organisms/settings`, `molecules/network-picker`, `core/src/history.ts`, `core/src/lobby.ts`, translations.
+- **done when:** turning it off stops saving and delete clears it; typecheck + build pass.
+
+### Phase D: linked devices
+
+### [ ] T10.7 An account is an array of keys · `opus` · needs T10.4
+- **do:** a link is two signatures, each device signing the other's key, so neither can claim the other alone. Each device stores the set and sends it to people it meets in its own message, not the profile: a key and signature for each device is about 175 chars, so the profile's 1 KB wouldn't fit. Receivers verify, then resolve every uid in a set to one person: the smallest uid, so everyone agrees with no coordinator. Merge their two 1:1 conversations by message id. Member lists show one entry per person. Calls ring every device of that person that's online (`peerByUid` holds only the newest peer today).
+- **files:** `core/src/keys.ts`, `core/src/lobby.ts`, `core/src/history.ts`, `core/src/invites.ts`.
+- **done when:** two linked devices show as one person to others, and existing chats with either device stay; typecheck + build pass.
+
+### [ ] T10.8 Link my profile: QR code and link · `opus` · needs T10.7, T7.17
+- **do:** a "Link my profile" button in Settings creates a private one-time network and shows a QR code plus a copy-link button for `#link=<network>&key=<key>`, on T7.17's parser. It expires after 5 minutes. A phone's camera opens the link from the QR, so no scanner is needed; two browsers or a laptop use the link. The second device goes through onboarding if it's new, then both sides show the same short code from a hash of both keys, and the **first device must press Accept**: without that, anyone who sees the link could become you. Then exchange keys and signatures (T10.7).
+- **use:** a plain `Client`, not `Room`, so it stays out of the sidebar. Works from any network. Expect a 30-60 s wait on a Render cold start, and show it.
+- **QR:** `qrcode-generator` 2.0.4 (MIT, generates in the browser, no service). New `pc-qr-code` molecule, scaffolded with `npm create @papit --destination`. T9.3's contact QR reuses it.
+- **files:** `molecules/qr-code` (new), `core/src/link.ts`, `organisms/settings`, `organisms/onboarding`, page boot, translations.
+- **done when:** phone and laptop link with a scan and one click; an expired or used link fails clearly; typecheck + build pass.
+
+### [ ] T10.9 Sync linked devices · `opus` · needs T10.8, T10.5
+- **do:** right after linking, and whenever two linked devices are online together, exchange what the other lacks: conversations, messages and contacts, by id, newest first, in chunks over a data channel. Show progress. It can stop and resume, because ids make it safe to repeat. Files aren't included.
+- **files:** `core/src/link.ts`, `core/src/history.ts`.
+- **done when:** a new phone gets the laptop's chats, and a message on either device reaches the other; typecheck + build pass.
+
+### [ ] T10.10 Unlink a device · `opus` · needs T10.7
+- **do:** Settings lists linked devices, with "Remove". The removal is signed and spreads like the link set. Say clearly in the UI that a removed device keeps what it already has.
+- **limit:** people who were offline only learn it the next time they meet a linked device, and a lost phone can't be remotely wiped.
+- **files:** `core/src/keys.ts`, `organisms/settings`, translations.
+
+### Phase E: global chat
+
+### [ ] T10.11 Global chat · `opus` · needs —
+- **do:** a chat everyone in the current network is in: a fixed sidebar row, reusing `pc-conversation`, with lobby broadcasts. Each network has its own. Never notifies by push, no sound by default, and no unread badge beyond a dot. Client-side: rate limit (drop senders over 1 message per second), the `messageChars` cap, and a local mute per person, because nobody can moderate the public lobby. Text only, kept in memory: late joiners see nothing earlier.
+- **files:** `core/src/global.ts`, `organisms/room-list`, page, translations.
+- **done when:** two tabs chat with no room created, and muting hides someone; typecheck + build pass.
+
+### [ ] T10.12 Wave 10 live check + README · `opus` · needs T10.1-T10.11
+- User test: late joiner sees a stream; a day-old chat is still there; an offline message arrives on return; phone links by QR and a second browser by link; both get the chats; others see one person; removing a device works; global chat works. Update the README's identity, limits and trust sections.
 
 ---
 
