@@ -51,7 +51,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {string} network name of the private network in use, "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server, for the Network tab (property only)
  * @property {boolean} separated a same-name network with an unknown password exists (property only)
- * @property {string} invitelink invite link for the network in use, "" on the public one (property only)
+ * @property {string} invitelink invite link for the network in use (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed

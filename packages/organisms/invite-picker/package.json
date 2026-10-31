@@ -61,7 +61,8 @@
     "@papit/checkbox": "*",
     "@papit/input": "*",
     "@papit/button": "*",
-    "@papchat/avatar": "*"
+    "@papchat/avatar": "*",
+    "@papchat/share-link": "*"
   },
   "peerDependencies": {
     "react": "^19"

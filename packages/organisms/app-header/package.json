@@ -64,7 +64,8 @@
     "@papchat/avatar": "*",
     "@papchat/presence": "*",
     "@papchat/connection-status": "*",
-    "@papchat/language-picker": "*"
+    "@papchat/language-picker": "*",
+    "@papchat/share-link": "*"
   },
   "peerDependencies": {
     "react": "^19"

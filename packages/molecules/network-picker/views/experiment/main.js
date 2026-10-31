@@ -15,7 +15,7 @@ for (const id of ["picker", "private"])
 {
     const picker = document.getElementById(id);
     picker.networks = networks;
-    if (picker.network) picker.link = "https://example.com/papchat/#join=demo&key=demo";
+    picker.link = "https://example.com/papchat/#join=demo&key=demo";
     picker.addEventListener("network-change", (e) => { log.textContent = `network-change ${JSON.stringify(e.detail)}`; });
     picker.addEventListener("networks-refresh", () => { log.textContent = "networks-refresh"; });
 }

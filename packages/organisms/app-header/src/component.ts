@@ -13,6 +13,7 @@ import "@papit/theme-picker";
 import "@papchat/avatar";
 import "@papchat/presence";
 import "@papchat/connection-status";
+import "@papchat/share-link";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -38,6 +39,7 @@ const DARK = "(prefers-color-scheme: dark)";
  * @property {LobbyStatus} status lobby connection state; `idle` is shown as `connecting`
  * @property {string} network name of the private network in use, shown next to the connection state; "" = public
  * @property {boolean} separated a same-name network with an unknown password exists: the state says so (property only)
+ * @property {string} invitelink invite link for the network in use, "" hides the Invite button (property only)
  * @property {boolean} live you are presenting: the button reads "End broadcast" and fires `end-live` (reflected)
  *
  * @fires status-change `CustomEvent<{ status }>` a presence status was chosen
@@ -56,6 +58,7 @@ export class AppHeader extends CustomElement {
     @property({ type: String, rerender: true }) status: LobbyStatus = "connecting";
     @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
+    @property({ type: String, attribute: false, rerender: true }) invitelink: string = "";
     @property({ type: Boolean, reflect: true, rerender: true }) live: boolean = false;
 
     // the "Go live" title dialog
@@ -184,6 +187,7 @@ export class AppHeader extends CustomElement {
             <div part="bar" class="bar">
                 <pc-connection-status status="${this.connection}"></pc-connection-status>
                 ${this.network ? html`<span class="network" title="${this.t("network", { name: this.network })}">${this.network}</span>` : ""}
+                ${this.invitelink ? html`<pc-share-link compact link="${this.invitelink}"></pc-share-link>` : ""}
                 <span class="spacer"></span>
 
                 <pap-button class="live" size="small" variant="${this.live ? "filled" : "clear"}" color="${this.live ? "error" : "primary"}" @click="${this.handleLiveButton}">

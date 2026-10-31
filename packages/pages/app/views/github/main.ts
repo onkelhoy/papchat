@@ -73,6 +73,7 @@ import {
     joinSharedCall,
     networkLink,
     readShareLink,
+    sameNetwork,
 } from "@papchat/core";
 import type { CaptureName, Gif, Network, Prefs, Profile, Room, RoomSummary, ShareLink, Stage, Status } from "@papchat/core";
 
@@ -220,7 +221,8 @@ async function boot() {
 let waitingCall: Extract<ShareLink, { kind: "call" }> | null = null;
 
 function receiveLink() {
-    const link = readShareLink(location.hash);
+    const hash = location.hash;
+    const link = readShareLink(hash);
     if (!link) return;
     history.replaceState(null, "", location.pathname + location.search);
 
@@ -229,30 +231,45 @@ function receiveLink() {
         toast("warning", t(link === "expired" ? "linkExpired" : "linkInvalid"));
         return;
     }
-    if (me()) openLink(link);
-    else if (link.kind === "network") onboarding.joining = link.network;
-    else waitingCall = link;
+    if (me())
+    {
+        openLink(link, hash);
+        return;
+    }
+    onboarding.joining = link.network;
+    waitingCall = link.kind === "call" ? link : null;
 }
 window.addEventListener("hashchange", receiveLink);
 
-function openLink(link: ShareLink) {
-    const here = network();
-    if (link.kind === "network" && here?.name === link.network.name && here.password === link.network.password)
+function openLink(link: ShareLink, hash: string) {
+    if (link.kind === "network" && sameNetwork(link.network, network()))
     {
         toast("info", t("linkHere"));
         return;
     }
     if (!inAnyCall() && !currentStage())
     {
-        followLink(link);
+        followLink(link, hash);
         return;
     }
-    toast("info", t("linkConfirm"), { action: t("linkConfirmAction"), duration: 0, onAction: () => followLink(link) });
+    toast("info", t("linkConfirm"), { action: t("linkConfirmAction"), duration: 0, onAction: () => followLink(link, hash) });
 }
 
-function followLink(link: ShareLink) {
-    if (link.kind === "call") void joinSharedCall(link.room, link.password);
-    else void moveTo(link.network);
+function followLink(link: ShareLink, hash: string) {
+    if (link.kind === "network")
+    {
+        void moveTo(link.network);
+    }
+    else if (sameNetwork(link.network, network()))
+    {
+        void joinSharedCall(link.room, link.password);
+    }
+    else
+    {
+        // moving reloads the page: the hash goes back, so the reload joins the call from the right network
+        history.replaceState(null, "", hash);
+        switchNetwork(link.network);
+    }
 }
 
 // the password for a network we're separated from moves the group, with no reload
@@ -489,11 +506,8 @@ effect(() => { settings.profile = me() ?? undefined; });
 effect(() => { settings.prefs = prefs(); });
 effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { settings.separated = separated() !== null; });
-effect(() =>
-{
-    const net = network();
-    settings.invitelink = net ? networkLink(net) : "";
-});
+effect(() => { settings.invitelink = networkLink(network()); });
+effect(() => { header.invitelink = me() ? networkLink(network()) : ""; });
 effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
 // the files first (the first is the default), then the built-in beep they fall back to
@@ -870,7 +884,7 @@ onboarding.addEventListener("submit", (e) =>
     createProfile(name, color);
     onboarding.open = false;
     startLobby();
-    if (waitingCall) followLink(waitingCall);
+    if (waitingCall) followLink(waitingCall, "");
     waitingCall = null;
 });
 

@@ -58,7 +58,8 @@
     "@papit/web-component": "*",
     "@papit/translator": "*",
     "@papit/button": "*",
-    "@papit/input": "*"
+    "@papit/input": "*",
+    "@papchat/share-link": "*"
   },
   "peerDependencies": {
     "react": "^19"

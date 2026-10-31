@@ -18,8 +18,7 @@
     "name": "Network name",
     "password": "Password",
     "hint": "Joins the network with this name, or creates it if there is none. Leave the password empty for an open network.",
-    "copy": "Copy invite link",
-    "copied": "Copied",
-    "link-hint": "Anyone with this link can join. It contains the network's password."
+    "link-hint": "Anyone with this link can join. It contains the network's password.",
+    "link-hint-public": "Anyone with this link can join."
   }
 }

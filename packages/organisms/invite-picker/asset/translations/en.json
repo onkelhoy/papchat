@@ -12,8 +12,6 @@
     "cancel": "Cancel",
     "invite": "Invite",
     "invite-count": "Invite {count}",
-    "copy": "Copy invite link",
-    "copied": "Copied",
     "link-hint": "Anyone with this link can join the call."
   }
 }

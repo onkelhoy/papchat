@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-share-link": {
+    "copy": "Kopiera inbjudningslänk",
+    "share": "Dela inbjudningslänk",
+    "copied": "Kopierad",
+    "compact": "Bjud in"
+  }
+}

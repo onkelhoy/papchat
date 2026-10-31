@@ -2,6 +2,7 @@
 import { bind, CustomElement, html, property } from "@papit/web-component";
 import { translate, useTranslator } from "@papit/translator";
 import "@papit/button";
+import "@papchat/share-link";
 import "@papit/input";
 
 // local
@@ -22,7 +23,7 @@ import type { NetworkChangeEvent, NetworkEntry } from "./types";
  * @property {string} network name of the network in use (or picked), "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server (property only)
  * @property {boolean} separated a same-name network with an unknown password exists: says so above the form (property only)
- * @property {string} link invite link for the network in use, "" hides the copy button (property only)
+ * @property {string} link invite link for the network in use, "" hides the button (property only)
  *
  * @fires network-change `CustomEvent<{ network }>` a network was picked, `null` = public (bubbles, composed)
  * @fires networks-refresh Refresh pressed: the page sets a fresh `networks` (bubbles, composed)
@@ -30,8 +31,6 @@ import type { NetworkChangeEvent, NetworkEntry } from "./types";
  * @csspart list the network list
  * @csspart form the join-or-create form
  */
-const COPIED_MS = 2_000;
-
 export class NetworkPicker extends CustomElement {
     static sheet = sheet;
 
@@ -41,8 +40,6 @@ export class NetworkPicker extends CustomElement {
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
     @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
     @property({ type: String, attribute: false, rerender: true }) link: string = "";
-    @property({ type: Boolean, attribute: false, rerender: true }) private copied: boolean = false;
-    private copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
     private emit<T>(name: string, detail?: T) {
         this.dispatchEvent(new CustomEvent<T>(name, { detail, bubbles: true, composed: true }));
@@ -83,37 +80,15 @@ export class NetworkPicker extends CustomElement {
         this.emit("networks-refresh");
     }
 
-    @bind
-    private async handleCopy() {
-        try
-        {
-            await navigator.clipboard.writeText(this.link);
-        }
-        catch
-        {
-            // no clipboard (plain http on a phone, or refused): show it to copy by hand
-            window.prompt(this.t("copy"), this.link);
-            return;
-        }
-        this.copied = true;
-        clearTimeout(this.copiedTimer);
-        this.copiedTimer = setTimeout(() => { this.copied = false; }, COPIED_MS);
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        clearTimeout(this.copiedTimer);
-    }
-
     render() {
         return html`
             <p class="hint">${this.network ? this.t("private", { name: this.network }) : this.t("public-current")}</p>
             ${this.link ? html`
                 <div class="section">
                     <div class="row">
-                        <pap-button size="small" variant="outline" type="button" @click="${this.handleCopy}">${this.t(this.copied ? "copied" : "copy")}</pap-button>
+                        <pc-share-link link="${this.link}"></pc-share-link>
                     </div>
-                    <p class="hint">${this.t("link-hint")}</p>
+                    <p class="hint">${this.t(this.network ? "link-hint" : "link-hint-public")}</p>
                 </div>
             ` : ""}
             <div class="section">

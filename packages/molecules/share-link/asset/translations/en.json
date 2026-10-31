@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-share-link": {
+    "copy": "Copy invite link",
+    "share": "Share invite link",
+    "copied": "Copied",
+    "compact": "Invite"
+  }
+}

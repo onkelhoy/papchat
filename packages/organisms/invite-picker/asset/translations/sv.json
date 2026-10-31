@@ -12,8 +12,6 @@
     "cancel": "Avbryt",
     "invite": "Bjud in",
     "invite-count": "Bjud in {count}",
-    "copy": "Kopiera inbjudningslänk",
-    "copied": "Kopierad",
     "link-hint": "Alla som har länken kan gå med i samtalet."
   }
 }
