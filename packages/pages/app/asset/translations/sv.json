@@ -22,6 +22,7 @@
     "linkInvalid": "Inbjudningslänken fungerar inte",
     "linkHere": "Du är redan på det här nätverket",
     "linkConfirm": "Du är i ett samtal. Öppna inbjudningslänken?",
-    "linkConfirmAction": "Öppna"
+    "linkConfirmAction": "Öppna",
+    "identityFailed": "papchat behöver en säker anslutning (https) för att starta"
   }
 }

@@ -6,7 +6,8 @@ import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
-import { readMember, send as lobbySend, serverId } from "./lobby";
+import { PROOF, Verifier } from "./keys";
+import { readMember, send as lobbySend, serverId, type Member } from "./lobby";
 import { log } from "./log";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
@@ -122,6 +123,7 @@ export class Room extends EventTarget {
     private closed = false;
     private startedAt = 0;
     private baseline = false;
+    private verifier: Verifier | null = null;
     private present = new Map<string, Profile>();
     private memberByPeer = new Map<string, Profile>();
     private leaving = new Map<string, ReturnType<typeof setTimeout>>();
@@ -656,6 +658,13 @@ export class Room extends EventTarget {
             accept: (_newcomer, info) => info.size < LIMITS.roomSize,
         });
         this._client = c;
+        this.verifier = new Verifier({
+            me: () => c.id,
+            ready: () => c.links.length > 0,
+            send: (peer, payload) => { c.send(peer, PROOF, payload); },
+            changed: () => { if (c === this._client) this.readMembers(c); },
+        });
+        c.addEventListener("peer", this.handlePeer);
         this.attach(c);
 
         try
@@ -688,7 +697,10 @@ export class Room extends EventTarget {
         const old = this._client;
         this._client = null;
         this.clearIdTimer();
+        this.verifier?.stop();
+        this.verifier = null;
         if (!old) return;
+        old.removeEventListener("peer", this.handlePeer);
         this.unlistenMedia();
         this.setStreams([]);
         this.detach(old);
@@ -807,11 +819,18 @@ export class Room extends EventTarget {
         const byPeer = new Map<string, Profile>();
         const newest = new Map<string, { at: number; peer: string; profile: Profile }>();
 
+        const claims = new Map<string, Member>();
         for (const peer of peers)
         {
-            if (peer === c.id) continue;
-            const member = readMember(peer, profiles[peer]);
-            if (!member) continue;
+            const member = peer === c.id ? null : readMember(peer, profiles[peer]);
+            if (member) claims.set(peer, member);
+        }
+        this.verifier?.sync([...claims]);
+
+        for (const [peer, member] of claims)
+        {
+            // only members who proved their uid count
+            if (!this.verifier?.verified(peer)) continue;
             byPeer.set(peer, member.profile);
             if (member.profile.uid === mine) continue;
 
@@ -860,7 +879,8 @@ export class Room extends EventTarget {
                 this.stopTyping(uid);
             }
         }
-        this.baseline = true;
+        // nobody who was already here counts as joining, however long their proof takes
+        if (!this.verifier?.pending) this.baseline = true;
         this.present = next;
 
         // a third person turns a 1:1 into a group: openChat makes a new 1:1 after that
@@ -1019,7 +1039,22 @@ export class Room extends EventTarget {
     private handleMessage = (event: Event) => {
         if (event.target !== this._client) return;
         const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
-        dispatch(this.handlers, type, payload, this.from(sender));
+        if (type === PROOF)
+        {
+            this.verifier?.receive(sender, payload);
+            return;
+        }
+        this.whenProven(sender, () => dispatch(this.handlers, type, payload, this.from(sender)));
+    };
+
+    // nothing from someone who hasn't proven who they are yet; they get `room-id` and the rest after
+    private whenProven(peer: string, run: () => void) {
+        if (this.verifier?.verified(peer)) run();
+        else this.verifier?.hold(peer, run);
+    }
+
+    private handlePeer = (event: Event) => {
+        if (event.target === this._client) this.verifier?.poke();
     };
 
     private handleState(event: Event) {
@@ -1035,7 +1070,7 @@ export class Room extends EventTarget {
             return;
         }
         if (typeof message?.type !== "string") return;
-        dispatch(this.stateHandlers, message.type, message.payload, this.from(peer));
+        this.whenProven(peer, () => dispatch(this.stateHandlers, message.type as string, message.payload, this.from(peer)));
     }
 
     private handleError = (event: Event) => {

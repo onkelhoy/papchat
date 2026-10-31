@@ -6,8 +6,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 79/104 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Wave 8 (rogue networks) is in, waiting for its live test. Waves 9 (offline calling) and 10 (identity, saved chats, linked devices, global chat) are planned; wave 10 opens with its decisions, and T10.1 is in, waiting for its live check.
-- **Next, in order:** T10.2-T10.3 identity, then wave 9 (T9.3 needs T10.3), then the rest of wave 10. T10.11 global chat has no dependencies and can move earlier. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Done:** 81/104 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Wave 8 (rogue networks) is in, waiting for its live test. Waves 9 (offline calling) and 10 (identity, saved chats, linked devices, global chat) are planned; wave 10 opens with its decisions, and T10.1 is in, waiting for its live check.
+- **Next, in order:** wave 9 (T9.3 needs T10.3, done), then the rest of wave 10 from T10.4. T10.11 global chat has no dependencies and can move earlier. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
@@ -693,18 +693,20 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### Phase B: identity
 
-### [ ] T10.2 A key on the device · `opus` · needs —
+### [x] T10.2 A key on the device · `opus` · needs —
 - **do:** new `core/src/keys.ts`. On first run create an ECDSA P-256 pair with WebCrypto, `extractable: false` for the private key, and keep the `CryptoKey`s in IndexedDB (P-256 because Ed25519 isn't in every browser). `uid` becomes base64url of the first 16 bytes of SHA-256 of the public key. Add `key` (the public key) to `Profile`, read it in `readMember`, and bump `Profile.v`. Old stored profiles keep name and colour and get a new uid. If IndexedDB is unavailable (some private windows), use an in-memory pair for that session.
 - **check first:** the new uid fits `ID_MAX` (`invites.ts`), and the wire profile stays under the 1 KB limit. A raw key is about 88 chars in base64.
 - **files:** `core/src/keys.ts`, `core/src/identity.ts`, `core/src/types.ts`, `core/src/lobby.ts`, `core/src/storage.ts`.
 - **done when:** a uid survives a reload and two tabs agree; a stored profile migrates; typecheck + build pass.
+- Done: `core/src/keys.ts`. The uid is 22 chars and the key 87, so both fit (`ID_MAX`, 1 KB). `Profile` is `v: 2` with `key`. `startIdentity()` runs in page boot before anything connects, and `createProfile` needs it finished. Two tabs agree because one IndexedDB transaction keeps whichever pair got in first. Without WebCrypto (plain http, so a phone on a LAN address) the app stops at boot with a toast. `@papit/bundle-ts` hides API Extractor crashes and then skips (papit finding #25): if `lib/bundle.d.ts` looks stale, run `npx @papit/build --force --error` in the package and check `main.ts` with the temporary tsconfig. Don't put `Map` in a public signature in core. Typecheck + build pass; not run in a browser.
 
-### [ ] T10.3 Prove who you are · `opus` · needs T10.2
+### [x] T10.3 Prove who you are · `opus` · needs T10.2
 - **why:** today anyone can copy a uid: everyone in the lobby sees it, and `readMember` believes it.
 - **do:** when a member with a key appears: check `hash(key) === uid`, send a random challenge, and verify the signature over challenge + both peer ids. The signature can't be forged by peers relaying in chord. Do it in the lobby and in rooms. A member who fails or doesn't answer in time is dropped from the list and can't be messaged as that uid.
 - **limit:** chord can relay lobby messages, so proving the key doesn't sign each later lobby message. Rooms are mesh with direct links. If `client.send` turns out to be spoofable by a relay, write a papit finding.
 - **files:** `core/src/keys.ts`, `core/src/lobby.ts`, `core/src/room.ts`.
 - **done when:** a client faking someone's uid is rejected; typecheck + build pass.
+- Done: `Verifier` in `keys.ts`, one per client (lobby and rooms). `memberByPeer` holds only proven members, so uid lookups, `profileOf` and `send` all go through proofs. Messages from an unproven peer are held and delivered once proven (16 per peer), except `here` and the lobby's merge messages, which go by peer id. Asks every 2 s; after 30 s the member counts as not answering but is asked every 20 s, because a phone in the background can't reply. A member with no key is rejected: otherwise a faker would just leave it out, so tabs from before this ship are invisible until reloaded. `readInvite` no longer trusts `payload.from`. The unreachable toast now only fires for sends a person made. Members appear when their links open, not at the welcome. Rooms hold "joined" messages until everyone present is proven. Not covered: stage chat uses `readMember` unproven, and a relay can fake later messages' senders (papit finding #24). Checked outside the repo with two real Verifiers: honest members pass, a copied uid + key and a uid that isn't the key's hash both fail, held messages arrive. Typecheck + build pass; not run in a browser.
 
 ### Phase C: saved chats
 

@@ -64,6 +64,7 @@ import {
     setNetwork,
     setPrefs,
     setStatus,
+    startIdentity,
     startLobby,
     switchNetwork,
     unlockNetwork,
@@ -197,6 +198,17 @@ async function changeLanguage(code: string) {
 async function boot() {
     for (const id of LANGUAGES) translator.add({ id, url: `/translations/${id}.json` });
     await changeLanguage(pickLanguage());
+
+    try
+    {
+        await startIdentity();
+    }
+    catch (error)
+    {
+        log("identity: no device key", error);
+        toast("error", t("identityFailed"));
+        return;
+    }
 
     settings.sinkSupported = sinkSupported;
     startNotify();

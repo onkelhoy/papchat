@@ -4,8 +4,11 @@ export type Status = "available" | "busy" | "away" | "dnd";
 export type Presence = Status | "offline";
 
 export type Profile = {
-    v: 1;
+    v: 2;
+    // a hash of `key`, see keys.ts
     uid: string;
+    // the device's public key, base64url
+    key: string;
     name: string;
     color: string;
     status: Status;

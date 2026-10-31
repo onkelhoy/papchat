@@ -363,7 +363,7 @@ function endCall(call: Outgoing, cancel: boolean) {
 }
 
 function unknownProfile(uid: string): Profile {
-    return { v: 1, uid, name: "Someone", color: "#6b7280", status: "available" };
+    return { v: 2, uid, key: "", name: "Someone", color: "#6b7280", status: "available" };
 }
 
 // ---------------------------------------------------------------- helpers
@@ -430,8 +430,8 @@ function readInvite(payload: unknown, sender: string | null): Invite | null {
     if (!KINDS.includes(value.kind as InviteKind)) return null;
     if (value.password !== undefined && typeof value.password !== "string") return null;
 
-    // the lobby knows who really sent it; fall back to the payload only when it doesn't (yet)
-    const from = sender ?? (isId(value.from) ? value.from : null);
+    // only the lobby knows who really sent it, never the payload
+    const from = sender;
     if (!from) return null;
 
     return {

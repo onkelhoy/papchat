@@ -1,3 +1,4 @@
+import { deviceKey, loadDeviceKey } from "./keys";
 import { setLobbyProfile } from "./lobby";
 import { log } from "./log";
 import { setRoomsProfile } from "./room";
@@ -5,7 +6,7 @@ import { me, setMe } from "./state";
 import { storage } from "./storage";
 import type { Profile, Status } from "./types";
 
-// who you are: a stable uid (peer ids change on every connect), stored once in localStorage
+// who you are: a uid from this device's key (keys.ts) plus a name and colour, which are only labels
 
 // avatar colours offered in onboarding/settings; a new profile gets a random one
 export const PALETTE = [
@@ -41,6 +42,18 @@ function commit(profile: Profile): Profile {
     return profile;
 }
 
+/**
+ * Loads the device key and fits your profile to it, before anything connects. A profile from before
+ * keys becomes a new person with the same name and colour. Rejects without WebCrypto (plain http).
+ */
+export async function startIdentity(): Promise<void> {
+    const { uid, key } = await loadDeviceKey();
+    const current = me() ?? storage.profile.legacy();
+    if (!current) return;
+    if (me()?.uid === uid && me()?.key === key) return;
+    commit({ v: 2, uid, key, name: current.name, color: current.color, status: current.status });
+}
+
 export function getProfile(): Profile | null {
     return me() ?? storage.profile.get();
 }
@@ -50,17 +63,21 @@ export function hasProfile(): boolean {
 }
 
 /**
- * Creates (or replaces the name/colour of) your profile. Keeps an existing uid, so a re-onboarding
- * doesn't turn you into someone new. Throws on an empty name.
+ * Creates (or replaces the name/colour of) your profile. Throws on an empty name, or before
+ * `startIdentity` has loaded the key.
  */
 export function createProfile(name: string, color?: string): Profile {
     const clean = cleanName(name);
     if (!clean) throw new Error("a profile needs a name");
 
+    const device = deviceKey();
+    if (!device) throw new Error("a profile needs the device key");
+
     const existing = getProfile();
     return commit({
-        v: 1,
-        uid: existing?.uid ?? crypto.randomUUID(),
+        v: 2,
+        uid: device.uid,
+        key: device.key,
         name: clean,
         color: color || existing?.color || randomColor(),
         status: existing?.status ?? "available",
@@ -71,7 +88,7 @@ export function updateProfile(partial: Partial<Pick<Profile, "name" | "color" | 
     const current = getProfile();
     if (!current) return null;
 
-    const next: Profile = { ...current, v: 1 };
+    const next: Profile = { ...current };
     if (partial.name !== undefined)
     {
         const clean = cleanName(partial.name);

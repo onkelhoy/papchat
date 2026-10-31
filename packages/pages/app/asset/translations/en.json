@@ -22,6 +22,7 @@
     "linkInvalid": "This invite link doesn't work",
     "linkHere": "You're already on this network",
     "linkConfirm": "You're in a call. Open this invite link?",
-    "linkConfirmAction": "Open"
+    "linkConfirmAction": "Open",
+    "identityFailed": "papchat needs a secure (https) connection to start"
   }
 }

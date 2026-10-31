@@ -51,8 +51,11 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isProfile(value: unknown): value is Profile {
+    return hasProfileFields(value) && value.v === 2 && typeof value.key === "string" && value.key.length > 0;
+}
+
+function hasProfileFields(value: unknown): value is Record<string, unknown> {
     return isObject(value)
-        && value.v === 1
         && typeof value.uid === "string" && value.uid.length > 0
         && typeof value.name === "string" && value.name.length > 0
         && typeof value.color === "string"
@@ -64,6 +67,11 @@ export const storage = {
         get(): Profile | null {
             const value = read(local, KEYS.profile);
             return isProfile(value) ? value : null;
+        },
+        /** A profile from before device keys, for its name, colour and status. */
+        legacy(): Pick<Profile, "name" | "color" | "status"> | null {
+            const value = read(local, KEYS.profile);
+            return hasProfileFields(value) && value.v === 1 ? value as Pick<Profile, "name" | "color" | "status"> : null;
         },
         set(value: Profile | null) {
             write(local, KEYS.profile, value ?? undefined);

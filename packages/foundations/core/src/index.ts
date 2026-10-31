@@ -16,6 +16,7 @@ export * from "./config";
 export * from "./storage";
 export * from "./state";
 export * from "./log";
+export * from "./keys";
 export * from "./identity";
 export * from "./lobby";
 export * from "./room";

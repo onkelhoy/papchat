@@ -1,6 +1,7 @@
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
+import { PROOF, Verifier } from "./keys";
 import { log } from "./log";
 import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
 import type { Network, NetworkEntry, Profile, Status } from "./types";
@@ -67,6 +68,9 @@ let startedAt = 0;
 let profile: Profile | null = null;
 
 let peerByUid = new Map<string, string>();
+// everyone in the network, by what they say; `memberByPeer` is those who proved it
+let claimed = new Map<string, Member>();
+let verifier: Verifier | null = null;
 let memberByPeer = new Map<string, Member>();
 const handlers = new Map<string, Set<LobbyHandler>>();
 const timers = new Set<{ id: ReturnType<typeof setTimeout>; resolve: () => void }>();
@@ -121,6 +125,7 @@ export function stopLobby() {
     recent.clear();
     retrying.clear();
     peerByUid = new Map();
+    claimed = new Map();
     memberByPeer = new Map();
     setMembers([]);
     setLobbyStatus("idle");
@@ -334,6 +339,7 @@ function rejoin() {
     rebooting = true;
     stopClient();
     peerByUid = new Map();
+    claimed = new Map();
     memberByPeer = new Map();
     setMembers([]);
     void startClient();
@@ -649,6 +655,9 @@ function refuse(c: Client, peers: string[]) {
     }
 }
 
+// these go by peer id, not by person, so they don't wait for a proof
+const ANYONE = new Set(["here", MERGE, SEPARATED, UNLOCK, UNLOCK_REFUSED]);
+
 on(MERGE, handleMerge);
 on(SEPARATED, handleSeparated);
 on(UNLOCK, handleUnlock);
@@ -776,14 +785,16 @@ export function readMember(peer: string, raw: unknown): Member | null {
     if (typeof raw !== "object" || raw === null) return null;
     const value = raw as Record<string, unknown>;
     if (typeof value.uid !== "string" || !value.uid) return null;
+    if (typeof value.key !== "string" || !value.key) return null;
     if (typeof value.name !== "string" || !value.name.trim()) return null;
 
     return {
         peer,
         at: typeof value.at === "number" ? value.at : 0,
         profile: {
-            v: 1,
+            v: 2,
             uid: value.uid,
+            key: value.key,
             name: value.name.trim().slice(0, 32),
             color: typeof value.color === "string" ? value.color : "",
             status: STATUSES.includes(value.status as Status) ? value.status as Status : "available",
@@ -817,6 +828,13 @@ function syncStatus() {
 // ---------------------------------------------------------------- client events (never throw)
 
 function attach(c: Client) {
+    verifier = new Verifier({
+        me: () => c.id,
+        ready: () => c.links.length > 0,
+        send: (peer, payload) => { c.send(peer, PROOF, payload); },
+        changed: () => { if (c === client) applyProofs(); },
+    });
+    c.addEventListener("peer", handlePeer);
     c.addEventListener("status", handleStatus);
     c.addEventListener("members", handleMembers);
     c.addEventListener("message", handleMessage);
@@ -826,12 +844,19 @@ function attach(c: Client) {
 }
 
 function detach(c: Client) {
+    verifier?.stop();
+    verifier = null;
+    c.removeEventListener("peer", handlePeer);
     c.removeEventListener("status", handleStatus);
     c.removeEventListener("members", handleMembers);
     c.removeEventListener("message", handleMessage);
     c.removeEventListener("unreachable", handleUnreachable);
     c.removeEventListener("host", handleHost);
     c.removeEventListener("error", handleError);
+}
+
+function handlePeer(event: Event) {
+    if (event.target === client) verifier?.poke();
 }
 
 function handleStatus(event: Event) {
@@ -848,6 +873,12 @@ function handleStatus(event: Event) {
     {
         log("lobby: status handler failed", error);
     }
+}
+
+// only members who proved their uid count
+function applyProofs() {
+    memberByPeer = new Map([...claimed].filter(([peer]) => verifier?.verified(peer)));
+    publish();
 }
 
 // one entry per uid (newest peer wins), yourself left out
@@ -875,8 +906,9 @@ function handleMembers(event: Event) {
         }
 
 
-        memberByPeer = byPeer;
-        publish();
+        claimed = byPeer;
+        verifier?.sync([...byPeer]);
+        applyProofs();
         syncStatus();
     }
     catch (error)
@@ -888,6 +920,13 @@ function handleMembers(event: Event) {
 function handleMessage(event: Event) {
     if (event.target !== client) return;
     const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
+    if (type === PROOF)
+    {
+        heard(sender);
+        verifier?.receive(sender, payload);
+        return;
+    }
+
     const set = handlers.get(type);
     if (!set || set.size === 0)
     {
@@ -896,6 +935,11 @@ function handleMessage(event: Event) {
     }
 
     heard(sender);
+    if (ANYONE.has(type) || verifier?.verified(sender)) deliver(type, sender, payload, set);
+    else verifier?.hold(sender, () => deliver(type, sender, payload, set));
+}
+
+function deliver(type: string, sender: string, payload: unknown, set: Set<LobbyHandler>) {
     const member = memberByPeer.get(sender);
     const from: LobbyFrom = { peer: sender, uid: member?.profile.uid ?? null, profile: member?.profile ?? null };
     for (const handler of [...set])
@@ -917,6 +961,8 @@ function handleUnreachable(event: Event) {
     {
         const { receiver } = (event as CustomEvent<{ receiver: string; ref: string }>).detail;
         log("lobby: unreachable", receiver);
+        // background traffic (proofs, broadcasts) isn't something the person sent
+        if (!recent.has(receiver) && !retrying.has(receiver)) return;
         if (resend(receiver)) return;
 
         // one toast per person for a burst of undeliverable messages

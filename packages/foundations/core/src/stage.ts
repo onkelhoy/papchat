@@ -456,8 +456,7 @@ on<unknown>("stage.end", (payload, from) => {
 
 on<unknown>("stage.query", (_payload, from) => {
     const stage = currentStage();
-    // a newcomer's query can beat the member list here, so an unknown sender gets the broadcast
-    if (stage?.mine) stage.announce(from.uid ?? undefined);
+    if (stage?.mine && from.uid) stage.announce(from.uid);
 });
 
 // once per lobby connection, as soon as a link is open: `connected` comes with the server's welcome,
