@@ -62,6 +62,37 @@ export type Contact = {
     at: number;
 };
 
+/** Two devices that are one person: each signed `a`, `b` and `at`. `a` sorts before `b`. */
+export type DeviceLink = {
+    a: string;
+    b: string;
+    at: number;
+    sa: string;
+    sb: string;
+};
+
+/** A device taken out of an account, signed by `by`, a device of that account. */
+export type DeviceRemoval = {
+    key: string;
+    by: string;
+    at: number;
+    sig: string;
+};
+
+export type AccountData = {
+    links: DeviceLink[];
+    removed: DeviceRemoval[];
+};
+
+/** One of your devices, for the list in settings. */
+export type LinkedDevice = {
+    uid: string;
+    key: string;
+    // what it said it was when it linked, "" when unknown
+    label: string;
+    self: boolean;
+};
+
 /** What a caller pushes to a closed app. `key` is the room's password; the rest proves who called. */
 export type CallPush = {
     t: "call";

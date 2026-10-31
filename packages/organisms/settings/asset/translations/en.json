@@ -53,6 +53,15 @@
     "save-chats-hint": "Text and GIFs stay here so a chat is still there tomorrow. Files aren't saved, and nothing is stored on a server.",
     "delete-chats": "Delete saved chats",
     "delete-confirm": "Press again to delete them",
-    "delete-hint": "Only from this device. Anyone you chatted with keeps their copy."
+    "delete-hint": "Only from this device. Anyone you chatted with keeps their copy.",
+    "linked": "Devices",
+    "devices": "Your devices",
+    "devices-hint": "Linked devices are one person: the same chats, and calls ring all of them.",
+    "device-this": "This device",
+    "device-unknown": "Another device",
+    "device-remove": "Remove",
+    "device-confirm": "Press again to remove",
+    "device-link": "Link my profile",
+    "devices-limit": "A removed device keeps what it already has, and people who were offline only hear about it next time they meet one of your devices. A lost phone can't be wiped from here."
   }
 }

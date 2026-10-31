@@ -10,6 +10,7 @@ import "@papchat/room";
 import "@papchat/incoming-call";
 import "@papchat/invite-picker";
 import "@papchat/settings";
+import "@papchat/link-device";
 import "@papchat/toaster";
 import type { AppHeader } from "@papchat/app-header";
 import type { MemberList } from "@papchat/member-list";
@@ -19,6 +20,7 @@ import type { Room as RoomView, CallTile } from "@papchat/room";
 import type { IncomingCall as IncomingCard } from "@papchat/incoming-call";
 import type { InvitePicker } from "@papchat/invite-picker";
 import type { Settings } from "@papchat/settings";
+import type { LinkDevice } from "@papchat/link-device";
 import type { Toaster } from "@papchat/toaster";
 
 import {
@@ -83,6 +85,16 @@ import {
     unlockNetwork,
     GIPHY_KEY,
     GLOBAL_ID,
+    acceptLink,
+    cancelLink,
+    joinLink,
+    linkedDevices,
+    linking,
+    removeDevice,
+    samePerson,
+    startAccount,
+    startLink,
+    startSync,
     conversations,
     deleteAllConversations,
     deleteConversation,
@@ -124,6 +136,7 @@ const view = document.querySelector<RoomView>("pc-room")!;
 const picker = document.querySelector<InvitePicker>("pc-invite-picker")!;
 const overlay = document.querySelector<HTMLElement>(".incoming")!;
 const settings = document.querySelector<Settings>("pc-settings")!;
+const linker = document.querySelector<LinkDevice>("pc-link-device")!;
 const toaster = document.querySelector<Toaster>("pc-toaster")!;
 const empty = document.querySelector<HTMLElement>(".empty")!;
 const shell = document.querySelector<HTMLElement & { sidebaropen: boolean }>("pc-app-shell")!;
@@ -265,6 +278,8 @@ async function boot() {
 
     settings.sinkSupported = sinkSupported;
     void startHistory();
+    await startAccount();
+    startSync();
     startNotify();
     void refreshPush();
     void ringtone.loadTones();
@@ -287,7 +302,7 @@ async function boot() {
 // invite links: read once and taken out of the address bar, so a reload doesn't follow them again
 let waitingCall: Extract<ShareLink, { kind: "call" }> | null = null;
 
-type JoinLink = Exclude<ShareLink, { kind: "contact" | "ring" }>;
+type JoinLink = Exclude<ShareLink, { kind: "contact" | "ring" | "link" }>;
 
 function receiveLink() {
     const hash = location.hash;
@@ -309,6 +324,13 @@ function receiveLink() {
     if (link.kind === "ring")
     {
         void takeRing(link.ring, true);
+        return;
+    }
+    if (link.kind === "link")
+    {
+        // no profile needed: a new device becomes whoever it links to
+        linker.open = true;
+        void joinLink(link.network, link.key);
         return;
     }
     if (me())
@@ -367,6 +389,45 @@ function followLink(link: JoinLink, hash: string) {
     }
 }
 
+// linking a device: settings or onboarding open it, this device shows its code straight away
+function openLinker() {
+    linker.notice = "";
+    linker.open = true;
+    void startLink();
+}
+
+// a code read by the camera, or pasted: only this site's device links count
+function takeLinkText(text: string) {
+    let url: URL | null = null;
+    try
+    {
+        url = new URL(text);
+    }
+    catch { /* not a URL */ }
+
+    const link = url && url.origin === location.origin && url.pathname === location.pathname ? readShareLink(url.hash) : null;
+    if (link === "expired")
+    {
+        linker.notice = "expired";
+        return;
+    }
+    if (!link || link === "invalid" || link.kind !== "link")
+    {
+        linker.notice = "invalid";
+        return;
+    }
+    linker.notice = "";
+    void joinLink(link.network, link.key);
+}
+
+linker.addEventListener("retry", () => void startLink());
+linker.addEventListener("accept", acceptLink);
+linker.addEventListener("close", cancelLink);
+linker.addEventListener("link-text", (e) => takeLinkText((e as CustomEvent<{ text: string }>).detail.text));
+effect(() => { linker.state = linking(); });
+// a new device that just linked became someone
+effect(() => { if (me()) onboarding.open = false; });
+
 // the password for a network we're separated from moves the group, with no reload
 async function moveTo(next: Network | null) {
     if (!await unlockNetwork(next)) switchNetwork(next);
@@ -381,8 +442,15 @@ effect(() => { list.members = members(); });
 effect(() => { list.stages = stages(); });
 effect(() =>
 {
-    const here = new Set(members().map(p => p.uid));
-    list.contacts = contacts().filter(c => !here.has(c.uid)).map(contactProfile);
+    // a person with two saved devices is one row, and none when any device of theirs is here
+    const here = members();
+    const seen: string[] = [];
+    list.contacts = contacts().filter(c =>
+    {
+        if (here.some(p => samePerson(p.uid, c.uid)) || seen.some(uid => samePerson(uid, c.uid))) return false;
+        seen.push(c.uid);
+        return true;
+    }).map(contactProfile);
 });
 effect(() => { header.live = !!currentStage()?.mine; });
 
@@ -698,6 +766,7 @@ effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { settings.separated = separated() !== null; });
 effect(() => { settings.invitelink = networkLink(network()); });
 effect(() => { settings.pushstate = pushState(); });
+effect(() => { settings.linked = linkedDevices(); });
 effect(() =>
 {
     const profile = me();
@@ -792,6 +861,8 @@ settings.addEventListener("prefs-change", (e) =>
     if (partial.noiseReduction && partial.noiseReduction !== noise) restartMic();
 });
 settings.addEventListener("networks-refresh", () => void refreshNetworks());
+settings.addEventListener("link-device", openLinker);
+settings.addEventListener("remove-device", (e) => void removeDevice((e as CustomEvent<{ uid: string }>).detail.uid));
 settings.addEventListener("network-change", (e) => void moveTo((e as CustomEvent<{ network: Network | null }>).detail.network));
 settings.addEventListener("language-change", (e) =>
 {
@@ -1123,6 +1194,7 @@ document.addEventListener("member-files", async (e) =>
     room?.sendFiles(files);
 });
 
+onboarding.addEventListener("link-device", openLinker);
 onboarding.addEventListener("language-change", (e) =>
 {
     const { value } = (e as CustomEvent<{ value: string }>).detail;

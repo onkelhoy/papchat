@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-link-device": {
+    "title": "Länka min profil",
+    "connecting": "Ansluter… om servern sover kan det ta en minut.",
+    "show": "Skanna koden med kameran på din andra enhet, eller skicka länken till dig själv. Den fungerar en gång.",
+    "qr": "QR-kod som länkar en enhet till din profil",
+    "expires": "Koden fungerar i 5 minuter.",
+    "enter": "Eller använd den andra enhetens kod",
+    "scan": "Skanna med kameran",
+    "scan-stop": "Stäng kameran",
+    "paste": "Klistra in en länk",
+    "paste-go": "Använd länken",
+    "camera-denied": "Kameran är blockerad. Tillåt den i webbläsaren, eller klistra in länken.",
+    "camera-missing": "Ingen kamera hittades. Klistra in länken i stället.",
+    "camera-failed": "Kameran startade inte. Klistra in länken i stället.",
+    "notice-invalid": "Det där är ingen enhetslänk från papchat.",
+    "notice-expired": "Länken har gått ut. Skapa en ny.",
+    "confirm": "Kontrollera att båda enheterna visar den här koden.",
+    "confirm-named": "Länkar till {name}. Kontrollera att båda enheterna visar den här koden.",
+    "code": "Länkkod",
+    "warning": "Godkänn bara om du håller i båda enheterna. En länkad enhet kan läsa dina chattar och vara du.",
+    "accept": "Godkänn",
+    "decline": "Avböj",
+    "waiting": "Väntar på att den andra enheten godkänner…",
+    "syncing": "Kopierar dina chattar…",
+    "syncing-count": "Kopierar dina chattar… {done} av {total}",
+    "done": "Länkat. Båda enheterna är du nu.",
+    "failed-server": "Kunde inte nå servern. Försök igen om en minut.",
+    "failed-expired": "Koden gick ut innan någon annan enhet använde den.",
+    "failed-gone": "Länken har gått ut eller använts redan.",
+    "failed-lost": "Den andra enheten försvann.",
+    "failed-same": "Det är samma webbläsare: öppna länken på en annan enhet, eller i den installerade appen.",
+    "failed-declined": "Den andra enheten avböjde.",
+    "failed-proof": "Den andra enheten kunde inte bevisa vem den är, så inget länkades.",
+    "retry": "Försök igen"
+  }
+}

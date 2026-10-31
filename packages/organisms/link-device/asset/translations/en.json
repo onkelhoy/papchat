@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-link-device": {
+    "title": "Link my profile",
+    "connecting": "Connecting… if the server is asleep this can take a minute.",
+    "show": "On your other device, scan this code with the camera, or send yourself the link. It works once.",
+    "qr": "QR code that links a device to your profile",
+    "expires": "This code works for 5 minutes.",
+    "enter": "Or use the other device's code",
+    "scan": "Scan with the camera",
+    "scan-stop": "Stop the camera",
+    "paste": "Paste a link",
+    "paste-go": "Use link",
+    "camera-denied": "Camera access is blocked. Allow it in your browser, or paste the link.",
+    "camera-missing": "No camera found. Paste the link instead.",
+    "camera-failed": "The camera didn't start. Paste the link instead.",
+    "notice-invalid": "That isn't a papchat device link.",
+    "notice-expired": "That link has expired. Make a new one.",
+    "confirm": "Check that both devices show this code.",
+    "confirm-named": "Linking to {name}. Check that both devices show this code.",
+    "code": "Link code",
+    "warning": "Accept only if you're holding both devices. A linked device can read your chats and be you.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "waiting": "Waiting for the other device to accept…",
+    "syncing": "Copying your chats…",
+    "syncing-count": "Copying your chats… {done} of {total}",
+    "done": "Linked. Both devices are you now.",
+    "failed-server": "Couldn't reach the server. Try again in a minute.",
+    "failed-expired": "The code expired before another device used it.",
+    "failed-gone": "That link has expired or was already used.",
+    "failed-lost": "The other device went away.",
+    "failed-same": "That's this same browser: open the link on another device, or in the installed app.",
+    "failed-declined": "The other device declined.",
+    "failed-proof": "The other device couldn't prove who it is, so nothing was linked.",
+    "retry": "Try again"
+  }
+}

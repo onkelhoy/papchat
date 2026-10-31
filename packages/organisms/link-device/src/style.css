@@ -1,0 +1,109 @@
+:host {
+    display: contents;
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+.body {
+    display: grid;
+    gap: var(--space-4, 1rem);
+    inline-size: min(22rem, 80vw);
+}
+
+.show,
+.enter,
+.confirm,
+.failed {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    justify-items: start;
+}
+
+.show pc-qr-code,
+.enter pc-qr-scanner {
+    inline-size: min(16rem, 100%);
+    justify-self: center;
+}
+
+p {
+    margin: 0;
+}
+
+.label {
+    font-weight: 600;
+}
+
+.hint {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.error {
+    font-size: 0.875rem;
+    color: var(--error);
+}
+
+.done {
+    font-weight: 600;
+    color: var(--success);
+}
+
+.code {
+    justify-self: center;
+    font-size: 2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+}
+
+.actions {
+    display: flex;
+    justify-self: end;
+    gap: var(--space-3, 0.75rem);
+}
+
+.paste {
+    display: flex;
+    gap: var(--space-2, 0.5rem);
+    inline-size: 100%;
+}
+
+.paste pap-input {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+pap-button {
+    white-space: nowrap;
+}
+
+/* pap-input: a quiet frame across the full box. Focus is one orange outline drawn over the border, inset so a
+   scrolling parent can't clip it. No shadow; the outline on the host drops the browser's blue ring */
+pap-input {
+    outline: none;
+}
+
+pap-input::part(wrapper) {
+    box-shadow: none;
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border: 1px solid light-dark(oklch(0% 0 0 / 0.15), oklch(100% 0 0 / 0.15));
+    border-radius: var(--radius-small, 0.5rem);
+}
+
+pap-input:focus-within::part(wrapper) {
+    outline: 2px solid var(--focus-color);
+    outline-offset: -1px;
+}
+
+/* room around the content, so nothing at the edge of the scrolling body gets clipped */
+pap-dialog::part(dialog) {
+    padding: var(--space-4, 1rem);
+}
+
+pap-dialog::part(main) {
+    padding: var(--space-3, 0.75rem);
+    overscroll-behavior: contain;
+}

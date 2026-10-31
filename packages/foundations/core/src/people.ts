@@ -25,20 +25,3 @@ export function devicesOf(uid: string): string[] {
     const list = Object.entries(people()).filter(([, owner]) => owner === person).map(([device]) => device);
     return list.includes(uid) ? list : [uid, ...list];
 }
-
-/** Records that `uids` are one person. Returns every uid whose person changed, with the old one. */
-export function setPerson(uids: string[]): [string, string][] {
-    const owner = [...uids].sort()[0];
-    const next = { ...people() };
-    const moved: [string, string][] = [];
-    for (const uid of uids)
-    {
-        const before = next[uid] ?? uid;
-        if (before !== owner) moved.push([uid, before]);
-        if (uid === owner && uids.length === 1) delete next[uid];
-        else next[uid] = owner;
-    }
-    storage.people.set(next);
-    setPeople(next);
-    return moved;
-}

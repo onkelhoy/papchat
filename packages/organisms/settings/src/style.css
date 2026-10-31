@@ -175,3 +175,25 @@ pap-dialog::part(main) {
     padding: var(--space-3, 0.75rem);
     overscroll-behavior: contain;
 }
+
+.linked {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2, 0.5rem);
+}
+
+.linked li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+}
+
+.device {
+    flex: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

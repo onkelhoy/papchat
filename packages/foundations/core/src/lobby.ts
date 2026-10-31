@@ -4,6 +4,7 @@ import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
 import { readNetworkSaves } from "./history";
 import { PROOF, Verifier } from "./keys";
 import { log } from "./log";
+import { devicesOf, personOf, samePerson } from "./people";
 import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
 import type { Network, NetworkEntry, Profile, Status } from "./types";
 
@@ -141,7 +142,7 @@ export function send(uid: string, type: string, payload?: unknown): boolean {
 }
 
 function sendTry(uid: string, type: string, payload: unknown, tries: number): boolean {
-    const peer = peerByUid.get(uid);
+    const peer = peerOf(uid);
     if (!client?.network || !peer) return false;
     try
     {
@@ -199,8 +200,51 @@ export function setLobbyProfile(next: Profile) {
     }
 }
 
+/** The newest peer of `uid`, or of another device of theirs when that one isn't here. */
 export function peerOf(uid: string): string | null {
-    return peerByUid.get(uid) ?? null;
+    return peerByUid.get(uid) ?? online(uid)[0] ?? null;
+}
+
+// the peers of every device of whoever owns `uid`, `uid`'s own first
+function online(uid: string): string[] {
+    const list = devicesOf(uid).filter(device => peerByUid.has(device));
+    return list.sort((a, b) => Number(b === uid) - Number(a === uid)).map(device => peerByUid.get(device)!);
+}
+
+/** uids of your other devices that are in the lobby right now. */
+export function otherDevices(): string[] {
+    const mine = me()?.uid;
+    return mine ? devicesOf(mine).filter(uid => uid !== mine && peerByUid.has(uid)) : [];
+}
+
+/** Sends to every device of whoever owns `uid`: a call rings them all. False when none is here. */
+export function sendAll(uid: string, type: string, payload?: unknown): boolean {
+    let sent = false;
+    for (const device of devicesOf(uid))
+    {
+        if (peerByUid.has(device) && sendTry(device, type, payload, 0)) sent = true;
+    }
+    return sent;
+}
+
+/** Sends something nobody asked for: a peer that can't be reached is no reason for a toast. */
+export function quietSend(uid: string, type: string, payload?: unknown): boolean {
+    const peer = peerByUid.get(uid);
+    if (!peer || !client?.network) return false;
+    try
+    {
+        return client.send(peer, type, payload);
+    }
+    catch (error)
+    {
+        log("lobby: send failed", type, error);
+        return false;
+    }
+}
+
+/** Reads the members again after the person map changed. */
+export function refreshMembers() {
+    if (running) publish();
 }
 
 export function uidOf(peer: string): string | null {
@@ -208,7 +252,7 @@ export function uidOf(peer: string): string | null {
 }
 
 export function profileOf(uid: string): Profile | null {
-    const peer = peerByUid.get(uid);
+    const peer = peerOf(uid);
     return (peer && memberByPeer.get(peer)?.profile) || null;
 }
 
@@ -1009,26 +1053,37 @@ function handleError(event: Event) {
 
 // ---------------------------------------------------------------- presence
 
-// members by uid (newest peer wins) among the peers heard from lately, yourself left out
+// one peer per uid and one entry per person (newest wins) among those heard from lately. Your own
+// peer is left out, and so are your other devices: they're you, not someone to chat with
 function publish() {
     const now = Date.now();
-    const newest = new Map<string, Member>();
+    const byUid = new Map<string, Member>();
     for (const [peer, member] of memberByPeer)
     {
         if (!fresh(peer, now)) continue;
-        const current = newest.get(member.profile.uid);
-        if (!current || member.at > current.at || (member.at === current.at && peer > current.peer))
-        {
-            newest.set(member.profile.uid, member);
-        }
+        const current = byUid.get(member.profile.uid);
+        if (newer(member, current)) byUid.set(member.profile.uid, member);
     }
+    peerByUid = new Map([...byUid.values()].map(m => [m.profile.uid, m.peer]));
 
-    peerByUid = new Map([...newest.values()].map(m => [m.profile.uid, m.peer]));
+    const mine = me()?.uid;
+    const byPerson = new Map<string, Member>();
+    for (const member of byUid.values())
+    {
+        const { uid } = member.profile;
+        if (mine && uid !== mine && samePerson(uid, mine)) continue;
+        const person = personOf(uid);
+        if (newer(member, byPerson.get(person))) byPerson.set(person, member);
+    }
     setMembers(
-        [...newest.values()]
+        [...byPerson.values()]
             .map(m => m.profile)
             .sort((a, b) => a.name.localeCompare(b.name) || (a.uid < b.uid ? -1 : 1)),
     );
+}
+
+function newer(member: Member, current: Member | undefined): boolean {
+    return !current || member.at > current.at || (member.at === current.at && member.peer > current.peer);
 }
 
 function fresh(peer: string, now: number): boolean {

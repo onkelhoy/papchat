@@ -21,7 +21,7 @@ import "@papchat/level-meter";
 import sheet from "./style.css" with { type: "css" };
 import type {
     DeviceLists, LanguageChangeEvent, Prefs, PrefsChangeEvent, PreviewDeviceEvent,
-    NetworkEntry, Profile, ProfileChangeEvent, PushState, Shortcut, Status, Tone,
+    LinkedDevice, NetworkEntry, Profile, ProfileChangeEvent, PushState, Shortcut, Status, Tone,
 } from "./types";
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
@@ -56,6 +56,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {string} invitelink invite link for the network in use (property only)
  * @property {PushState} pushstate calls while the app is closed: `unsupported` hides that section (property only)
  * @property {string} contactlink link that saves you as a contact, "" hides it and its QR code (property only)
+ * @property {LinkedDevice[]} linked your devices, this one first (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
@@ -66,6 +67,8 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @fires request-notifications switch turned on: the page asks for permission, then sets `prefs.notifications`
  * @fires push-enable the call notifications button was pressed (a tap, so the page can ask for permission)
  * @fires push-disable the button to turn them off was pressed
+ * @fires link-device "Link my profile" was pressed
+ * @fires remove-device `{ uid }` a linked device was removed, after a second press to confirm
  * @fires delete-chats the saved chats on this device were deleted, after a second press to confirm
  * @fires preview-device `{ kind: "camera" | "mic" }` a test button was pressed
  * @fires preview-dial `{ id }` play was pressed on a dial tone (`preview-stop` passes through as for ringtones)
@@ -82,6 +85,8 @@ export class Settings extends CustomElement {
 
     // the first press of Delete saved chats only asks
     @property({ type: Boolean, attribute: false, rerender: true }) private confirmDelete: boolean = false;
+    // the device whose Remove was pressed once
+    @property({ type: String, attribute: false, rerender: true }) private confirmRemove: string = "";
 
     @property({ type: Boolean, reflect: true, rerender: true }) open: boolean = false;
     @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
@@ -101,6 +106,7 @@ export class Settings extends CustomElement {
     @property({ type: String, attribute: false, rerender: true }) invitelink: string = "";
     @property({ type: String, attribute: false, rerender: true }) pushstate: PushState = "unsupported";
     @property({ type: String, attribute: false, rerender: true }) contactlink: string = "";
+    @property({ type: Array, attribute: false, rerender: true }) linked: LinkedDevice[] = [];
 
     @query("pc-ringtone-picker.ring") private ringtones?: Synced;
     @query("pc-ringtone-picker.dial") private dials?: Synced;
@@ -178,6 +184,7 @@ export class Settings extends CustomElement {
         if (!this.open) return;
         this.open = false;
         this.confirmDelete = false;
+        this.confirmRemove = "";
         this.emit("close");
     }
 
@@ -185,6 +192,41 @@ export class Settings extends CustomElement {
     private handleSaveChats(e: Event) {
         const checked = !!(e.currentTarget as HTMLInputElement).checked;
         if (checked !== this.prefs?.saveChats) this.emitPrefs({ saveChats: checked });
+    }
+
+    @bind
+    private handleLink() {
+        this.emit("link-device");
+    }
+
+    private handleRemove(uid: string) {
+        if (this.confirmRemove !== uid)
+        {
+            this.confirmRemove = uid;
+            return;
+        }
+        this.confirmRemove = "";
+        this.emit<{ uid: string }>("remove-device", { uid });
+    }
+
+    private renderDevices() {
+        return html`
+            <div class="field">
+                <span>${this.t("devices")}</span>
+                <p class="hint">${this.t("devices-hint")}</p>
+                <ul class="linked">
+                    ${(this.linked ?? []).map(device => html`
+                        <li key="${device.uid}">
+                            <span class="device">${device.label || this.t("device-unknown")}</span>
+                            ${device.self ? html`<span class="hint">${this.t("device-this")}</span>` : ""}
+                            ${device.self ? "" : html`<pap-button size="small" variant="clear" @click="${() => this.handleRemove(device.uid)}">${this.t(this.confirmRemove === device.uid ? "device-confirm" : "device-remove")}</pap-button>`}
+                        </li>
+                    `)}
+                </ul>
+                <div class="row"><pap-button size="small" @click="${this.handleLink}">${this.t("device-link")}</pap-button></div>
+                <p class="hint">${this.t("devices-limit")}</p>
+            </div>
+        `;
     }
 
     @bind
@@ -350,6 +392,7 @@ export class Settings extends CustomElement {
                         <pap-tab value="audio">${this.t("audio")}</pap-tab>
                         <pap-tab value="video">${this.t("video")}</pap-tab>
                         <pap-tab value="chats">${this.t("chats")}</pap-tab>
+                        <pap-tab value="linked">${this.t("linked")}</pap-tab>
                         <pap-tab value="appearance">${this.t("appearance")}</pap-tab>
                         <pap-tab value="notifications">${this.t("notifications")}</pap-tab>
                         ${this.shortcuts?.length ? html`<pap-tab value="shortcuts">${this.t("shortcuts")}</pap-tab>` : ""}
@@ -443,6 +486,8 @@ export class Settings extends CustomElement {
                                 <p class="hint">${this.t("delete-hint")}</p>
                             </div>
                         </pap-tabpanel>
+
+                        <pap-tabpanel value="linked">${this.renderDevices()}</pap-tabpanel>
 
                         <pap-tabpanel value="appearance">
                             <div class="field">

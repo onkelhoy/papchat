@@ -1,4 +1,4 @@
-import type { Contact, Debug, Network, Prefs, Profile, PushRecord, Session } from "./types";
+import type { AccountData, Contact, Debug, Network, Prefs, Profile, PushRecord, Session } from "./types";
 
 const KEYS = {
     profile: "papchat:profile",
@@ -10,6 +10,8 @@ const KEYS = {
     contacts: "papchat:contacts",
     muted: "papchat:muted",
     people: "papchat:people",
+    account: "papchat:account",
+    deviceNames: "papchat:device-names",
 } as const;
 
 export const DEFAULT_PREFS: Prefs = {
@@ -160,6 +162,28 @@ export const storage = {
         },
         set(value: Record<string, string>) {
             write(local, KEYS.people, value);
+        },
+    },
+    // every device link and removal you've seen, see account.ts
+    account: {
+        get(): AccountData {
+            const value = read(local, KEYS.account);
+            return isObject(value) && Array.isArray(value.links) && Array.isArray(value.removed)
+                ? value as AccountData
+                : { links: [], removed: [] };
+        },
+        set(value: AccountData) {
+            write(local, KEYS.account, value);
+        },
+    },
+    // what your devices are called
+    deviceNames: {
+        get(): Record<string, string> {
+            const value = read(local, KEYS.deviceNames);
+            return isObject(value) ? value as Record<string, string> : {};
+        },
+        set(value: Record<string, string>) {
+            write(local, KEYS.deviceNames, value);
         },
     },
     // people you've muted in global chat

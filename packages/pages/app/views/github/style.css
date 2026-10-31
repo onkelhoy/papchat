@@ -12,8 +12,8 @@ body {
 }
 
 /* a modal dialog is open: the page behind it stays put */
-html:has(pc-settings[open], pc-invite-picker[open], pc-onboarding[open], pc-app-header[asking]),
-html:has(pc-settings[open], pc-invite-picker[open], pc-onboarding[open], pc-app-header[asking]) body {
+html:has(pc-settings[open], pc-invite-picker[open], pc-onboarding[open], pc-link-device[open], pc-app-header[asking]),
+html:has(pc-settings[open], pc-invite-picker[open], pc-onboarding[open], pc-link-device[open], pc-app-header[asking]) body {
     overflow: hidden;
     overscroll-behavior: none;
 }

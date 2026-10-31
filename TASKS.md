@@ -740,27 +740,31 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### Phase D: linked devices
 
-### [ ] T10.7 An account is an array of keys · `opus` · needs T10.4
+### [x] T10.7 An account is an array of keys · `opus` · needs T10.4
 - **do:** a link is two signatures, each device signing the other's key, so neither can claim the other alone. Each device stores the set and sends it to people it meets in its own message, not the profile: a key and signature for each device is about 175 chars, so the profile's 1 KB wouldn't fit. Receivers verify, then resolve every uid in a set to one person: the smallest uid, so everyone agrees with no coordinator. Merge their two 1:1 conversations by message id. Member lists show one entry per person. Calls ring every device of that person that's online (`peerByUid` holds only the newest peer today).
 - **files:** `core/src/keys.ts`, `core/src/lobby.ts`, `core/src/history.ts`, `core/src/invites.ts`.
 - **done when:** two linked devices show as one person to others, and existing chats with either device stay; typecheck + build pass.
+- Done: `core/src/account.ts` and `people.ts`. A `DeviceLink` is two signatures over both keys and a time; a `DeviceRemoval` is signed by a device of that account. Every device keeps every link it has verified (`storage.account`), and `apply()` turns them into the person map, moves 1:1s to the new id by message id, and republishes members. Your other devices leave the member list. `send` falls back to a sibling, `sendAll` reaches all of them, calls use it, and answering on one device cancels the rest without a missed-call toast. **Chats go to one device of each person** and the others follow through T10.9, so rooms stay small. **Limit:** contacts stay per device, so a person's push tokens aren't merged; the page shows one row. Checked with two simulated devices (below). Typecheck + build pass; not run in a browser.
 
-### [ ] T10.8 Link my profile: QR code and link · `opus` · needs T10.7, T7.17
+### [x] T10.8 Link my profile: QR code and link · `opus` · needs T10.7, T7.17
 - **do:** a "Link my profile" button in Settings creates a private one-time network and shows a QR code plus a copy-link button for `#link=<network>&key=<key>`, on T7.17's parser. It expires after 5 minutes. A phone's camera opens the link from the QR, so no scanner is needed; two browsers or a laptop use the link. The second device goes through onboarding if it's new, then both sides show the same short code from a hash of both keys, and the **first device must press Accept**: without that, anyone who sees the link could become you. Then exchange keys and signatures (T10.7).
 - **installed app on iPhone:** Home Screen apps have separate storage from Safari, so the installed app is its own device with its own key, and the camera always opens Safari. So "Link my profile" has a **scanner inside the app** next to the QR: either device can show the code and the other scans it, and a laptop's webcam works too. New `pc-qr-scanner` molecule (scaffolded the same way): `getUserMedia` with the rear camera, read frames from a canvas, decode with `jsQR`, loaded only when the scanner opens, and release the camera on close. Only accept this site's `#link=` URLs. Keep a "Paste a link" field for a denied or missing camera, and let the app share its link too. Offer "Already use papchat? Link this device" during onboarding when running standalone. Check camera access in the installed iOS app on a real phone early, before building the rest.
 - **use:** a plain `Client`, not `Room`, so it stays out of the sidebar. Works from any network. Expect a 30-60 s wait on a Render cold start, and show it.
 - **QR:** already built in T9.3: `pc-qr-code` (versions 1-40), checked with `jsQR`.
 - **files:** `core/src/link.ts`, `organisms/settings`, `organisms/onboarding`, page boot, translations.
 - **done when:** phone and laptop link with a scan and one click; an expired or used link fails clearly; typecheck + build pass.
+- Done: `core/src/link.ts`, `organisms/link-device` (dialog), `molecules/qr-scanner` (both scaffolded). **Changed from the plan: both devices press Accept**, not only the first. Otherwise scanning a stranger's QR code would let their device link itself to you. A brand new device adopts the other's name, colour and network, with no onboarding to finish. Links work once and last `LIMITS.linkMs`. **Changed:** jsQR is vendored in `qr-scanner/src/vendor` and loaded in the bundle (133 KB), not only when the scanner opens, because the build leaves every declared dependency as a bare import. **Not done:** the early check of camera access in the installed iOS app needs a real phone; paste and share-link are the fallback. Typecheck + build pass; not run in a browser.
 
-### [ ] T10.9 Sync linked devices · `opus` · needs T10.8, T10.5
+### [x] T10.9 Sync linked devices · `opus` · needs T10.8, T10.5
 - **do:** right after linking, and whenever two linked devices are online together, exchange what the other lacks: conversations, messages and contacts, by id, newest first, in chunks over a data channel. Show progress. It can stop and resume, because ids make it safe to repeat. Files aren't included.
 - **files:** `core/src/link.ts`, `core/src/history.ts`.
 - **done when:** a new phone gets the laptop's chats, and a message on either device reaches the other; typecheck + build pass.
+- Done: `core/src/sync.ts`. `DeviceSync` trades ids and sends what's missing in chunks, newest first, plus contacts and the account. It runs on the link's own connection right after linking, and later over a private two-device network the smaller uid opens when both are in the lobby. New messages follow over the lobby (`sync.live`). Stalls end the round, and ids make it safe to repeat. Unsent messages stay with their device. **Limits:** only devices in the same network meet, read state isn't synced, and `sync.live` is relayed by the lobby. Checked in a simulation of two devices in worker threads (separate storage, real WebCrypto, a fake `Client`): 29 checks, which caught two sync races. Typecheck + build pass; not run in a browser.
 
-### [ ] T10.10 Unlink a device · `opus` · needs T10.7
+### [x] T10.10 Unlink a device · `opus` · needs T10.7
 - **do:** Settings lists linked devices, with "Remove". The removal is signed and spreads like the link set. Say clearly in the UI that a removed device keeps what it already has.
 - **limit:** people who were offline only learn it the next time they meet a linked device, and a lost phone can't be remotely wiped.
+- Done: a Devices tab in Settings lists your devices, with Remove (second press confirms) and Link my profile. The removal is signed, goes to the device itself, and spreads with the account. The tab says what a removed device keeps. Linking again later works, because a link only counts against removals made before it. Typecheck + build pass; not run in a browser.
 - **files:** `core/src/keys.ts`, `organisms/settings`, translations.
 
 ### Phase E: global chat

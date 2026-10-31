@@ -10,12 +10,18 @@ export type ShareLink =
     | { kind: "network"; network: Network | null }
     | { kind: "call"; room: string; password: string; network: Network | null }
     | { kind: "contact"; contact: Omit<Contact, "at"> }
-    | { kind: "ring"; ring: Ring };
+    | { kind: "ring"; ring: Ring }
+    | { kind: "link"; network: string; key: string };
 
 const NAME_MAX = 40;
 const ROOM_MAX = 200;
 const TOKEN_MAX = 4_096;
 const COLOR = /^#[0-9a-f]{6}$/i;
+
+/** A one-time link that links another device to this one. */
+export function deviceLink(network: string, key: string, expires: number): string {
+    return linkTo({ link: network, key, exp: String(Math.ceil(expires / 1000)) });
+}
 
 function linkTo(params: Record<string, string>): string {
     return `${location.origin}${location.pathname}#${new URLSearchParams(params)}`;
@@ -44,6 +50,7 @@ export function sameNetwork(a: Network | null, b: Network | null): boolean {
 /** Reads a location hash. Null when it isn't an invite link, a word when it is one that can't be used. */
 export function readShareLink(hash: string): ShareLink | "expired" | "invalid" | null {
     const params = new URLSearchParams(hash.replace(/^#/, ""));
+    if (params.has("link")) return readDeviceLink(params);
     if (params.has("contact")) return readContact(params);
     if (params.has("from")) return readRing(params);
 
@@ -67,6 +74,14 @@ export function readShareLink(hash: string): ShareLink | "expired" | "invalid" |
 
     const net = clean ? { name: clean, password: params.get("netkey") ?? "" } : null;
     return room && room.length <= ROOM_MAX && key ? { kind: "call", room, password: key, network: net } : "invalid";
+}
+
+function readDeviceLink(params: URLSearchParams): ShareLink | "expired" | "invalid" {
+    const network = params.get("link") ?? "";
+    const key = params.get("key") ?? "";
+    const seconds = Number(params.get("exp"));
+    if (!network || network.length > ROOM_MAX || !key || !Number.isFinite(seconds)) return "invalid";
+    return Date.now() >= seconds * 1000 ? "expired" : { kind: "link", network, key };
 }
 
 function readContact(params: URLSearchParams): ShareLink | "invalid" {

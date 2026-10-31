@@ -53,6 +53,15 @@
     "save-chats-hint": "Text och GIF:ar sparas här så att en chatt finns kvar i morgon. Filer sparas inte, och inget lagras på en server.",
     "delete-chats": "Ta bort sparade chattar",
     "delete-confirm": "Tryck igen för att ta bort dem",
-    "delete-hint": "Bara från den här enheten. De du har chattat med behåller sin kopia."
+    "delete-hint": "Bara från den här enheten. De du har chattat med behåller sin kopia.",
+    "linked": "Enheter",
+    "devices": "Dina enheter",
+    "devices-hint": "Länkade enheter är en person: samma chattar, och samtal ringer på alla.",
+    "device-this": "Den här enheten",
+    "device-unknown": "En annan enhet",
+    "device-remove": "Ta bort",
+    "device-confirm": "Tryck igen för att ta bort",
+    "device-link": "Länka min profil",
+    "devices-limit": "En borttagen enhet behåller det den redan har, och de som var offline får veta det först när de möter någon av dina enheter. En borttappad telefon kan inte rensas härifrån."
   }
 }

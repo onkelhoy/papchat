@@ -1,6 +1,6 @@
-import type { NetworkEntry, Prefs, Profile, PushState, Status } from "@papchat/core";
+import type { LinkedDevice, NetworkEntry, Prefs, Profile, PushState, Status } from "@papchat/core";
 
-export type { NetworkEntry, Prefs, Profile, PushState, Status };
+export type { LinkedDevice, NetworkEntry, Prefs, Profile, PushState, Status };
 
 export type Tone = { id: string; label: string };
 

@@ -8,7 +8,7 @@ import { canSave, conversations, directId, hasMessage, loadMessages, markSent, m
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { PROOF, Verifier } from "./keys";
-import { profileOf, readMember, send as lobbySend, serverId, type Member } from "./lobby";
+import { profileOf, readMember, send as lobbySend, sendAll as lobbySendAll, serverId, type Member } from "./lobby";
 import { log } from "./log";
 import { personOf, samePerson } from "./people";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
@@ -289,6 +289,16 @@ export class Room extends EventTarget {
         return this.direct && mine ? directId(mine, this.direct) : this.group;
     }
 
+    /** Messages that reached this device another way (a linked device): shown, nothing more. */
+    showSaved(messages: ChatMessage[]) {
+        this.addSaved(messages);
+    }
+
+    /** Reads the store again after it was changed from outside. */
+    async reloadHistory() {
+        await this.openHistory();
+    }
+
     /** Pages older saved messages in. False when there are none left. */
     async loadOlder(): Promise<boolean> {
         if (!this.saving || !this.olderLeft) return false;
@@ -447,10 +457,11 @@ export class Room extends EventTarget {
             title: this.title,
             from: profile.uid,
             members: [profile.uid, ...this.present.keys()],
-            ...(this.direct === uid ? { direct: true } : {}),
+            ...(this.direct && samePerson(this.direct, uid) ? { direct: true } : {}),
             ...extra,
         };
-        const sent = lobbySend(uid, "invite", invite);
+        // a chat goes to one device and the others follow; a call rings them all
+        const sent = kind === "chat" ? lobbySend(uid, "invite", invite) : lobbySendAll(uid, "invite", invite);
         log("room: invite", uid, kind, sent ? "sent" : "not sent");
         return sent;
     }
@@ -903,12 +914,14 @@ export class Room extends EventTarget {
             // only members who proved their uid count
             if (!this.verifier?.verified(peer)) continue;
             byPeer.set(peer, member.profile);
-            if (member.profile.uid === mine) continue;
+            // your other devices are you, and someone's two devices are one person
+            if (mine && samePerson(member.profile.uid, mine)) continue;
 
-            const current = newest.get(member.profile.uid);
+            const person = personOf(member.profile.uid);
+            const current = newest.get(person);
             if (!current || member.at > current.at || (member.at === current.at && peer > current.peer))
             {
-                newest.set(member.profile.uid, member);
+                newest.set(person, member);
             }
         }
         this.memberByPeer = byPeer;
@@ -1441,6 +1454,16 @@ function findRoom(id: string): Room | null {
         if (r.network === id) return r;
     }
     return null;
+}
+
+/** @internal the person map changed: 1:1 rooms are keyed by person. */
+export function rekeyDirects() {
+    directs.clear();
+    for (const room of registry.values())
+    {
+        if (room.direct && room.status() !== "closed") setDirect(room.direct, room);
+        room.sync();
+    }
 }
 
 /** @internal identity.ts pushes profile changes to every room. */

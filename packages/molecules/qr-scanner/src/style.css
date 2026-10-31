@@ -1,0 +1,17 @@
+:host {
+    display: block;
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+video {
+    display: block;
+    inline-size: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: var(--radius-medium, 0.5rem);
+    background-color: var(--background-dark);
+}

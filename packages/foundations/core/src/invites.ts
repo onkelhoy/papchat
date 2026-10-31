@@ -3,8 +3,9 @@ import { effect } from "@papit/signals";
 import { LIMITS } from "./config";
 import { contactOf, contactProfile, forgetContact } from "./contacts";
 import { signedBy, uidOfKey } from "./keys";
-import { on, peerOf, profileOf, send } from "./lobby";
+import { on, peerOf, profileOf, send, sendAll } from "./lobby";
 import { log } from "./log";
+import { devicesOf, personOf, samePerson } from "./people";
 import { callText, closeNotification, pushCall, pushCancel } from "./push";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
@@ -51,7 +52,7 @@ export async function openChat(uid: string, options: { quiet?: boolean } = {}): 
     const existing = directRoom(uid);
     if (existing)
     {
-        if (!existing.participants().some(p => p.uid === uid)) existing.invite(uid, "chat");
+        if (!existing.participants().some(p => samePerson(p.uid, uid))) existing.invite(uid, "chat");
         if (!options.quiet) selectRoom(existing.id);
         return existing;
     }
@@ -183,15 +184,16 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     }
 
     // whoever is already in the chat hasn't answered yet: only newcomers (or `invite.accept`) count
-    const before = new Set(room.participants().map(p => p.uid));
+    const before = new Set(room.participants().map(p => personOf(p.uid)));
     const target = room;
     const call: Outgoing = {
         room,
-        ringing: new Set([uid]),
+        // by person: answering on any device counts
+        ringing: new Set([personOf(uid)]),
         // the callee declines with `timeout` itself; this covers one that vanished
         timer: setTimeout(() => expire(call), (token ? LIMITS.ringOfflineMs : LIMITS.ringMs) + 3_000),
         watch: effect(() => {
-            const here = target.participants().map(p => p.uid).filter(u => !before.has(u));
+            const here = target.participants().map(p => personOf(p.uid)).filter(u => !before.has(u));
             if (here.length > 0) setTimeout(() => answered(call, here), 0);
             // hung up while ringing (the chat stays, so there's no `leave` to catch it)
             if (!target.oncall()) setTimeout(() => endCall(call, true), 0);
@@ -216,7 +218,7 @@ async function ringDevice(call: Outgoing, uid: string, kind: Extract<RoomKind, "
 
     toast("warning", `Couldn't reach ${nameOf(uid) ?? "that person"}`);
     call.token = "";
-    call.ringing.delete(uid);
+    call.ringing.delete(personOf(uid));
     finishIfEmpty(call);
 }
 
@@ -279,7 +281,7 @@ export function cancelRing(roomId: string) {
 export function cancelInvite(roomId: string, uids: string[]) {
     const room = getRoom(roomId);
     const id = room?.network ?? roomId;
-    for (const uid of uids) send(uid, "invite.cancel", { room: id });
+    for (const uid of uids) sendAll(uid, "invite.cancel", { room: id });
 }
 
 // ---------------------------------------------------------------- lobby handlers
@@ -324,14 +326,21 @@ on<unknown>("invite", (payload, from) => {
 
 on<unknown>("invite.cancel", (payload) => {
     const room = readId(payload);
-    if (room) missRing(room);
+    if (!room) return;
+    // picked up on another device of yours: nothing was missed
+    if ((payload as Record<string, unknown>).elsewhere === true) stopRing(room);
+    else missRing(room);
 });
 
 on<unknown>("invite.accept", (payload, from) => {
     const id = readId(payload);
     log("invites: accepted", id, "by", from.uid);
     const call = id ? outgoingOf(id) : undefined;
-    if (call) answered(call, [from.uid ?? ""]);
+    if (call && from.uid)
+    {
+        stopOtherDevices(call, from.uid);
+        answered(call, [personOf(from.uid)]);
+    }
 });
 
 on<unknown>("invite.decline", (payload, from) => {
@@ -342,10 +351,14 @@ on<unknown>("invite.decline", (payload, from) => {
     const name = from.profile?.name ?? "They";
     log("invites: declined", room, reason, "by", from.uid);
 
+    // every ringing device times out on its own: one answer per person
+    if (from.uid && !firstAnswer(room, from.uid)) return;
+
     const call = outgoingOf(room);
     if (call && from.uid)
     {
-        call.ringing.delete(from.uid);
+        stopOtherDevices(call, from.uid);
+        call.ringing.delete(personOf(from.uid));
         finishIfEmpty(call);
     }
     const text = {
@@ -367,6 +380,25 @@ effect(() => {
 });
 
 // ---------------------------------------------------------------- ringing
+
+const ANSWER_MEMORY_MS = 10_000;
+const answers = new Set<string>();
+
+function firstAnswer(room: string, uid: string): boolean {
+    const key = `${room}\n${personOf(uid)}`;
+    if (answers.has(key)) return false;
+    answers.add(key);
+    setTimeout(() => answers.delete(key), ANSWER_MEMORY_MS);
+    return true;
+}
+
+// one device answered: the person's other devices stop ringing
+function stopOtherDevices(call: Outgoing, uid: string) {
+    for (const device of devicesOf(uid))
+    {
+        if (device !== uid) send(device, "invite.cancel", { room: call.room.network, elsewhere: true });
+    }
+}
 
 const callTag = (roomId: string) => `call:${roomId}`;
 
@@ -425,6 +457,7 @@ function nameOf(uid: string): string | null {
 }
 
 function expire(call: Outgoing) {
+    // these are people: a person's uid works for any lookup
     for (const uid of call.ringing)
     {
         toast("info", `${nameOf(uid) ?? "They"} didn't answer`);

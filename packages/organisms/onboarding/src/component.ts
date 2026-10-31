@@ -50,6 +50,7 @@ let instances = 0;
  * @property {{ name: string, password: string } | null} joining a private network to join (share link), null for the public one (property only)
  *
  * @fires submit `CustomEvent<{ name, color, language, network }>` valid form submitted; `network` is `joining` (bubbles, composed)
+ * @fires link-device "Already use papchat?" was pressed (bubbles, composed)
  * @fires language-change `CustomEvent<{ value }>` the language was changed, so the page can translate live (bubbles, composed)
  * @csspart dialog the `pap-dialog`
  */
@@ -111,6 +112,11 @@ export class Onboarding extends CustomElement {
         {
             if (this.open) this.dialog?.showModal();
         });
+    }
+
+    @bind
+    private handleLink() {
+        this.dispatchEvent(new CustomEvent("link-device", { bubbles: true, composed: true }));
     }
 
     @bind
@@ -181,6 +187,7 @@ export class Onboarding extends CustomElement {
                     ${this.joining ? html`<p class="network">${this.t("joining")} <strong>${this.joining.name}</strong></p>` : ""}
 
                     <pap-button type="submit" size="large">${this.t("submit")}</pap-button>
+                    <pap-button type="button" size="small" variant="clear" @click="${this.handleLink}">${this.t("link")}</pap-button>
                 </form>
             </pap-dialog>
         `;

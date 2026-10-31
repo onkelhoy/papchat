@@ -34,6 +34,8 @@ export const LIMITS = {
     // what members offer each other when they meet, to fill gaps
     historyFillMs: 7 * 24 * 60 * 60_000,
     historyOffer: 1_000,
+    // a link for another device works this long
+    linkMs: 5 * 60_000,
     // history goes in pieces of about this many characters
     historyChunk: 12_000,
     typingSendMs: 1_000,
