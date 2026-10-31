@@ -84,6 +84,7 @@ import {
     GIPHY_KEY,
     GLOBAL_ID,
     conversations,
+    deleteAllConversations,
     deleteConversation,
     devicesOf,
     loadOlderViewing,
@@ -809,6 +810,11 @@ settings.addEventListener("push-enable", async () =>
     else if (result === "failed") toast("warning", t("pushFailed"));
 });
 settings.addEventListener("push-disable", () => void disablePush());
+settings.addEventListener("delete-chats", () =>
+{
+    void deleteAllConversations();
+    toast("success", t("chatsDeleted"));
+});
 settings.addEventListener("preview-device", (e) => void startTest((e as CustomEvent<{ kind: "camera" | "mic" }>).detail.kind));
 settings.addEventListener("preview", (e) => ringtone.preview((e as CustomEvent<{ id: string }>).detail.id));
 settings.addEventListener("preview-stop", () => ringtone.stop());

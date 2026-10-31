@@ -732,10 +732,11 @@ Ideas from the user, planned in this order because each phase needs the one befo
 - **done when:** a message sent while the other person is away arrives when they return, once; typecheck + build pass.
 - Done: in `room.ts`. Receivers answer `ack` by id, and a repeat is acked again but dropped. No receipt in `LIMITS.ackMs` shows "Not sent yet". The outbox is an index on the message store, and `chats.ts` opens a quiet room when someone with waiting messages comes online. On meeting, members trade ids from the last 7 days (`history.offer` / `want` / `fill`). **Decision:** a group's past is only offered to someone already in that saved conversation, so an invite doesn't hand a newcomer the backlog. **Limit:** a filled message's author is checked against the conversation's members, but it isn't signed, so a member could fake a line from another member. A group message counts as sent on its first receipt. Typecheck + build pass; not run in a browser.
 
-### [ ] T10.6 History settings · `sonnet` · needs T10.4
+### [x] T10.6 History settings · `sonnet` · needs T10.4
 - **do:** "Save chats on this device" in Settings, on by default, plus "Delete saved chats". A new network can ask for no saving with `meta.history: false`, chosen when it's created. It's a request, not enforcement, because any device can keep what it receives; say so in the copy. Meta is readable by anyone listing networks: flags only, never messages. The server's only limit is its 256 KB frame.
 - **files:** `organisms/settings`, `molecules/network-picker`, `core/src/history.ts`, `core/src/lobby.ts`, translations.
 - **done when:** turning it off stops saving and delete clears it; typecheck + build pass.
+- Done: a Chats tab in Settings (`prefs.saveChats`, on by default; Delete takes a second press). The network form's checkbox sets `Network.nosave`, which goes in the lobby's `meta.history: false` when this creates the network; rooms copy it into their own meta, and the network list shows it. It only counts when the network is new, and the copy says it's a request. Typecheck + build pass; not run in a browser.
 
 ### Phase D: linked devices
 

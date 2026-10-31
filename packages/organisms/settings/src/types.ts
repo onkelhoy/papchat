@@ -20,4 +20,4 @@ export type PrefsChangeEvent = { partial: Partial<Prefs> };
 export type LanguageChangeEvent = { value: string };
 export type PreviewDeviceEvent = { kind: "camera" | "mic" };
 /** `network: null` = the public papchat network */
-export type NetworkChangeEvent = { network: { name: string; password: string } | null };
+export type NetworkChangeEvent = { network: { name: string; password: string; nosave?: boolean } | null };

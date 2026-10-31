@@ -47,6 +47,12 @@
     "noise-off": "Av",
     "noise-standard": "Standard",
     "noise-strong": "Stark (tydligare röst, mer processorkraft)",
-    "noise-hint": "Tar bort bakgrundsljud från din mikrofon innan det skickas. Testet ovan använder det också."
+    "noise-hint": "Tar bort bakgrundsljud från din mikrofon innan det skickas. Testet ovan använder det också.",
+    "chats": "Chattar",
+    "save-chats": "Spara chattar på den här enheten",
+    "save-chats-hint": "Text och GIF:ar sparas här så att en chatt finns kvar i morgon. Filer sparas inte, och inget lagras på en server.",
+    "delete-chats": "Ta bort sparade chattar",
+    "delete-confirm": "Tryck igen för att ta bort dem",
+    "delete-hint": "Bara från den här enheten. De du har chattat med behåller sin kopia."
   }
 }

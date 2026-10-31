@@ -55,6 +55,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@papit/checkbox": "*",
     "@papit/web-component": "*",
     "@papit/translator": "*",
     "@papit/button": "*",

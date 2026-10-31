@@ -47,6 +47,12 @@
     "noise-off": "Off",
     "noise-standard": "Standard",
     "noise-strong": "Strong (clearer voice, uses more CPU)",
-    "noise-hint": "Cleans background noise from your microphone before it's sent. The test above uses it too."
+    "noise-hint": "Cleans background noise from your microphone before it's sent. The test above uses it too.",
+    "chats": "Chats",
+    "save-chats": "Save chats on this device",
+    "save-chats-hint": "Text and GIFs stay here so a chat is still there tomorrow. Files aren't saved, and nothing is stored on a server.",
+    "delete-chats": "Delete saved chats",
+    "delete-confirm": "Press again to delete them",
+    "delete-hint": "Only from this device. Anyone you chatted with keeps their copy."
   }
 }

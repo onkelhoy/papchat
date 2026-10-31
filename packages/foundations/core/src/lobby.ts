@@ -1,6 +1,7 @@
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
+import { readNetworkSaves } from "./history";
 import { PROOF, Verifier } from "./keys";
 import { log } from "./log";
 import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
@@ -254,6 +255,7 @@ export async function listNetworks(): Promise<NetworkEntry[]> {
             const entry = found.get(name) ?? { name, members: 0, locked: false };
             entry.members += info.size;
             entry.locked ||= info.meta.locked === true;
+            entry.nosave ||= info.meta.history === false;
             found.set(name, entry);
         }
     }
@@ -398,11 +400,13 @@ async function boot(current: number): Promise<boolean> {
             await serverCall(current, () => c.create({
                 name: net?.name ?? LOBBY_NAME,
                 ...(net?.password ? { password: net.password } : {}),
-                meta: { app: APP, kind: "lobby", v: 1, created: Date.now(), ...(net ? { network: net.name, locked: !!net.password } : {}) },
+                // only flags: anyone listing networks can read this
+                meta: { app: APP, kind: "lobby", v: 1, created: Date.now(), ...(net ? { network: net.name, locked: !!net.password } : {}), ...(net?.nosave ? { history: false } : {}) },
             }));
         }
         alive(current);
 
+        readNetworkSaves(c.network?.meta);
         booting = false;
         rebooting = false;
         retryMs = RETRY_MIN_MS;

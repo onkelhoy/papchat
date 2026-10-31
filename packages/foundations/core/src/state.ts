@@ -43,7 +43,7 @@ export function setPrefs(partial: Partial<Prefs>) {
 /** Saves the network to use (null = public). Takes effect on the next `startLobby`; `switchNetwork` reloads. */
 export function setNetwork(next: Network | null) {
     const name = next?.name.trim().slice(0, 40) ?? "";
-    const value = name ? { name, password: next!.password } : null;
+    const value = name ? { name, password: next!.password, ...(next!.nosave ? { nosave: true } : {}) } : null;
     storage.network.set(value);
     setNetworkSignal(value);
 }

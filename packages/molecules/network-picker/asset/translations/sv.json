@@ -19,6 +19,9 @@
     "password": "Lösenord",
     "hint": "Går med i nätverket med det här namnet, eller skapar det om det inte finns. Lämna lösenordet tomt för ett öppet nätverk.",
     "link-hint": "Alla som har länken kan gå med. Den innehåller nätverkets lösenord.",
-    "link-hint-public": "Alla som har länken kan gå med."
+    "link-hint-public": "Alla som har länken kan gå med.",
+    "nosave": "Be alla att inte spara chattar",
+    "nosave-hint": "Gäller bara när det här skapar ett nytt nätverk. Det är en begäran, inte en regel: alla enheter kan behålla det de tar emot.",
+    "nosaved": "chattar sparas inte"
   }
 }

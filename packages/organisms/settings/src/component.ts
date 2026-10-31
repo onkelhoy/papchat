@@ -66,6 +66,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @fires request-notifications switch turned on: the page asks for permission, then sets `prefs.notifications`
  * @fires push-enable the call notifications button was pressed (a tap, so the page can ask for permission)
  * @fires push-disable the button to turn them off was pressed
+ * @fires delete-chats the saved chats on this device were deleted, after a second press to confirm
  * @fires preview-device `{ kind: "camera" | "mic" }` a test button was pressed
  * @fires preview-dial `{ id }` play was pressed on a dial tone (`preview-stop` passes through as for ringtones)
  * @fires close the dialog was dismissed (the page sets `open = false`)
@@ -78,6 +79,9 @@ export class Settings extends CustomElement {
     @translate t = useTranslator("pc-settings");
 
     private group = `pc-settings-${++instances}`;
+
+    // the first press of Delete saved chats only asks
+    @property({ type: Boolean, attribute: false, rerender: true }) private confirmDelete: boolean = false;
 
     @property({ type: Boolean, reflect: true, rerender: true }) open: boolean = false;
     @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
@@ -173,7 +177,25 @@ export class Settings extends CustomElement {
         // also fires when the page closes us; only dismissals by the user count
         if (!this.open) return;
         this.open = false;
+        this.confirmDelete = false;
         this.emit("close");
+    }
+
+    @bind
+    private handleSaveChats(e: Event) {
+        const checked = !!(e.currentTarget as HTMLInputElement).checked;
+        if (checked !== this.prefs?.saveChats) this.emitPrefs({ saveChats: checked });
+    }
+
+    @bind
+    private handleDeleteChats() {
+        if (!this.confirmDelete)
+        {
+            this.confirmDelete = true;
+            return;
+        }
+        this.confirmDelete = false;
+        this.emit("delete-chats");
     }
 
     @bind
@@ -327,6 +349,7 @@ export class Settings extends CustomElement {
                         <pap-tab value="network">${this.t("network")}</pap-tab>
                         <pap-tab value="audio">${this.t("audio")}</pap-tab>
                         <pap-tab value="video">${this.t("video")}</pap-tab>
+                        <pap-tab value="chats">${this.t("chats")}</pap-tab>
                         <pap-tab value="appearance">${this.t("appearance")}</pap-tab>
                         <pap-tab value="notifications">${this.t("notifications")}</pap-tab>
                         ${this.shortcuts?.length ? html`<pap-tab value="shortcuts">${this.t("shortcuts")}</pap-tab>` : ""}
@@ -406,6 +429,18 @@ export class Settings extends CustomElement {
                                 <pc-device-picker kind="videoinput" data-device="camera" @change="${this.handleCamera}"></pc-device-picker>
                                 <pap-button size="small" variant="clear" data-kind="camera" @click="${this.handleTest}">${this.t("test-camera")}</pap-button>
                                 <div class="camera"><pc-video fit="cover"></pc-video></div>
+                            </div>
+                        </pap-tabpanel>
+
+                        <pap-tabpanel value="chats">
+                            <label class="toggle">
+                                <pap-switch checked="${prefs?.saveChats ? "true" : ""}" @change="${this.handleSaveChats}"></pap-switch>
+                                <span>${this.t("save-chats")}</span>
+                            </label>
+                            <p class="hint">${this.t("save-chats-hint")}</p>
+                            <div class="field">
+                                <pap-button size="small" variant="clear" @click="${this.handleDeleteChats}">${this.t(this.confirmDelete ? "delete-confirm" : "delete-chats")}</pap-button>
+                                <p class="hint">${this.t("delete-hint")}</p>
                             </div>
                         </pap-tabpanel>
 

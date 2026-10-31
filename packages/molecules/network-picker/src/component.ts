@@ -4,6 +4,7 @@ import { translate, useTranslator } from "@papit/translator";
 import "@papit/button";
 import "@papchat/share-link";
 import "@papit/input";
+import "@papit/checkbox";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -56,7 +57,8 @@ export class NetworkPicker extends CustomElement {
         e.stopPropagation();
         const name = this.field("name").trim();
         if (!name) return;
-        this.emit<NetworkChangeEvent>("network-change", { network: { name, password: this.field("password") } });
+        const nosave = !!this.shadowRoot?.querySelector<HTMLInputElement>("#nosave")?.checked;
+        this.emit<NetworkChangeEvent>("network-change", { network: { name, password: this.field("password"), ...(nosave ? { nosave } : {}) } });
     }
 
     private handleJoin(entry: NetworkEntry) {
@@ -100,7 +102,7 @@ export class NetworkPicker extends CustomElement {
                     ${this.networks.map(entry => html`
                         <div class="item" role="listitem" key="${entry.name || "-public"}">
                             <span class="name">${entry.name || this.t("public")}</span>
-                            <span class="hint">${this.t("members", { count: String(entry.members) })}${entry.locked ? ` · ${this.t("locked")}` : ""}</span>
+                            <span class="hint">${this.t("members", { count: String(entry.members) })}${entry.locked ? ` · ${this.t("locked")}` : ""}${entry.nosave ? ` · ${this.t("nosaved")}` : ""}</span>
                             <span class="spacer"></span>
                             ${entry.name === this.network ? html`<span class="hint">${this.t("current")}</span>` : ""}
                             ${entry.name === this.network ? "" : html`<pap-button size="small" variant="clear" type="button" @click="${() => this.handleJoin(entry)}">${this.t("join")}</pap-button>`}
@@ -115,6 +117,8 @@ export class NetworkPicker extends CustomElement {
                 <pap-input id="name" maxlength="40" autocomplete="off"></pap-input>
                 <label for="password">${this.t("password")}</label>
                 <pap-input id="password" type="password" autocomplete="off"></pap-input>
+                <pap-checkbox id="nosave">${this.t("nosave")}</pap-checkbox>
+                <p class="hint">${this.t("nosave-hint")}</p>
                 <div class="row">
                     <pap-button type="submit" variant="outline">${this.t("join-or-create")}</pap-button>
                 </div>
