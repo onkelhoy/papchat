@@ -60,39 +60,6 @@
     display: none;
 }
 
-.preview p {
-    margin: 0;
-}
-
-.preview > * + * {
-    margin-block-start: var(--space-1, 0.25rem);
-}
-
-.preview ul,
-.preview ol {
-    margin-block: 0;
-    padding-inline-start: var(--space-5, 1.25rem);
-}
-
-.preview blockquote {
-    margin: 0;
-    padding-inline-start: var(--space-3, 0.75rem);
-    border-inline-start: 2px solid color-mix(in oklch, currentColor 35%, transparent);
-}
-
-.preview code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.875em;
-    padding: 0 0.25em;
-    border-radius: var(--space-1, 0.25rem);
-    background-color: color-mix(in oklch, currentColor 12%, transparent);
-}
-
-.preview pre {
-    margin: 0;
-    white-space: pre-wrap;
-}
-
 /* collapsed: field and buttons on one line; formatting: the field takes the row, buttons wrap under it */
 .row {
     display: flex;

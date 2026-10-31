@@ -5,7 +5,8 @@ import "@papit/button";
 import "@papit/file-input";
 import type { FileInput } from "@papit/file-input";
 import "@papit/icon";
-import { renderText } from "@papchat/message";
+import "@papit/markdown";
+import type { Markdown } from "@papit/markdown";
 import "@papchat/emoji-picker";
 import { loadEmoji, searchEmoji } from "@papchat/emoji-picker";
 import type { EmojiEntry, EmojiPickEvent } from "@papchat/emoji-picker";
@@ -61,7 +62,7 @@ type PickTab = "emoji" | "gifs";
  *
  * Collapsed it's one line with the buttons on the right. The format button ("T") opens a toolbar
  * (bold, italic, underline, strikethrough | bullets, numbers | quote, link, code, and a trash button
- * that clears the draft) and a live preview. Formatting is the markdown subset `pc-message`
+ * that clears the draft) and a live `pap-markdown` preview. Formatting is the markdown subset `pc-message`
  * renders: the toolbar wraps or prefixes the selection, so what's sent is plain text with marks.
  *
  * Enter sends, Shift+Enter inserts a newline (and continues a list or quote). Ctrl/Cmd+B/I/U
@@ -381,17 +382,16 @@ export class Composer extends CustomElement {
 
     // ---------------------------------------------------------------- preview
 
-    // the toolbar's live preview shows the draft as it will look (only once it has some formatting)
+    // the toolbar's live preview, once the draft has some formatting. It renders full markdown, more than
+    // `pc-message` does, until the papit editor replaces it
     private syncPreview() {
-        const preview = this.shadowRoot?.querySelector<HTMLElement>("[part='preview']");
+        const preview = this.shadowRoot?.querySelector<Markdown>("[part='preview']");
         if (!preview) return;
 
         const text = this.field?.value.trim() ?? "";
-        const marked = /[*_~`>\[]|^\s*(?:[-*]|\d{1,3}[.)])\s/m.test(text);
+        const marked = /[*_~`>\[|]|^\s*(?:[-*]|\d{1,3}[.)]|#{1,6})\s/m.test(text);
         preview.hidden = !text || !marked;
-        if (preview.hidden || preview.dataset.text === text) return;
-        preview.replaceChildren(renderText(text));
-        preview.dataset.text = text;
+        if (!preview.hidden && preview.content !== text) preview.content = text;
     }
 
     // ---------------------------------------------------------------- emoji popover
@@ -634,7 +634,7 @@ export class Composer extends CustomElement {
                     <pap-icon name="/icons/trash.svg" aria-hidden="true"></pap-icon>
                 </pap-button>
             </div>
-            <div part="preview" class="preview" aria-label="${this.t("preview")}" hidden></div>
+            <pap-markdown part="preview" class="preview" aria-label="${this.t("preview")}" hidden></pap-markdown>
         </div>`;
     }
 

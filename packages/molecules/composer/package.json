@@ -55,15 +55,15 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@papit/web-component": "*",
-    "@papit/translator": "*",
-    "@papit/input": "*",
-    "@papit/file-input": "*",
-    "@papit/button": "*",
-    "@papit/icon": "*",
-    "@papchat/message": "*",
     "@papchat/emoji-picker": "*",
-    "@papchat/gif-picker": "*"
+    "@papchat/gif-picker": "*",
+    "@papit/button": "*",
+    "@papit/file-input": "*",
+    "@papit/icon": "*",
+    "@papit/input": "*",
+    "@papit/markdown": "^0.0.9",
+    "@papit/translator": "*",
+    "@papit/web-component": "*"
   },
   "peerDependencies": {
     "react": "^19"
@@ -74,14 +74,14 @@
     }
   },
   "devDependencies": {
-    "@playwright/test": "1.64.1",
-    "playwright": "1.64.1",
-    "typescript": "5.9.3",
+    "@papchat/core": "*",
     "@papchat/theme": "*",
+    "@papit/codeblock": "*",
     "@papit/theme": "*",
     "@papit/translator": "*",
-    "@papit/codeblock": "*",
-    "@papchat/core": "*"
+    "@playwright/test": "1.64.1",
+    "playwright": "1.64.1",
+    "typescript": "5.9.3"
   },
   "browserslist": [
     "defaults",

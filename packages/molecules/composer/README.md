@@ -49,7 +49,7 @@ npm install @papchat/composer
 
 The smiley button opens a popover with tabs All / Emoji and a "Find something fun" search (`pc-emoji-picker` inside). Typing `:smi` suggests up to 6 emoji above the field: arrows move, Enter or Tab picks, Escape dismisses.
 
-The toolbar writes the markdown subset `pc-message` renders (`**bold**`, `*italic*`, `__underline__`, `~~strike~~`, lists, `> ` quotes, `[link](https://…)`, `` `code` ``), so what's sent is plain text. Parts: `box`, `toolbar`, `preview`, `field`, `attach`, `send`.
+The toolbar writes the markdown subset `pc-message` renders (`**bold**`, `*italic*`, `__underline__`, `~~strike~~`, lists, `> ` quotes, `[link](https://…)`, `` `code` ``), so what's sent is plain text. The live preview is `pap-markdown`, which renders full markdown, so headings, images, tables and `__underline__` (shown bold) can look different from the sent message. Parts: `box`, `toolbar`, `preview`, `field`, `attach`, `send`.
 
 Enter sends, Shift+Enter inserts a newline. The field is a native `<textarea>` (`pap-input` is single-line) that grows up to 8rem. Methods: `focus()`. Parts: `field`, `send`, `attach`. Events bubble and are composed. Needs `/icons/spritesheet.svg` (paperclip, send) served by the page.
 
