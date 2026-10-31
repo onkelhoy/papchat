@@ -50,6 +50,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {boolean} sinkSupported the browser can pick an output device (default true)
  * @property {string} network name of the private network in use, "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server, for the Network tab (property only)
+ * @property {boolean} separated a same-name network with an unknown password exists (property only)
  * @property {Shortcut[]} shortcuts keyboard shortcuts listed in the Shortcuts tab, hidden when empty (property only)
  *
  * @fires profile-change `{ partial }` name, colour or status changed
@@ -85,6 +86,7 @@ export class Settings extends CustomElement {
     @property({ type: Array, attribute: false, rerender: true }) shortcuts: Shortcut[] = [];
     @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
+    @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
 
     @query("pc-ringtone-picker.ring") private ringtones?: Synced;
     @query("pc-ringtone-picker.dial") private dials?: Synced;
@@ -119,6 +121,7 @@ export class Settings extends CustomElement {
         if (this.picker)
         {
             this.picker.networks = this.networks;
+            this.picker.separated = this.separated;
         }
 
         if (this.languages) this.languages.value = this.language;

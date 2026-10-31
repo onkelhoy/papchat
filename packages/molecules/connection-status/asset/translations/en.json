@@ -8,6 +8,7 @@
     "waking": "Waking up the server… (can take up to a minute)",
     "connected": "Connected",
     "reconnecting": "Reconnecting…",
-    "closed": "Disconnected"
+    "closed": "Disconnected",
+    "separated": "Connected, separate group"
   }
 }

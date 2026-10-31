@@ -21,6 +21,7 @@ import type { NetworkChangeEvent, NetworkEntry } from "./types";
  *
  * @property {string} network name of the network in use (or picked), "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server (property only)
+ * @property {boolean} separated a same-name network with an unknown password exists: says so above the form (property only)
  *
  * @fires network-change `CustomEvent<{ network }>` a network was picked, `null` = public (bubbles, composed)
  * @fires networks-refresh Refresh pressed: the page sets a fresh `networks` (bubbles, composed)
@@ -35,6 +36,7 @@ export class NetworkPicker extends CustomElement {
 
     @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
+    @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
 
     private emit<T>(name: string, detail?: T) {
         this.dispatchEvent(new CustomEvent<T>(name, { detail, bubbles: true, composed: true }));
@@ -96,6 +98,7 @@ export class NetworkPicker extends CustomElement {
                 </div>
             </div>
             <form part="form" class="section" @submit="${this.handleSubmit}">
+                ${this.separated ? html`<p class="hint">${this.t("separated", { name: this.network })}</p>` : ""}
                 <span class="label">${this.t("join-or-create")}</span>
                 <label for="name">${this.t("name")}</label>
                 <pap-input id="name" maxlength="40" autocomplete="off"></pap-input>

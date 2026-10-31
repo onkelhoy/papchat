@@ -37,6 +37,7 @@ const DARK = "(prefers-color-scheme: dark)";
  * @property {Profile} me the signed-in profile (avatar and status menu are hidden without it)
  * @property {LobbyStatus} status lobby connection state; `idle` is shown as `connecting`
  * @property {string} network name of the private network in use, shown next to the connection state; "" = public
+ * @property {boolean} separated a same-name network with an unknown password exists: the state says so (property only)
  * @property {boolean} live you are presenting: the button reads "End broadcast" and fires `end-live` (reflected)
  *
  * @fires status-change `CustomEvent<{ status }>` a presence status was chosen
@@ -54,6 +55,7 @@ export class AppHeader extends CustomElement {
     @property({ type: Object, attribute: false, rerender: true }) me?: Profile | null;
     @property({ type: String, rerender: true }) status: LobbyStatus = "connecting";
     @property({ type: String, rerender: true }) network: string = "";
+    @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) live: boolean = false;
 
     // the "Go live" title dialog
@@ -81,6 +83,7 @@ export class AppHeader extends CustomElement {
         super.disconnectedCallback();
     }
     private get connection() {
+        if (this.status === "connected" && this.separated) return "separated";
         return this.status === "idle" || this.status === "waking" ? "connecting" : this.status;
     }
 

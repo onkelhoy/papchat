@@ -6,6 +6,7 @@
   "pc-network-picker": {
     "public-current": "Du är på det publika papchat-nätverket.",
     "private": "Du är på det privata nätverket \"{name}\".",
+    "separated": "Någon annan har ett nätverk som heter \"{name}\" med ett annat lösenord. Din grupp är separat tills du skriver in det lösenordet nedan, sedan flyttar alla här över.",
     "networks": "Tillgängliga nätverk",
     "refresh": "Uppdatera",
     "public": "papchat (publikt)",

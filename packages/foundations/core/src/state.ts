@@ -22,6 +22,8 @@ export const [lobbyStatus, setLobbyStatus] = signal<LobbyStatus>("idle");
 export const [network, setNetworkSignal] = signal<Network | null>(storage.network.get());
 // everyone else in the lobby, one entry per uid (newest peer wins)
 export const [members, setMembers] = signal<Profile[]>([]);
+// a same-name network this group can't enter (unknown password), null when there is none
+export const [separated, setSeparated] = signal<string | null>(null);
 export const [rooms, setRooms] = signal<RoomSummary[]>([]);
 export const [activeRoom, setActiveRoom] = signal<string | null>(null);
 export const [stages, setStages] = signal<StageSummary[]>([]);

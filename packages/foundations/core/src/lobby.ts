@@ -2,13 +2,13 @@ import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
 import { log } from "./log";
-import { me, network, setLobbyStatus, setMembers, toast } from "./state";
-import type { NetworkEntry, Profile, Status } from "./types";
+import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
+import type { Network, NetworkEntry, Profile, Status } from "./types";
 
 // The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in. A private network
 // (`network()`) is the same thing under its own name and password, so only its members meet. Find the canonical
-// lobby or create it, converge when two people create at once, rebuild after a socket reconnect,
-// keep `members` / `lobbyStatus` up to date and route app messages by uid.
+// lobby or create it, converge when two people create at once or a rogue group comes back, keep
+// `members` / `lobbyStatus` up to date and route app messages by uid.
 
 export type LobbyFrom = {
     peer: string;
@@ -27,6 +27,15 @@ const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const RETRY_MIN_MS = 3_000;
 const RETRY_MAX_MS = 30_000;
 const UNREACHABLE_QUIET_MS = 3_000;
+// how long the host stays after telling the group to move, so nobody loses it mid-move
+const MERGE_HOST_DELAY_MS = 1_500;
+const PROBE_TIMEOUT_MS = 20_000;
+// host → group: move to the more canonical network. Comes with the password once someone found it.
+const MERGE = "lobby-merge";
+// host → group: a same-name network exists that we can't get into
+const SEPARATED = "lobby-separated";
+// member → host: this password opens the network we're separated from
+const UNLOCK = "lobby-unlock";
 
 class WrongPassword extends Error { }
 
@@ -41,6 +50,8 @@ let guarding = false;
 let rebooting = false;
 // the client's re-register failed: the group still works, but nobody can find it until it's sent again
 let unregistered = false;
+// network + password pairs the host already tried, so a scan doesn't knock on the same door every minute
+const refused = new Set<string>();
 let retryMs = RETRY_MIN_MS;
 let nextServerSlot = 0;
 // when this client started: sent in the profile so "newest peer wins" is the same for everyone
@@ -187,6 +198,46 @@ export function profileOf(uid: string): Profile | null {
     return (peer && memberByPeer.get(peer)?.profile) || null;
 }
 
+/**
+ * Tries a password on the network this group is separated from. True when that was handled here, so
+ * the page must not switch network: a right password moves the whole group, a wrong one shows a toast.
+ * False when we aren't separated, or `next` is another network: a normal switch.
+ */
+export async function unlockNetwork(next: Network | null): Promise<boolean> {
+    const c = client;
+    const target = separated();
+    if (!c?.network || !target || !next || next.name !== network()?.name) return false;
+
+    const current = epoch;
+    try
+    {
+        if (!await canEnter(target, next.password))
+        {
+            toast("warning", `That isn't the password for "${next.name}"`);
+            return true;
+        }
+        alive(current);
+        setNetwork(next);
+        setSeparated(null);
+        if (c.host === c.id)
+        {
+            await merge(current, c, target, next.password);
+            return true;
+        }
+        c.send(c.host!, UNLOCK, { password: next.password });
+        await wait(MERGE_HOST_DELAY_MS);
+        alive(current);
+        rejoin();
+    }
+    catch (error)
+    {
+        if (error instanceof Cancelled) return true;
+        log("lobby: unlock failed", error);
+        toast("error", `Couldn't reach "${next.name}"`);
+    }
+    return true;
+}
+
 /** The underlying client, for console checks. Null while stopped. */
 export function lobbyClient(): Client | null {
     return client;
@@ -265,6 +316,8 @@ function stopClient() {
     booting = false;
     guarding = false;
     unregistered = false;
+    refused.clear();
+    setSeparated(null);
     for (const timer of timers)
     {
         clearTimeout(timer.id);
@@ -286,11 +339,11 @@ function stopClient() {
     }
 }
 
-// a reconnect gives the socket a new id, but Client keeps sending with the old one (the server
-// rejects that as spoofing), so leaving and rejoining on the same Client can't work: start a fresh one
-function reconnect() {
+// members drop their socket once linked, so moving network on the same Client can't work: start a
+// fresh one, and `boot` lands it on the canonical lobby
+function rejoin() {
     if (!running) return;
-    log("lobby: socket reconnected with a new id, rebuilding the lobby connection");
+    log("lobby: rebuilding the lobby connection");
     rebooting = true;
     stopClient();
     peerByUid = new Map();
@@ -312,26 +365,37 @@ async function boot(current: number): Promise<boolean> {
         await c.ready;
         alive(current);
 
-        // steps 1, 2 and 5: join the canonical lobby, retry once from the top
+        // steps 1, 2 and 5: join the most canonical lobby we can enter, retry once from the top
+        let locked = false;
         for (let attempt = 0; attempt < 2 && !c.network; attempt++)
         {
             const lobbies = await findLobbies(current, c);
             if (lobbies.length === 0) break;
 
-            const target = lobbies[0];
-            try
+            for (const target of lobbies)
             {
-                log("lobby: joining", target.id, target.meta);
-                await join(current, c, target.id);
-            }
-            catch (error)
-            {
-                alive(current);
-                // the network exists but isn't ours to enter: creating a second one would split it
-                if (error instanceof WrongPassword) throw error;
-                log("lobby: join failed", error);
+                try
+                {
+                    log("lobby: joining", target.id, target.meta);
+                    await join(current, c, target.id);
+                    break;
+                }
+                catch (error)
+                {
+                    alive(current);
+                    // a rogue member who reloads gets back to its group here, behind the locked one
+                    if (error instanceof WrongPassword)
+                    {
+                        locked = true;
+                        continue;
+                    }
+                    log("lobby: join failed", error);
+                    break;
+                }
             }
         }
+        // the network exists but isn't ours to enter: creating a second one would split it
+        if (locked && !c.network) throw new WrongPassword();
 
         // step 3: none (or joining keeps failing): we host it
         if (!c.network)
@@ -410,34 +474,21 @@ async function raceGuard(current: number) {
             return;
         }
 
-        const best = lobbies[0];
-        if (compare(best, mine) >= 0)
+        // an older network we can't enter doesn't stop us joining one we can
+        let wall: string | null = null;
+        for (const target of lobbies)
         {
-            log("lobby: already the canonical lobby", mine.id);
-            return;
+            if (compare(target, mine) >= 0) break;
+            if (await mayEnter(current, target))
+            {
+                log("lobby: a more canonical lobby exists, moving", mine.id, "→", target.id);
+                await merge(current, c, target.id);
+                return;
+            }
+            wall ??= target.id;
         }
-
-        log("lobby: a more canonical lobby exists, moving", mine.id, "→", best.id);
-        booting = true;
-        await serverCall(current, async () => c.leave());
-        alive(current);
-        syncStatus();
-
-        try
-        {
-            await join(current, c, best.id);
-            alive(current);
-            booting = false;
-            syncStatus();
-        }
-        catch (error)
-        {
-            alive(current);
-            log("lobby: moving failed, booting again", error);
-            guarding = false;
-            booting = false;
-            await boot(current);
-        }
+        log(wall ? "lobby: staying separate from" : "lobby: already the canonical lobby", wall ?? mine.id);
+        markSeparated(wall);
     }
     catch (error)
     {
@@ -453,6 +504,113 @@ async function raceGuard(current: number) {
         }
     }
 }
+
+// the host moves last: the network it hosts dies with it, and a member that missed the message
+// gets another try from whoever takes over as host
+async function merge(current: number, c: Client, target: string, password?: string) {
+    if (c.members.length > 1)
+    {
+        broadcast(MERGE, { network: target, ...(password ? { password } : {}) });
+        await wait(MERGE_HOST_DELAY_MS);
+        alive(current);
+    }
+    rejoin();
+}
+
+async function mayEnter(current: number, target: NetworkInfo): Promise<boolean> {
+    if (target.meta?.locked !== true) return true;
+
+    const password = network()?.password ?? "";
+    const key = `${target.id}\n${password}`;
+    if (refused.has(key)) return false;
+
+    const open = await canEnter(target.id, password);
+    alive(current);
+    if (!open) refused.add(key);
+    return open;
+}
+
+// only joining can test a password. A client with no profile never shows up in anyone's member list.
+// False for a wrong password; anything else throws, because it says nothing about the password.
+async function canEnter(id: string, password: string): Promise<boolean> {
+    const probe = new Client({ url: signalUrl(), rtc: RTC, topology: "chord", timeout: PROBE_TIMEOUT_MS, connectTimeout: PROBE_TIMEOUT_MS });
+    try
+    {
+        await probe.ready;
+        await probe.join(id, password || undefined);
+        return true;
+    }
+    catch (error)
+    {
+        if (isWrongPassword(error)) return false;
+        throw error;
+    }
+    finally
+    {
+        try { probe.close(); } catch { /* already closed */ }
+    }
+}
+
+function isWrongPassword(error: unknown): boolean {
+    return /wrong password|forbidden/i.test(String((error as Error)?.message ?? error));
+}
+
+// sent on every scan, because members who joined since then haven't heard
+function markSeparated(target: string | null) {
+    const changed = target !== separated();
+    setSeparated(target);
+    if (target || changed) broadcast(SEPARATED, { network: target });
+}
+
+function handleMerge(payload: { network?: unknown; password?: unknown }, from: LobbyFrom) {
+    const c = client;
+    if (!c?.network || c.host === c.id || from.peer !== c.host) return;
+
+    const net = network();
+    if (net && typeof payload?.password === "string") setNetwork({ name: net.name, password: payload.password });
+    log("lobby: the group is moving");
+    // rebuild outside the client's own event dispatch; a second message finds another client and stops
+    setTimeout(() => { if (client === c) rejoin(); }, 0);
+}
+
+function handleSeparated(payload: { network?: unknown }, from: LobbyFrom) {
+    const c = client;
+    if (!c?.network || c.host === c.id || from.peer !== c.host) return;
+    setSeparated(typeof payload?.network === "string" ? payload.network : null);
+}
+
+// the host tests it too: anyone in the group can send this
+function handleUnlock(payload: { password?: unknown }) {
+    const c = client;
+    const target = separated();
+    const net = network();
+    if (!c?.network || c.host !== c.id || !target || !net || typeof payload?.password !== "string") return;
+
+    const current = epoch;
+    const password = payload.password;
+    void (async () => {
+        try
+        {
+            if (!await canEnter(target, password))
+            {
+                log("lobby: unlock refused");
+                return;
+            }
+            alive(current);
+            setNetwork({ name: net.name, password });
+            setSeparated(null);
+            await merge(current, c, target, password);
+        }
+        catch (error)
+        {
+            if (!(error instanceof Cancelled)) log("lobby: unlock failed", error);
+        }
+    })();
+}
+
+on(MERGE, handleMerge);
+on(SEPARATED, handleSeparated);
+on(UNLOCK, handleUnlock);
 
 // the race guard runs once after joining, which misses a rogue group that comes back later: keep looking
 async function scan(current: number) {
@@ -511,7 +669,7 @@ async function join(current: number, c: Client, id: string) {
     }
     catch (error)
     {
-        if (/wrong password|forbidden/i.test(String((error as Error)?.message ?? error))) throw new WrongPassword();
+        if (isWrongPassword(error)) throw new WrongPassword();
         throw error;
     }
 }
@@ -755,8 +913,6 @@ function handleError(event: Event) {
     log("lobby: error", detail?.type, detail?.message, detail?.payload);
     // the scan sends it again
     if (detail?.type === "host") unregistered = true;
-    // rebuild outside the client's own event dispatch
-    if (detail?.type === "reconnect") setTimeout(reconnect, 0);
 }
 
 // ---------------------------------------------------------------- presence

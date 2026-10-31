@@ -60,11 +60,13 @@ import {
     members,
     network,
     prefs,
+    separated,
     setNetwork,
     setPrefs,
     setStatus,
     startLobby,
     switchNetwork,
+    unlockNetwork,
     GIPHY_KEY,
 } from "@papchat/core";
 import type { CaptureName, Gif, Prefs, Profile, Room, RoomSummary, Stage, Status } from "@papchat/core";
@@ -211,6 +213,7 @@ async function boot() {
 // state → components
 effect(() => { header.me = me(); });
 effect(() => { header.status = lobbyStatus(); });
+effect(() => { header.separated = separated() !== null; });
 effect(() => { list.me = me() ?? undefined; });
 effect(() => { list.members = members(); });
 effect(() => { list.stages = stages(); });
@@ -435,6 +438,7 @@ effect(() =>
 effect(() => { settings.profile = me() ?? undefined; });
 effect(() => { settings.prefs = prefs(); });
 effect(() => { settings.network = network()?.name ?? ""; });
+effect(() => { settings.separated = separated() !== null; });
 effect(() => { header.network = network()?.name ?? ""; });
 effect(() => { settings.tones = ringtone.tones().map(({ id, label }) => ({ id, label })); });
 // the files first (the first is the default), then the built-in beep they fall back to
@@ -522,7 +526,12 @@ settings.addEventListener("prefs-change", (e) =>
     if (partial.noiseReduction && partial.noiseReduction !== noise) restartMic();
 });
 settings.addEventListener("networks-refresh", () => void refreshNetworks());
-settings.addEventListener("network-change", (e) => switchNetwork((e as CustomEvent<{ network: { name: string; password: string } | null }>).detail.network));
+settings.addEventListener("network-change", async (e) =>
+{
+    const next = (e as CustomEvent<{ network: { name: string; password: string } | null }>).detail.network;
+    // the password for a network we're separated from moves the group, with no reload
+    if (!await unlockNetwork(next)) switchNetwork(next);
+});
 settings.addEventListener("language-change", (e) =>
 {
     const { value } = (e as CustomEvent<{ value: string }>).detail;

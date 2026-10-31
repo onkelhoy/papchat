@@ -6,7 +6,7 @@ import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
-import { peerOf, readMember, send as lobbySend } from "./lobby";
+import { readMember, send as lobbySend, serverId } from "./lobby";
 import { log } from "./log";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
@@ -16,8 +16,8 @@ import { cleanGif } from "./gif";
 
 // A room (PLAN §2.5): one private mesh network with its own Client. Chat over `client.broadcast`,
 // ephemeral state (typing; mute flags in T3.1) over the `state` channel, files (T4.1) over `file`.
-// A socket reconnect closes the client and builds a fresh one (see Notes: papit gap), then rejoins;
-// if the network is gone (server restart) the smallest uid recreates it and re-invites the rest.
+// Peer links outlive the server: Client reconnects and re-registers the network by itself. That gives it
+// a new server id, which the host shares so everyone's invites keep working.
 
 type NetworkInfo = NonNullable<Client["network"]>;
 type MediaPlan = NonNullable<Parameters<Client["create"]>[0]["media"]>;
@@ -56,11 +56,9 @@ export type RoomOptions = {
     unread?: number;
 };
 
-const REJOIN_ATTEMPTS = 3;
-const REJOIN_GAP_MS = 1_500;
-const REINVITE_EVERY_MS = 3_000;
-const REINVITE_FOR_MS = 60_000;
-const ADOPT_WAIT_MS = 20_000;
+// a re-register takes a moment after the socket is back, and tells nobody: look a few times
+const ID_CHECK_MS = 2_000;
+const ID_CHECK_TRIES = 15;
 const TITLE_MAX = 80;
 
 class Cancelled extends Error { }
@@ -70,14 +68,14 @@ const registry = new Map<string, Room>();
 const restoring = new Map<string, SessionRoom>();
 
 /**
- * Fires `client` (detail: the new `Client`) every time a client is in the network, after create,
- * join and every rebuild: attach media/channel listeners there (T3.1, T4.1). Fires `leave` once.
+ * Fires `client` (detail: the new `Client`) once a client is in the network, after create or
+ * join: attach media/channel listeners there (T3.1, T4.1). Fires `leave` once.
  */
 export class Room extends EventTarget {
     /** Stable local id: the first network id. Used by `rooms`, `activeRoom` and `getRoom`. */
     readonly id: string;
     readonly kind: RoomKind;
-    /** The network currently used (differs from `id` only after a recreate). */
+    /** The id the server knows the network by (differs from `id` after a re-register). */
     network: string;
     password: string;
     title: string;
@@ -127,15 +125,12 @@ export class Room extends EventTarget {
     private present = new Map<string, Profile>();
     private memberByPeer = new Map<string, Profile>();
     private leaving = new Map<string, ReturnType<typeof setTimeout>>();
-    private expected = new Map<string, Profile>();
-    private expectedTimer: ReturnType<typeof setTimeout> | null = null;
     private typingUntil = new Map<string, number>();
     private typingTimer: ReturnType<typeof setInterval> | null = null;
     private lastTypingSent = 0;
     private lastBuzzSent = 0;
     private lastBuzzFrom = new Map<string, number>();
-    private reinviteTimer: ReturnType<typeof setInterval> | null = null;
-    private adoptTimer: ReturnType<typeof setTimeout> | null = null;
+    private idTimer: ReturnType<typeof setTimeout> | null = null;
     private handlers = new Map<string, Set<RoomHandler>>();
     private stateHandlers = new Map<string, Set<RoomHandler>>();
     private stateListener: ((event: Event) => void) | null = null;
@@ -161,6 +156,7 @@ export class Room extends EventTarget {
 
         this.onMessage("chat", this.handleChat);
         this.onMessage("buzz", this.handleBuzz);
+        this.onMessage("room-id", this.handleRoomId);
         this.onState("typing", this.handleTyping);
         this.onState("flags", this.handleFlags);
         this.addEventListener("client", this.handleClientMedia);
@@ -516,26 +512,6 @@ export class Room extends EventTarget {
         log("room: absorbed", other.id, "into", this.id, moved.length, "messages");
     }
 
-    /** @internal the network vanished and someone recreated it: follow them there. */
-    async adopt(invite: Invite): Promise<boolean> {
-        if (this.closed || invite.replaces !== this.network || !invite.password) return false;
-        log("room: following the recreated room", this.network, "→", invite.room);
-        this.clearAdoptTimer();
-        try
-        {
-            this.password = invite.password;
-            const info = await this.connect(c => c.join(invite.room, invite.password));
-            this.network = info.id;
-            saveSession();
-            return true;
-        }
-        catch (error)
-        {
-            if (!(error instanceof Cancelled)) this.lost(isRejected(error) ? "full" : "gone");
-            return false;
-        }
-    }
-
     /** @internal */
     setProfile(profile: Profile) {
         try
@@ -711,6 +687,7 @@ export class Room extends EventTarget {
     private dropClient() {
         const old = this._client;
         this._client = null;
+        this.clearIdTimer();
         if (!old) return;
         this.unlistenMedia();
         this.setStreams([]);
@@ -734,108 +711,7 @@ export class Room extends EventTarget {
         }
     }
 
-    // reconnect error: the old client can't talk to the server any more, rebuild (PLAN Notes, papit gap)
-    private async rebuild() {
-        if (this.closed) return;
-        log("room: socket reconnected with a new id, rebuilding", this.id);
-        const known = new Map([...this.present, ...this.expected]);
-        this.expect(known);
-        this.setStatus("reconnecting");
-
-        for (let attempt = 0; attempt < REJOIN_ATTEMPTS; attempt++)
-        {
-            try
-            {
-                await this.connect(c => c.join(this.network, this.password));
-                return;
-            }
-            catch (error)
-            {
-                if (error instanceof Cancelled) return;
-                if (isRejected(error))
-                {
-                    this.lost("full");
-                    return;
-                }
-                log("room: rejoin failed", attempt + 1, error);
-                await delay(REJOIN_GAP_MS * (attempt + 1));
-                if (this.closed) return;
-            }
-        }
-
-        // the network is gone (server restart, or we were alone): the smallest uid recreates it
-        const mine = me()?.uid ?? "";
-        const smallest = [mine, ...known.keys()].sort()[0];
-        if (smallest === mine) await this.recreate([...known.keys()]);
-        else this.awaitAdopt();
-    }
-
-    private async recreate(uids: string[]) {
-        const old = this.network;
-        try
-        {
-            const meta: Record<string, unknown> = { app: APP, kind: "room", room: this.kind, title: this.title };
-            const profile = me();
-            if (this.direct && profile) meta.direct = [profile.uid, this.direct];
-
-            const info = await this.connect(c => c.create({
-                name: `papchat:room:${crypto.randomUUID()}`,
-                private: true,
-                password: this.password,
-                meta,
-                media: ROOM_PLAN,
-            }));
-            this.network = info.id;
-            saveSession();
-            log("room: recreated", old, "→", info.id);
-            this.reinvite(uids, old);
-        }
-        catch (error)
-        {
-            if (!(error instanceof Cancelled)) this.lost("gone");
-        }
-    }
-
-    // re-invite everyone who was here until they're back (the lobby may still be rebooting too)
-    private reinvite(uids: string[], replaces: string) {
-        this.clearReinvite();
-        const lastSent = new Map<string, number>();
-        const until = Date.now() + REINVITE_FOR_MS;
-        const tick = () => {
-            const missing = uids.filter(uid => !this.present.has(uid));
-            if (this.closed || missing.length === 0 || Date.now() > until)
-            {
-                this.clearReinvite();
-                return;
-            }
-            for (const uid of missing)
-            {
-                if (!peerOf(uid) || Date.now() - (lastSent.get(uid) ?? 0) < REINVITE_EVERY_MS * 3) continue;
-                if (this.invite(uid, this.kind, { replaces })) lastSent.set(uid, Date.now());
-            }
-        };
-        this.reinviteTimer = setInterval(tick, REINVITE_EVERY_MS);
-        tick();
-    }
-
-    // someone else recreates the room: wait for their invite (invites.ts calls adopt)
-    private awaitAdopt() {
-        this.clearAdoptTimer();
-        log("room: waiting for the recreated room", this.network);
-        this.adoptTimer = setTimeout(() => this.lost("gone"), ADOPT_WAIT_MS);
-    }
-
-    // the room can't be reached any more: keep the messages, stop trying
-    private lost(reason: "full" | "gone") {
-        if (this.closed) return;
-        this.end();
-        this.system(reason === "full" ? "The room is full" : "Connection to this chat was lost", "");
-        if (reason === "full") toast("warning", "The room is full");
-        saveSession();
-        this.sync();
-    }
-
-    // stops networking (shared by leave and lost)
+    // stops networking
     private end() {
         this.closed = true;
         this.epoch++;
@@ -845,10 +721,6 @@ export class Room extends EventTarget {
         this.setFlags({});
         this.setOncall(false);
         this.mediaChanged();
-        this.clearReinvite();
-        this.clearAdoptTimer();
-        if (this.expectedTimer) clearTimeout(this.expectedTimer);
-        this.expectedTimer = null;
         for (const timer of this.leaving.values()) clearTimeout(timer);
         this.leaving.clear();
         if (this.typingTimer) clearInterval(this.typingTimer);
@@ -864,14 +736,39 @@ export class Room extends EventTarget {
         this.stateHandlers.clear();
     }
 
-    private clearReinvite() {
-        if (this.reinviteTimer) clearInterval(this.reinviteTimer);
-        this.reinviteTimer = null;
+    private clearIdTimer() {
+        if (this.idTimer) clearTimeout(this.idTimer);
+        this.idTimer = null;
     }
 
-    private clearAdoptTimer() {
-        if (this.adoptTimer) clearTimeout(this.adoptTimer);
-        this.adoptTimer = null;
+    private useNetwork(id: string) {
+        log("room: new server id", this.network, "→", id);
+        this.network = id;
+        saveSession();
+    }
+
+    // after a re-register: the host tells the room, because only it can see the new id. Also on every
+    // member change: a newcomer's welcome carries the old one.
+    private shareServerId() {
+        const c = this._client;
+        if (!c?.network || c.host !== c.id) return;
+        const id = serverId(c);
+        if (!id || id === c.network.id) return;
+        if (id !== this.network) this.useNetwork(id);
+        c.broadcast("room-id", { network: id });
+    }
+
+    // Client doesn't say when a re-register is done
+    private watchServerId() {
+        this.clearIdTimer();
+        const before = this.network;
+        let tries = ID_CHECK_TRIES;
+        const check = () => {
+            this.idTimer = null;
+            this.shareServerId();
+            if (this.network === before && --tries > 0) this.idTimer = setTimeout(check, ID_CHECK_MS);
+        };
+        this.idTimer = setTimeout(check, ID_CHECK_MS);
     }
 
     private alive(current: number) {
@@ -900,18 +797,6 @@ export class Room extends EventTarget {
     }
 
     // ------------------------------------------------------------ members → participants + system messages
-
-    // remembers who was here across a rebuild: missing ones get rejoinGraceMs before they count as left
-    private expect(known: Map<string, Profile>) {
-        this.expected = new Map(known);
-        if (this.expectedTimer) clearTimeout(this.expectedTimer);
-        this.expectedTimer = setTimeout(() => {
-            this.expectedTimer = null;
-            const gone = [...this.expected.values()].filter(p => !this.present.has(p.uid));
-            this.expected.clear();
-            for (const profile of gone) this.system(`${profile.name} left`, profile.uid);
-        }, LIMITS.rejoinGraceMs);
-    }
 
     private readMembers(c: Client) {
         this.applyMembers(c, [...c.members], c.profiles as Record<string, unknown>);
@@ -951,10 +836,6 @@ export class Room extends EventTarget {
                     clearTimeout(pending);
                     this.leaving.delete(uid);
                 }
-                else if (this.expected.has(uid))
-                {
-                    this.expected.delete(uid);
-                }
                 else
                 {
                     this.system(`${profile.name} joined`, uid);
@@ -962,7 +843,7 @@ export class Room extends EventTarget {
             }
             for (const [uid, profile] of this.present)
             {
-                if (next.has(uid) || this.leaving.has(uid) || this.expected.has(uid)) continue;
+                if (next.has(uid) || this.leaving.has(uid)) continue;
                 this.leaving.set(uid, setTimeout(() => {
                     this.leaving.delete(uid);
                     if (this.closed || this.present.has(uid)) return;
@@ -1089,12 +970,16 @@ export class Room extends EventTarget {
     private attach(c: Client) {
         c.addEventListener("members", this.handleMembers);
         c.addEventListener("message", this.handleMessage);
+        c.addEventListener("status", this.handleClientStatus);
+        c.addEventListener("host", this.handleHost);
         c.addEventListener("error", this.handleError);
     }
 
     private detach(c: Client) {
         c.removeEventListener("members", this.handleMembers);
         c.removeEventListener("message", this.handleMessage);
+        c.removeEventListener("status", this.handleClientStatus);
+        c.removeEventListener("host", this.handleHost);
         c.removeEventListener("error", this.handleError);
     }
 
@@ -1104,11 +989,30 @@ export class Room extends EventTarget {
         {
             const { members, profiles } = (event as CustomEvent<{ members: string[]; profiles: Record<string, unknown> }>).detail;
             this.applyMembers(this._client!, members, profiles);
+            this.shareServerId();
         }
         catch (error)
         {
             log("room: members handler failed", error);
         }
+    };
+
+    private handleClientStatus = (event: Event) => {
+        if (event.target !== this._client) return;
+        if ((event as CustomEvent).detail === "connected" && this._client?.network) this.watchServerId();
+    };
+
+    // a member promoted to host had no socket, so it opens one and re-registers: `status` doesn't change
+    private handleHost = (event: Event) => {
+        const c = this._client;
+        if (event.target !== c || (event as CustomEvent<string>).detail !== c?.id) return;
+        this.watchServerId();
+    };
+
+    private handleRoomId: RoomHandler<{ network?: unknown }> = (payload, from) => {
+        const c = this._client;
+        if (!c || from.peer !== c.host || typeof payload?.network !== "string") return;
+        if (payload.network !== this.network) this.useNetwork(payload.network);
     };
 
     private handleMessage = (event: Event) => {
@@ -1137,8 +1041,6 @@ export class Room extends EventTarget {
         if (event.target !== this._client) return;
         const detail = (event as CustomEvent<{ type: string; message: string; payload: unknown }>).detail;
         log("room: error", this.id, detail?.type, detail?.message);
-        // rebuild outside the client's own event dispatch
-        if (detail?.type === "reconnect") setTimeout(() => void this.rebuild(), 0);
     };
 }
 
@@ -1343,10 +1245,6 @@ function randomPassword(): string {
     let binary = "";
     for (const byte of bytes) binary += String.fromCharCode(byte);
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // a real unload: close every room client so the others see us leave at once (the session stays for the refresh)

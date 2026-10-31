@@ -39,7 +39,9 @@ Everything about you lives in `localStorage` in your own browser.
 
 The lobby is a public `chord` network named `papchat`. On boot (once there is a profile) the client lists networks, keeps those with `meta.app === "papchat" && meta.kind === "lobby"`, and joins the **canonical** one: the smallest `meta.created`, ties broken by `id`. If there is none it creates it. Two people arriving at the same moment both create one, so after creating the client looks again about 2 s later and leaves for a more canonical lobby if one exists. Both sides converge on the same network without coordination. When the host leaves, the signal server promotes the next member, so the lobby lives as long as anyone is in it.
 
-A socket reconnect gives a new peer id, so the lobby closes the client and starts a fresh one. Rooms rejoin with the room id and password kept in `sessionStorage`.
+Peers stay linked when the signal server goes away. The `Client` keeps trying to reconnect and registers the network again, under a new server id. While that's happening the group is "rogue": it works, but nobody new can find it, so someone may open a second network with the same name.
+
+To heal that, the host looks for a more canonical network with the same name when its socket returns and every 60 s after that. Only the host has a socket, so it tells the group over peer links, the members move, and the host moves last. If the other network has a password this group doesn't know, the group stays separate and the header says so. Anyone who enters that password in Settings → Network brings the whole group across. Private networks follow the same rules. Rooms have random names and aren't listed, so they never merge; their host shares the new server id so invites keep working. Refreshing rejoins rooms with the id and password kept in `sessionStorage`.
 
 ### Identity
 
@@ -128,6 +130,8 @@ packages/
 - **Free hosting for the signal server.** The first connect after it has been idle takes about 30 to 60 s; the header shows "waking up the server…".
 - **No history, no accounts.** Rooms are ephemeral and peers trust each other. Names are self-chosen.
 - **Files:** 100 MB cap, late joiners do not get earlier files, and files cannot be shared on a stage.
+- **Rogue merges take time.** Two groups can stay split for up to about a minute after the server returns, and everyone in the lobby reconnects during a merge. Calls and chats carry on.
+- **Split rooms stay split.** If a room loses its peer links and both sides re-register, they can't find each other. A stage re-registered by its presenter keeps handing out its old id in invites.
 
 ## papit gaps found along the way
 
@@ -135,7 +139,7 @@ None of these block papchat; they are candidates for upstream issues.
 
 1. **SDP over the lobby.** `Client` cannot take a custom signalling transport. A `signal` option (any link) would make "handshake through chord" literal and server-free after the lobby.
 2. **Channel back-pressure.** `Channel` has no `bufferedAmount` or `bufferedamountlow`, so file transfer has to guess its pacing.
-3. **Reconnect keeps the old id.** After a socket reconnect `Client` keeps its previous `id`, so later messages are rejected as `spoof`; the lobby works around it by closing the client and building a new one.
+3. **No public server id.** After a re-register, `client.network.id` keeps the old id and the new one is private, with no event when it changes. papchat reads `serverNetwork` and polls for it.
 4. **One socket per network.** Every room and stage opens its own signal socket.
 5. **Multicast host handover.** If the presenter drops, the tree re-roots under a host with no capture, so the stage just ends.
 6. **Design system.** No select or combobox, avatar, toast or progress in papit, so papchat has `pc-*` versions that could be upstreamed.

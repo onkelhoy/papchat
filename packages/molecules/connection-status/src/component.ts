@@ -14,7 +14,7 @@ import type { ConnectionStatusValue } from "./types";
  *
  * @element pc-connection-status
  *
- * @property {ConnectionStatusValue} status connecting | waking | connected | reconnecting | closed (reflected, default connecting)
+ * @property {ConnectionStatusValue} status connecting | waking | connected | reconnecting | closed | separated (reflected, default connecting)
  *
  * @csspart dot the presence dot
  * @csspart text the status text
@@ -53,6 +53,7 @@ const DOTS: Record<ConnectionStatusValue, "available" | "away" | "offline"> = {
     connected: "available",
     reconnecting: "away",
     closed: "offline",
+    separated: "away",
 };
 
 declare global {

@@ -24,8 +24,6 @@ export const LIMITS = {
     typingMs: 4_000,
     // a "left" system message waits this long, so a quick reconnect doesn't show left + joined
     leaveGraceMs: 5_000,
-    // after a room rebuild, missing participants get this long to come back before they count as left
-    rejoinGraceMs: 30_000,
     // presence: everyone broadcasts a tiny `here` this often (less while hidden); someone not heard
     // from for `staleMs` (a closed phone the server hasn't noticed yet) drops out of the member list
     heartbeatMs: 30_000,

@@ -5,7 +5,7 @@ import { on, peerOf, profileOf, send } from "./lobby";
 import { log } from "./log";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
-import { allRooms, directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
+import { directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
 import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
 import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, RoomKind } from "./types";
 
@@ -211,14 +211,6 @@ on<unknown>("invite", (payload, from) => {
         return;
     }
     log("invites: invite", invite.kind, invite.room, "from", invite.from);
-
-    // a room we're in was recreated after its network vanished: follow it
-    if (invite.replaces)
-    {
-        const room = allRooms().find(r => r.network === invite.replaces);
-        if (room) void room.adopt(invite);
-        return;
-    }
 
     const existing = getRoom(invite.room);
     if (existing && invite.kind === "chat")
@@ -450,7 +442,6 @@ function readInvite(payload: unknown, sender: string | null): Invite | null {
         from,
         members: Array.isArray(value.members) ? value.members.filter(isId).slice(0, 16) : [],
         ...(value.direct === true ? { direct: true } : {}),
-        ...(isId(value.replaces) ? { replaces: value.replaces } : {}),
     };
 }
 

@@ -1,1 +1,1 @@
-export type ConnectionStatusValue = "connecting" | "waking" | "connected" | "reconnecting" | "closed";
+export type ConnectionStatusValue = "connecting" | "waking" | "connected" | "reconnecting" | "closed" | "separated";

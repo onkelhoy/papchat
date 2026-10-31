@@ -6,9 +6,9 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 74/92 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Waves 8 (rogue networks) and 9 (offline calling) are planned from `FINDINGS.md`.
-- **Next, in order:** T8.3, then the rest of wave 8, then T7.17 share links (onboarding already has `joining` for it; T9.6 needs it), then wave 9. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
-- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
+- **Done:** 77/92 tasks. Wave 7 is mostly in (T7.1-T7.5, T7.7, T7.9-T7.16b, plus review polish T7.14b/c, T7.15b), each committed. Waves 8 (rogue networks) and 9 (offline calling) are planned from `FINDINGS.md`.
+- **Next, in order:** T7.17 share links (onboarding already has `joining` for it; T9.6 needs it), then wave 9. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
 - **Not run in a browser:** everything above is typecheck + build only; the user reviews live with `npm start` (dev server doesn't reload new translations: restart it).
@@ -593,28 +593,32 @@ A network goes rogue when its host loses the signal server while the peers stay 
 - **done when:** a check runs on reconnect and on the timer, only on the host; typecheck + build pass. Log lines say what was decided.
 - Done: `scan()` starts with each client and ends with its epoch; `recheck()` is the host-only gate and also runs when status becomes `connected`. `raceGuard` keeps its 2 s wait and `guarding` flag, so checks can't overlap. A failed re-register sets `unregistered`, and the next scan resends it with `c["reregister"]()` (private, same papit gap as #23). If that failure was a timeout the server actually handled, a second copy of our network lasts until the socket drops. Until T8.3 a move still only moves the host. Typecheck + build pass; not run in a browser.
 
-### [ ] T8.3 Merge the whole group · `opus` · needs T8.2
+### [x] T8.3 Merge the whole group · `opus` · needs T8.2
 - **do:** when the check finds a more canonical network, the host broadcasts `lobby-merge` `{ network }` over peer links, then moves itself last (so the network it hosts stays up until the others have gone). Everyone moves by running the fresh-client path: `reconnect()` (`lobby.ts:287`). Webrtc no longer fires the `reconnect` error, so that code only runs from here now: rename it to `rejoin()` and delete the dead `detail?.type === "reconnect"` line at `lobby.ts:691`. `boot` then lands on the canonical lobby by itself.
 - **replaces today's move:** the `c.leave()` + `join` in `raceGuard` only moves the host and can't work for members without a socket.
 - **files:** `core/src/lobby.ts`.
 - **done when:** one code path for all moves; stale or duplicate `lobby-merge` messages are ignored (`epoch`); active rooms are untouched; typecheck + build pass.
+- Done: `merge()` broadcasts, waits 1.5 s, then `rejoin()`; members only obey the current host, so a stranger in the public lobby can't reboot everyone. A second `lobby-merge` finds a new client and stops. If a member misses it, the next host repeats the move. Typecheck + build pass; not run in a browser.
 
-### [ ] T8.4 Stay separate on an unknown password · `opus` · needs T8.3
+### [x] T8.4 Stay separate on an unknown password · `opus` · needs T8.3
 - **symptom:** a wrong password today stops the client and closes the lobby (`lobby.ts:358`). For a rogue group that would kill a working group.
 - **do:** (1) Before a merge, if the target has `meta.locked`, the host tests our password with a throwaway `Client` (the pattern at `lobby.ts:200`): `join`, then `close`. It sends no profile, so `readMember` keeps it out of the member list. (2) Wrong password: stay in the group, remember the blocked network id, and don't retest that id until the id or the password changes. (3) Show it quietly: a status hint in `pc-connection-status` and Settings, not an error toast; en + sv. (4) Someone enters the right password in Settings: they send `lobby-merge` with the password over peer links before they move, so the group merges with them. (5) `boot`: on a wrong password for `lobbies[0]`, try the next same-name lobby before giving up, so a rogue member who reloads gets back to their group. A fresh visitor with no match keeps today's closed + toast.
 - **files:** `core/src/lobby.ts`, `core/src/state.ts`, `molecules/connection-status`, `organisms/settings`, page wiring.
 - **done when:** a blocked group keeps chatting and shows the hint; a correct password merges everyone; typecheck + build pass.
+- Done: `canEnter()` is the probe; `refused` remembers id + password pairs; `separated` is a new state signal, sent by the host on every scan and cleared when the other network goes. New `unlockNetwork()` runs before `switchNetwork`, so the right password moves the group with no reload and rooms survive. A wrong one shows a toast. Changed from the plan: a member sends the password to the host (`lobby-unlock`), the host tests it, then broadcasts `lobby-merge` with it, so only the host can change members' stored password. Header state `separated` (`lobbyStatus` stays `connected`, because invites and stages read it). Typecheck + build pass; not run in a browser.
 
-### [ ] T8.5 Rooms keep a working id · `opus` · needs T8.1
+### [x] T8.5 Rooms keep a working id · `opus` · needs T8.1
 - **no merge for rooms:** a room's name is a random uuid and it's `private`, so it's never listed and nothing can have the same name. FINDINGS' same-name rule can't apply. The invite key isn't an issue either: every member has it. Partitioned rooms (each side re-registers separately) stay out of scope.
 - **symptom:** after `reregister`, `room.network` is the dead old id, and it goes out in invites (`room.ts:406`) and share links. Anyone invited to a rogue call gets "gone".
 - **do:** after a re-register, the host reads `serverId(c)`, updates `room.network` + `saveSession()`, and broadcasts it to members so their invites work too (keep `room.id`, the registry key, stable). Remove what's now unreachable: `rebuild()`, the line at `room.ts:1141`, and any of `awaitAdopt`/`reinvite`/`recreate` left with no caller. **Check first:** `adopt` (`room.ts:521`) still uses `invite.replaces`, so keep what it needs, and reload rejoin (`room.ts:1285`) stays.
 - **files:** `core/src/room.ts`.
 - **done when:** an invite from a re-registered room carries the live id on every member; typecheck + build pass.
+- Done: `shareServerId()` broadcasts `room-id` after a re-register and on member changes; `watchServerId()` polls for it, on `status` and on `host` (a promoted member's status never changes). Members only accept it from the host. Removed as unreachable: `rebuild`, `recreate`, `reinvite`, `awaitAdopt`, `adopt`, `lost`, `expect`, `invite.replaces`, `LIMITS.rejoinGraceMs`. So "Connection to this chat was lost" no longer exists; it couldn't fire before either. Not fixed: stages have the same stale id in `stage.invite` (listed in README limits). Typecheck + build pass; not run in a browser.
 
 ### [ ] T8.6 Wave 8 live check + README · `opus` · needs T8.2-T8.5
 - User test, with `npm run signal` restarted to force rogue: (1) two groups same name, restart server, both merge. (2) New person opens the network while the group is rogue, group returns, they merge. (3) Same, target has an unknown password: stays separate, hint shows, entering it merges everyone. (4) Invite someone to a call after the restart. (5) A call in progress survives a lobby merge.
 - Update the README's lobby and limits sections.
+- README done with T8.3-T8.5; only the live test is left.
 
 ---
 

@@ -6,6 +6,7 @@
   "pc-network-picker": {
     "public-current": "You're on the public papchat network.",
     "private": "You're on the private network \"{name}\".",
+    "separated": "Someone else has a network called \"{name}\" with a different password. Your group stays separate until you enter that password below, then everyone here moves across.",
     "networks": "Available networks",
     "refresh": "Refresh",
     "public": "papchat (public)",
