@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// Writes the version log page: one <details> per release, newest first, built from the v0.0.N git tags.
+// Writes the version log page: one <details> per release, newest first, built from the v0.0.N git tags,
+// and version.json next to it, which the app reads for the version link in the sidebar.
 // A commit with no tag yet is the next release; the pages workflow tags it once it's deployed.
 //
 //   node bin/version-log.mjs <output.html>
 
 import { appendFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { dirname, join } from "node:path";
 
 const output = process.argv[2];
 if (!output)
@@ -37,7 +39,7 @@ const releases = refs.map(({ version, ref }, index) => {
     };
 }).reverse();
 
-const entry = (release, index) => `        <details${index === 0 ? " open" : ""}>
+const entry = (release, index) => `        <details id="${release.version}"${index === 0 ? " open" : ""}>
             <summary>${release.version} (${release.date}): ${release.changes.length} ${release.changes.length === 1 ? "change" : "changes"}</summary>
             <ul>
 ${release.changes.map(change => `                <li>${escape(change)}</li>`).join("\n")}
@@ -57,9 +59,15 @@ writeFileSync(output, `<!DOCTYPE html>
         <p>Current version: ${version}. <a href="./">Open papchat</a></p>
 ${releases.map(entry).join("\n")}
     </main>
+    <script>
+        // a link to a version opens it
+        document.getElementById(location.hash.slice(1))?.setAttribute("open", "");
+    </script>
 </body>
 </html>
 `);
+
+writeFileSync(join(dirname(output), "version.json"), JSON.stringify({ version }) + "\n");
 
 console.log(`${output}: ${releases.length} releases, current ${version}`);
 

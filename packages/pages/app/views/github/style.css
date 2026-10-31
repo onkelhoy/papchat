@@ -22,6 +22,19 @@ html:has(pc-settings[open], pc-invite-picker[open], pc-onboarding[open], pc-link
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    min-block-size: 100%;
+}
+
+.version {
+    margin-block-start: auto;
+    align-self: flex-end;
+    padding: var(--space-1) var(--space-2);
+    color: var(--text-secondary);
+    font-size: 0.6875rem;
+}
+
+pc-app-shell:not([sidebaropen]) .version {
+    display: none;
 }
 
 .main {

@@ -150,6 +150,17 @@ function syncCompact() {
 shell.addEventListener("sidebar-toggle", syncCompact);
 customElements.whenDefined("pc-app-shell").then(syncCompact);
 
+// the deploy writes version.json next to the version log; running locally there's no version to show
+fetch("version.json", { cache: "no-cache" })
+    .then(response => response.json())
+    .then(({ version }: { version: string }) => {
+        const link = document.querySelector<HTMLAnchorElement>(".version")!;
+        link.textContent = version;
+        link.href = `version#${version}`;
+        link.hidden = false;
+    })
+    .catch(() => {});
+
 const t = (key: string, vars?: Record<string, string>) => useTranslator("app")(key, vars);
 
 // pap-icon fetches its file per icon and can render before the fetch lands, leaving the icon empty
