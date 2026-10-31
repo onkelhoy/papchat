@@ -62,7 +62,7 @@ export class AppHeader extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) live: boolean = false;
 
     // the "Go live" title dialog
-    @property({ type: Boolean, attribute: false, rerender: true }) private asking: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) private asking: boolean = false;
     @property({ type: String, attribute: false, rerender: true }) private liveTitle: string = "";
 
     @query("pap-menu.status") private statusMenu!: Menu;

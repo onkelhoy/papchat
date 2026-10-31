@@ -61,7 +61,7 @@ export class Onboarding extends CustomElement {
     // pap-radio groups by `name` page-wide: one name per instance
     private group = `pc-onboarding-color-${++instances}`;
 
-    @property({ type: Boolean, rerender: true }) open: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) open: boolean = false;
     @property({ type: String, rerender: true }) name: string = "";
     @property({ type: String, rerender: true }) color: string = "";
     @property({ type: String, rerender: true }) language: string = "en";

@@ -153,9 +153,14 @@ pap-theme-picker {
     block-size: 1rem;
 }
 
-/* pap-input: a quiet frame across the full box. Focus is one outline drawn over the border
-   (inset, so a scrolling parent can't clip its top and bottom); its own is a system-blue outline */
+/* pap-input: a quiet frame across the full box. Focus is one orange outline drawn over the border, inset so a
+   scrolling parent can't clip it. No shadow; the outline on the host drops the browser's blue ring */
+pap-input {
+    outline: none;
+}
+
 pap-input::part(wrapper) {
+    box-shadow: none;
     padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
     border: 1px solid light-dark(oklch(0% 0 0 / 0.15), oklch(100% 0 0 / 0.15));
     border-radius: var(--radius-small, 0.5rem);
@@ -164,4 +169,14 @@ pap-input::part(wrapper) {
 pap-input:focus-within::part(wrapper) {
     outline: 2px solid var(--focus-color);
     outline-offset: -1px;
+}
+
+/* room around the content, so nothing at the edge of the scrolling body gets clipped */
+pap-dialog::part(dialog) {
+    padding: var(--space-4, 1rem);
+}
+
+pap-dialog::part(main) {
+    padding: var(--space-3, 0.75rem);
+    overscroll-behavior: contain;
 }

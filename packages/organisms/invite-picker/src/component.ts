@@ -36,6 +36,7 @@ export class InvitePicker extends CustomElement {
 
     @property({
         type: Boolean,
+        reflect: true,
         rerender: true,
         after(this: InvitePicker) {
             // every opening starts from a clean slate

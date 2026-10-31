@@ -58,9 +58,14 @@ pap-group {
     display: none;
 }
 
-/* pap-input: a quiet frame across the full box. Focus is one outline drawn over the border
-   (inset, so a scrolling parent can't clip its top and bottom); its own is a system-blue outline */
+/* pap-input: a quiet frame across the full box. Focus is one orange outline drawn over the border, inset so a
+   scrolling parent can't clip it. No shadow; the outline on the host drops the browser's blue ring */
+pap-input {
+    outline: none;
+}
+
 pap-input::part(wrapper) {
+    box-shadow: none;
     padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
     border: 1px solid light-dark(oklch(0% 0 0 / 0.15), oklch(100% 0 0 / 0.15));
     border-radius: var(--radius-small, 0.5rem);

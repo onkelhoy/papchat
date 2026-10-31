@@ -79,7 +79,7 @@ export class Settings extends CustomElement {
 
     private group = `pc-settings-${++instances}`;
 
-    @property({ type: Boolean, rerender: true }) open: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) open: boolean = false;
     @property({ type: Object, attribute: false, rerender: true }) profile?: Profile;
     @property({ type: Object, attribute: false, rerender: true }) prefs?: Prefs;
     @property({ type: Array, attribute: false, rerender: true }) tones: Tone[] = [];
