@@ -790,10 +790,11 @@ Ideas from the user, planned in this order because each phase needs the one befo
 - **done when:** an existing browser keeps its identity and chats; typecheck + build pass.
 - Done: each account has a slot. The first one's slot is "", so its names have no suffix and nothing is migrated; other slots suffix every per-account name via `inSlot` (localStorage keys, the history database and tab channel, the key's IndexedDB record). `debug` and `session` aren't per account. `papchat:accounts` is the list, `papchat:active` the open slot (missing = "", null = logged out), `papchat:blank` the slot a new account takes. The slot is fixed at import because modules read storage then, so changing account has to reload.
 
-### [ ] T11.2 Log out, switching, Manage accounts · `opus` · needs T11.1
+### [x] T11.2 Log out, switching, Manage accounts · `opus` · needs T11.1
 - **do:** the avatar menu gets Manage accounts and Log out. Login lists saved accounts above the name field; picking one opens it, a name makes a new one.
 - **files:** `core/src/accounts.ts` (new), `molecules/account-list` (new), `organisms/accounts` (new), `organisms/onboarding`, `organisms/app-header`, page, translations.
 - **done when:** log out, pick, switch and add all work in the build; typecheck + build pass.
+- Done: `core/src/accounts.ts` has `logOut()` and `openAccount(slot)`, both stop push (one subscription per browser) with a 3 s limit, clear this tab's rooms and reload every tab. `pc-account-list` is shared by `pc-accounts` (the dialog) and `pc-onboarding`. Adding an account is logging out. An invite waiting at login goes back in the address before an account opens, so the opened account follows it.
 
 ### [ ] T11.3 Remove account · `opus` · needs T11.2
 - **do:** remove an account after a confirmation: tell linked devices, stop push, delete its key, chats and settings. Can't be undone.

@@ -2,7 +2,7 @@ import { deviceKey, loadDeviceKey } from "./keys";
 import { setLobbyProfile } from "./lobby";
 import { log } from "./log";
 import { setRoomsProfile } from "./room";
-import { me, setMe, setPrefs } from "./state";
+import { me, setMe, setPrefs, setSavedAccounts } from "./state";
 import { storage } from "./storage";
 import type { Profile, Status } from "./types";
 
@@ -36,6 +36,7 @@ function randomColor(): string {
 function commit(profile: Profile): Profile {
     storage.profile.set(profile);
     storage.accounts.remember(profile);
+    setSavedAccounts(storage.accounts.get());
     setMe(profile);
     setLobbyProfile(profile);
     setRoomsProfile(profile);

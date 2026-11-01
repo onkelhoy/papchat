@@ -2,6 +2,7 @@ import { signal } from "@papit/signals";
 
 import { storage } from "./storage";
 import type {
+    SavedAccount,
     IncomingCall,
     LobbyStatus,
     Network,
@@ -16,6 +17,8 @@ import type {
 // app state: core writes, the page reads inside effects and binds to components
 
 export const [me, setMe] = signal<Profile | null>(storage.profile.get());
+/** Every account on this browser, latest first. */
+export const [savedAccounts, setSavedAccounts] = signal<SavedAccount[]>(storage.accounts.get());
 export const [prefs, setPrefsSignal] = signal<Prefs>(storage.prefs.get());
 export const [lobbyStatus, setLobbyStatus] = signal<LobbyStatus>("idle");
 // the private network the lobby lives in, null for the public one

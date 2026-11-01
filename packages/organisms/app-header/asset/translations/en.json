@@ -21,6 +21,8 @@
     "theme-dark": "Dark",
     "theme-system": "System",
     "title-example": "e.g. Holiday photos",
-    "theme": "Theme: {mode}"
+    "theme": "Theme: {mode}",
+    "manage-accounts": "Manage accounts",
+    "log-out": "Log out"
   }
 }

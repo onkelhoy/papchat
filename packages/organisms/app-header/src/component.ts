@@ -44,6 +44,8 @@ const DARK = "(prefers-color-scheme: dark)";
  *
  * @fires status-change `CustomEvent<{ status }>` a presence status was chosen
  * @fires open-settings the settings button was clicked
+ * @fires manage-accounts "Manage accounts" was chosen in the avatar menu
+ * @fires log-out "Log out" was chosen in the avatar menu
  * @fires go-live `CustomEvent<{ title }>` a title was confirmed in the "Go live" dialog (the title is trimmed, never empty)
  * @fires end-live the "End broadcast" button was clicked (only while `live`)
  *
@@ -113,6 +115,11 @@ export class AppHeader extends CustomElement {
     private handleThemeChange(e: Event) {
         e.stopPropagation();
         this.theme = (e.currentTarget as ThemePicker).value ?? "system";
+    }
+
+    private handleAccountAction(name: "manage-accounts" | "log-out") {
+        this.statusMenu?.hidePopover();
+        this.dispatchEvent(new CustomEvent(name));
     }
 
     private handleSettings = () => {
@@ -214,6 +221,12 @@ export class AppHeader extends CustomElement {
                                 <span>${this.t(status)}</span>
                             </pap-menuitem>
                         `)}
+                        <pap-menuitem class="first-action" @click="${() => this.handleAccountAction("manage-accounts")}">
+                            <span>${this.t("manage-accounts")}</span>
+                        </pap-menuitem>
+                        <pap-menuitem @click="${() => this.handleAccountAction("log-out")}">
+                            <span>${this.t("log-out")}</span>
+                        </pap-menuitem>
                     </pap-menu>
                 ` : ""}
             </div>

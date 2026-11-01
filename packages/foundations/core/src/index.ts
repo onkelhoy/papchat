@@ -35,6 +35,7 @@ export * from "./gif";
 export * from "./global";
 export * from "./people";
 export * from "./account";
+export * from "./accounts";
 export * from "./sync";
 export * from "./link";
 export * from "./history";

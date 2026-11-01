@@ -68,7 +68,8 @@
     "@papchat/invite-picker": "*",
     "@papchat/settings": "*",
     "@papchat/onboarding": "*",
-    "@papchat/link-device": "*"
+    "@papchat/link-device": "*",
+    "@papchat/accounts": "*"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

@@ -1,0 +1,71 @@
+:host {
+    display: block;
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+ul {
+    display: grid;
+    gap: var(--space-1, 0.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    min-inline-size: 0;
+}
+
+.pick {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    min-inline-size: 0;
+    padding: var(--space-2, 0.5rem);
+    border: 0;
+    border-radius: var(--radius-medium, 0.5rem);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.pick:hover {
+    background-color: color-mix(in oklch, var(--text) 6%, transparent);
+}
+
+.pick:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: -2px;
+}
+
+.pick[aria-current="true"] {
+    cursor: default;
+}
+
+.pick[aria-current="true"]:hover {
+    background-color: transparent;
+}
+
+.name {
+    flex: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mark {
+    flex: none;
+    color: var(--text-secondary);
+    font-size: 0.875em;
+}

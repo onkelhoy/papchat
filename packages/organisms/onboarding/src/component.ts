@@ -8,6 +8,8 @@ import "@papit/radio";
 import "@papit/button";
 import "@papchat/avatar";
 import "@papchat/language-picker";
+import "@papchat/account-list";
+import type { AccountRow } from "@papchat/account-list";
 
 // local
 import sheet from "./style.css" with { type: "css" };
@@ -47,9 +49,11 @@ let instances = 0;
  * @property {string} color the chosen colour, one of `colors`
  * @property {string} language code of the chosen language (default "en")
  * @property {string[]} colors the swatches (default: the 8 colours of `PALETTE` in core)
+ * @property {AccountRow[]} accounts accounts saved in this browser, listed above the form so you can pick one (property only)
  * @property {{ name: string, password: string } | null} joining a private network to join (share link), null for the public one (property only)
  *
  * @fires submit `CustomEvent<{ name, color, language, network }>` valid form submitted; `network` is `joining` (bubbles, composed)
+ * @fires account-pick `CustomEvent<{ slot }>` a saved account was picked, from `pc-account-list` (bubbles, composed)
  * @fires link-device "Already use papchat?" was pressed (bubbles, composed)
  * @fires language-change `CustomEvent<{ value }>` the language was changed, so the page can translate live (bubbles, composed)
  * @csspart dialog the `pap-dialog`
@@ -67,6 +71,7 @@ export class Onboarding extends CustomElement {
     @property({ type: String, rerender: true }) color: string = "";
     @property({ type: String, rerender: true }) language: string = "en";
     @property({ type: Array, attribute: false, rerender: true }) colors: string[] = DEFAULT_COLORS;
+    @property({ type: Array, attribute: false, rerender: true }) accounts: AccountRow[] = [];
     @property({ type: Object, attribute: false, rerender: true }) joining: OnboardingSubmitEvent["network"] = null;
 
     // errors only show after a first attempt, not while the field is still empty
@@ -145,6 +150,14 @@ export class Onboarding extends CustomElement {
         return html`
             <pap-dialog part="dialog" open="${this.open && "true"}" header="${this.t("title")}" @close="${this.handleClose}">
                 <form novalidate @submit="${this.handleSubmit}">
+                    ${this.accounts.length > 0 ? html`
+                        <div class="saved">
+                            <div class="label">${this.t("saved")}</div>
+                            <pc-account-list accounts="${JSON.stringify(this.accounts)}"></pc-account-list>
+                            <p class="new">${this.t("new")}</p>
+                        </div>
+                    ` : ""}
+
                     <div class="preview">
                         <pc-avatar size="l" name="${this.trimmed}" color="${color}"></pc-avatar>
                     </div>

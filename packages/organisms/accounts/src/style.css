@@ -1,0 +1,19 @@
+:host {
+    display: contents;
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+.body {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    inline-size: min(24rem, 80vw);
+    padding-block-end: var(--space-2, 0.5rem);
+}
+
+pap-button {
+    justify-self: stretch;
+}

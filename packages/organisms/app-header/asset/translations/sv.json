@@ -21,6 +21,8 @@
     "theme-dark": "Mörkt",
     "theme-system": "System",
     "title-example": "t.ex. Semesterbilder",
-    "theme": "Tema: {mode}"
+    "theme": "Tema: {mode}",
+    "manage-accounts": "Hantera konton",
+    "log-out": "Logga ut"
   }
 }

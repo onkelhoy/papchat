@@ -11,6 +11,7 @@ import "@papchat/incoming-call";
 import "@papchat/invite-picker";
 import "@papchat/settings";
 import "@papchat/link-device";
+import "@papchat/accounts";
 import "@papchat/toaster";
 import type { AppHeader } from "@papchat/app-header";
 import type { MemberList } from "@papchat/member-list";
@@ -21,6 +22,7 @@ import type { IncomingCall as IncomingCard } from "@papchat/incoming-call";
 import type { InvitePicker } from "@papchat/invite-picker";
 import type { Settings } from "@papchat/settings";
 import type { LinkDevice } from "@papchat/link-device";
+import type { Accounts } from "@papchat/accounts";
 import type { Toaster } from "@papchat/toaster";
 
 import {
@@ -40,6 +42,9 @@ import {
     contacts,
     denoise,
     disablePush,
+    logOut,
+    openAccount,
+    savedAccounts,
     enablePush,
     forgetContact,
     peerOf,
@@ -142,6 +147,7 @@ const picker = document.querySelector<InvitePicker>("pc-invite-picker")!;
 const overlay = document.querySelector<HTMLElement>(".incoming")!;
 const settings = document.querySelector<Settings>("pc-settings")!;
 const linker = document.querySelector<LinkDevice>("pc-link-device")!;
+const accounts = document.querySelector<Accounts>("pc-accounts")!;
 const toaster = document.querySelector<Toaster>("pc-toaster")!;
 const empty = document.querySelector<HTMLElement>(".empty")!;
 const shell = document.querySelector<HTMLElement & { sidebaropen: boolean }>("pc-app-shell")!;
@@ -324,6 +330,8 @@ async function boot() {
 
 // invite links: read once and taken out of the address bar, so a reload doesn't follow them again
 let waitingCall: Extract<ShareLink, { kind: "call" }> | null = null;
+// the link that's waiting for someone to log in, to follow from whichever account opens
+let waitingHash = "";
 
 type JoinLink = Exclude<ShareLink, { kind: "contact" | "ring" | "link" }>;
 
@@ -362,6 +370,7 @@ function receiveLink() {
         return;
     }
     onboarding.joining = link.network;
+    waitingHash = hash;
     waitingCall = link.kind === "call" ? link : null;
 }
 window.addEventListener("hashchange", receiveLink);
@@ -1116,7 +1125,7 @@ document.addEventListener("keydown", (e) =>
 {
     const name = SHORTCUTS[e.key.toLowerCase()];
     if (!name || e.repeat || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (typing(e) || settings.open || picker.open || onboarding.open) return;
+    if (typing(e) || settings.open || picker.open || onboarding.open || accounts.open) return;
 
     const stage = shownStage();
     const room = current();
@@ -1237,6 +1246,22 @@ document.addEventListener("member-files", async (e) =>
 });
 
 onboarding.addEventListener("link-device", openLinker);
+// an invite that's waiting goes back in the address, so the account opening reads it
+onboarding.addEventListener("account-pick", (e) =>
+{
+    if (waitingHash) history.replaceState(null, "", location.pathname + location.search + waitingHash);
+    void openAccount((e as CustomEvent<{ slot: string }>).detail.slot);
+});
+accounts.addEventListener("account-pick", (e) => void openAccount((e as CustomEvent<{ slot: string }>).detail.slot));
+accounts.addEventListener("add-account", () => void logOut());
+header.addEventListener("manage-accounts", () => { accounts.open = true; });
+header.addEventListener("log-out", () => void logOut());
+effect(() =>
+{
+    onboarding.accounts = savedAccounts();
+    accounts.accounts = savedAccounts();
+    accounts.current = me()?.uid ?? "";
+});
 onboarding.addEventListener("language-change", (e) =>
 {
     const { value } = (e as CustomEvent<{ value: string }>).detail;

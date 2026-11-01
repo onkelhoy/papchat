@@ -63,7 +63,8 @@
     "@papit/button": "0.1.10",
     "@papchat/avatar": "*",
     "@papchat/language-picker": "*",
-    "@papchat/network-picker": "*"
+    "@papchat/network-picker": "*",
+    "@papchat/account-list": "*"
   },
   "peerDependencies": {
     "react": "^19"

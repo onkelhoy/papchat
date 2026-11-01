@@ -12,6 +12,8 @@
     "language": "Language",
     "submit": "Continue",
     "joining": "You're joining",
-    "link": "Already use papchat? Link this device"
+    "link": "Already use papchat? Link this device",
+    "saved": "Saved on this browser",
+    "new": "Or make a new account"
   }
 }

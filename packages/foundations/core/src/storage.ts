@@ -255,6 +255,15 @@ export const storage = {
             write(local, ACTIVE, slot);
             write(local, BLANK, undefined);
         },
+        /** Makes `slot` the account the next page load runs on. */
+        open(slot: string) {
+            write(local, ACTIVE, slot);
+        },
+        /** Logs out: the next page load runs on a blank slot, in the language you were using. */
+        close(language: string) {
+            write(local, ACTIVE, null);
+            write(local, inSlot(KEYS.prefs, blankSlot()), { ...DEFAULT_PREFS, language });
+        },
     },
     debug: {
         get(): Debug {

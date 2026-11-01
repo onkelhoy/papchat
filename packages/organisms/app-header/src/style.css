@@ -50,6 +50,10 @@ pap-menuitem {
     gap: var(--space-2, 0.5rem);
 }
 
+.first-action {
+    border-block-start: 1px solid var(--border, currentColor);
+}
+
 pap-menuitem[aria-checked="true"] {
     font-weight: 600;
 }
