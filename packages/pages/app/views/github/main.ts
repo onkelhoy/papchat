@@ -128,7 +128,7 @@ import {
     receiveRing,
     sameNetwork,
 } from "@papchat/core";
-import type { CaptureName, Gif, Network, Prefs, Profile, Ring, Room, RoomSummary, ShareLink, Stage, Status } from "@papchat/core";
+import type { CaptureName, Gif, GlobalPost, Network, Prefs, Profile, Ring, Room, RoomSummary, ShareLink, Stage, Status } from "@papchat/core";
 
 // languages with a file in asset/translations
 const LANGUAGES = ["en", "sv"];
@@ -944,13 +944,23 @@ roomList.addEventListener("leave", (e) =>
     else void deleteConversation(id);
 });
 
+const GLOBAL_PROBLEMS: Record<GlobalPost, string> = {
+    sent: "",
+    empty: "",
+    wait: "globalWait",
+    offline: "globalOffline",
+    alone: "globalAlone",
+    unreachable: "globalUnreachable",
+};
+
 view.addEventListener("send", (e) =>
 {
     const { text } = (e as CustomEvent<{ text: string }>).detail;
     const stage = shownStage();
     if (globalOpen())
     {
-        if (!postGlobal(text)) toast("info", t(lobbyStatus() === "connected" ? "globalWait" : "globalOffline"));
+        const problem = GLOBAL_PROBLEMS[postGlobal(text)];
+        if (problem) toast("info", t(problem));
     }
     else if (stage) stage.send(text);
     else if (viewing())

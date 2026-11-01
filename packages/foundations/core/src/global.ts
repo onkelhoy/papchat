@@ -3,7 +3,7 @@ import { signal } from "@papit/signals";
 import { LIMITS } from "./config";
 import { broadcast, on } from "./lobby";
 import { log } from "./log";
-import { me } from "./state";
+import { lobbyStatus, me, members } from "./state";
 import { storage } from "./storage";
 import type { ChatMessage, Profile } from "./types";
 
@@ -55,18 +55,27 @@ function add(message: ChatMessage, author: Profile) {
 
 let lastPost = 0;
 
-/** Posts to everyone in this network. False when empty, too soon after your last post, or not connected. */
-export function postGlobal(text: string): boolean {
+/**
+ * How a post went. A broadcast only travels over direct peer links, never through the server, so
+ * being connected to the network doesn't mean anyone can hear you: `alone` is nobody in the list,
+ * `unreachable` is people in the list but no open link to any of them.
+ */
+export type GlobalPost = "sent" | "empty" | "wait" | "offline" | "alone" | "unreachable";
+
+/** Posts to everyone in this network. */
+export function postGlobal(text: string): GlobalPost {
     const profile = me();
     const clean = String(text ?? "").trim().slice(0, LIMITS.messageChars);
     const now = Date.now();
-    if (!clean || !profile || now - lastPost < LIMITS.globalGapMs) return false;
+    if (!clean || !profile) return "empty";
+    if (now - lastPost < LIMITS.globalGapMs) return "wait";
+    if (lobbyStatus() !== "connected") return "offline";
 
     const id = crypto.randomUUID();
-    if (!broadcast(TYPE, { id, text: clean })) return false;
+    if (!broadcast(TYPE, { id, text: clean })) return members().length === 0 ? "alone" : "unreachable";
     lastPost = now;
     add({ id, uid: profile.uid, at: now, variant: "text", text: clean }, profile);
-    return true;
+    return "sent";
 }
 
 // senders over the limit are dropped here, whatever their own client lets them do
