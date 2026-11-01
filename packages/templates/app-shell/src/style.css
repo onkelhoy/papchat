@@ -1,4 +1,5 @@
 :host {
+    --pc-sidebar: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -7,7 +8,7 @@
         "sidebar main";
     block-size: 100dvh;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    background-color: var(--pc-surface, var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0))));
 }
 
 :host([hidden]) {
@@ -31,6 +32,8 @@
 
 pap-sidebar {
     grid-area: sidebar;
+    --shade-1: var(--pc-sidebar);
+    background-color: var(--pc-sidebar);
     border-inline-end: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
 }
 
@@ -38,6 +41,11 @@ pap-sidebar {
 pap-sidebar:not([open])::part(nav),
 pap-sidebar:not([open])::part(header) {
     padding-inline: var(--space-2, 0.5rem);
+}
+
+/* the phone's sidebar */
+pap-drawer {
+    --drawer-background: var(--pc-sidebar);
 }
 
 [part="main"] {

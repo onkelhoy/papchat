@@ -7,7 +7,7 @@ body {
 }
 
 body {
-    background: var(--background-light);
+    background: var(--pc-surface);
     color: var(--text);
 }
 

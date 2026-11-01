@@ -22,6 +22,7 @@
     "chatOff": "Visa chatten",
     "inviteTip": "Bjud in någon",
     "devicesTip": "Enheter",
-    "hangupTip": "Lämna samtalet"
+    "hangupTip": "Lämna samtalet",
+    "chatUnread": "{count} nya"
   }
 }

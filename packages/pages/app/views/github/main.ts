@@ -294,6 +294,12 @@ async function registerWorker() {
     }
 }
 
+async function askForNotifications() {
+    const result = await requestNotifications();
+    if (result === "denied") toast("warning", t("notificationsDenied"));
+    else if (result === "failed") toast("warning", t("pushFailed"));
+}
+
 async function boot() {
     log("browser", navigator.userAgent);
     void registerWorker();
@@ -319,9 +325,7 @@ async function boot() {
     askNotifications(() => toast("info", t("notificationsAsk"), {
         action: t("notificationsAllow"),
         duration: 0,
-        onAction: async () => {
-            if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
-        },
+        onAction: askForNotifications,
     }), () => toast("info", t("notificationsInstall"), { duration: 0 }));
     void (canNotify() ? enablePush() : refreshPush());
     void ringtone.loadTones();
@@ -615,6 +619,43 @@ function tilesOf(room: Room): CallTile[] {
     }
     return tiles;
 }
+
+// the call stage plays a call's audio, and it's gone while something else is on screen: a call you
+// looked away from has to keep going, so these play it until you're back
+const elsewhereAudio = new Map<string, HTMLAudioElement>();
+effect(() =>
+{
+    const shown = elsewhere() ? null : current();
+    const streams = new Map<string, MediaStream>();
+    const tiles = rooms().flatMap(summary =>
+    {
+        const room = getRoom(summary.id);
+        return room?.incall && room !== shown ? tilesOf(room) : [];
+    });
+    const stage = currentStage();
+    if (stage && !shownStage()) tiles.push(...stageTiles(stage));
+    for (const tile of tiles) if (!tile.self && tile.audio) streams.set(tile.audio.id, tile.audio);
+
+    for (const [id, audio] of elsewhereAudio)
+    {
+        if (streams.has(id)) continue;
+        audio.srcObject = null;
+        audio.remove();
+        elsewhereAudio.delete(id);
+    }
+    const sink = prefs().devices.speaker ?? "";
+    for (const [id, stream] of streams)
+    {
+        if (elsewhereAudio.has(id)) continue;
+        const audio = document.createElement("audio");
+        audio.hidden = true;
+        audio.srcObject = stream;
+        document.body.append(audio);
+        elsewhereAudio.set(id, audio);
+        if (sink) void (audio as HTMLAudioElement & { setSinkId?(id: string): Promise<void> }).setSinkId?.(sink).catch(() => { });
+        audio.play().catch(error => log("call: audio didn't start", error));
+    }
+});
 
 // a new stage (going live, watching) opens; picking a room leaves the stage running in the background
 let lastStage: Stage | null = null;
@@ -922,10 +963,7 @@ settings.addEventListener("language-change", (e) =>
     setPrefs({ language: value });
     changeLanguage(value);
 });
-settings.addEventListener("request-notifications", async () =>
-{
-    if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
-});
+settings.addEventListener("request-notifications", () => void askForNotifications());
 settings.addEventListener("push-disable", () => void disablePush());
 settings.addEventListener("delete-chats", () =>
 {

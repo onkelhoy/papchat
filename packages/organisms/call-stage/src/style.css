@@ -68,7 +68,7 @@ pc-video-tile {
     inline-size: min(30%, var(--call-stage-self-width, 14rem));
     min-inline-size: 7rem;
     aspect-ratio: 16 / 9;
-    box-shadow: 0 0 0 2px var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    box-shadow: 0 0 0 2px var(--pc-surface, var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0))));
 }
 
 @container (max-width: 36rem) {

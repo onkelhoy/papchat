@@ -36,3 +36,26 @@ pap-button[size="icon"] {
     block-size: var(--space-9, 2.25rem);
     border-radius: 50%;
 }
+
+pap-button[data-control="chat"] {
+    position: relative;
+}
+
+/* sits on the button's corner, the size of its text */
+.unread {
+    position: absolute;
+    inset-block-start: calc(-1 * var(--space-1));
+    inset-inline-end: calc(-1 * var(--space-1));
+    min-inline-size: 1.125rem;
+    block-size: 1.125rem;
+    padding-inline: var(--space-1);
+    box-sizing: border-box;
+    border-radius: 0.5625rem;
+    background-color: var(--primary);
+    color: var(--primary-contrast);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.125rem;
+    text-align: center;
+    pointer-events: none;
+}

@@ -22,6 +22,7 @@
     "chatOff": "Show chat",
     "inviteTip": "Invite someone",
     "devicesTip": "Devices",
-    "hangupTip": "Leave call"
+    "hangupTip": "Leave call",
+    "chatUnread": "{count} new"
   }
 }

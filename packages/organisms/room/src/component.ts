@@ -82,13 +82,15 @@ export class Room extends CustomElement {
     @property({ type: Object, attribute: false, rerender: true }) gifs: GifState | null = null;
 
     @property({ type: Boolean, attribute: false, rerender: true }) private narrow: boolean = false;
+    // the newest message seen, "" when there was none
+    private seenMessage = "";
     // chat panel next to the stage, toggled from the controls
     @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
     @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[]; gifs: GifState | null; textonly: boolean };
     @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
 
-    @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean };
+    @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean; unread: number };
 
     private media?: MediaQueryList;
 
@@ -140,6 +142,7 @@ export class Room extends CustomElement {
             controls.camera = this.camera;
             controls.screen = this.screen;
             controls.chat = this.showChat;
+            controls.unread = this.countUnread();
             controls.viewer = this.viewer;
             controls.canscreen = this.canscreen;
         }
@@ -178,6 +181,18 @@ export class Room extends CustomElement {
     @bind
     private handleBuzz() {
         this.dispatchEvent(new CustomEvent("buzz", { bubbles: true, composed: true }));
+    }
+
+    // what came in while the call hides the chat, from others: seeing the chat, or a new room, starts over
+    private countUnread() {
+        const last = this.messages.at(-1)?.id ?? "";
+        const from = this.messages.findIndex(message => message.id === this.seenMessage);
+        if (!this.incall || this.showChat || (this.seenMessage && from < 0))
+        {
+            this.seenMessage = last;
+            return 0;
+        }
+        return this.messages.slice(from + 1).filter(message => message.variant !== "system" && message.uid !== this.me).length;
     }
 
     // the controls don't flip their own state; the chat toggle is ours, the rest is left to the page

@@ -28,9 +28,9 @@ export function canNotify(): boolean {
     return typeof Notification !== "undefined" && Notification.permission === "granted" && prefs().notifications;
 }
 
-/** Asks the browser for permission (call from a click), stores the answer in prefs, and a yes covers calls with the app closed too. */
-export async function requestNotifications(): Promise<boolean> {
-    if (typeof Notification === "undefined") return false;
+/** Asks the browser for permission (call from a click), stores the answer in prefs, and a yes covers calls with the app closed too. "failed": allowed, but calls with the app closed couldn't be set up. */
+export async function requestNotifications(): Promise<"on" | "denied" | "failed"> {
+    if (typeof Notification === "undefined") return "denied";
     let answer: NotificationPermission = Notification.permission;
     try
     {
@@ -42,8 +42,8 @@ export async function requestNotifications(): Promise<boolean> {
     }
     const granted = answer === "granted";
     setPrefs({ notifications: granted });
-    if (granted) void enablePush();
-    return granted;
+    if (!granted) return "denied";
+    return await enablePush() === "failed" ? "failed" : "on";
 }
 
 /**

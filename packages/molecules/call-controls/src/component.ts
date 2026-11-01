@@ -25,6 +25,7 @@ import type { ToggleControl, ToggleEvent } from "./types";
  * @property {boolean} screen you are sharing your screen (reflected)
  * @property {boolean} chat chat panel is shown (reflected)
  * @property {boolean} viewer only show "Leave" and the chat toggle (reflected)
+ * @property {number} unread new messages while the chat is closed, shown on the chat button
  * @property {boolean} canscreen the browser supports screen sharing; false hides the button (default true)
  *
  * @fires toggle `CustomEvent<{ control: "mic" | "camera" | "screen" | "chat" }>`
@@ -43,6 +44,7 @@ export class CallControls extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) camera: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) screen: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) chat: boolean = false;
+    @property({ type: Number, rerender: true }) unread: number = 0;
     @property({ type: Boolean, reflect: true, rerender: true }) viewer: boolean = false;
     // default true: a boolean attribute can't be "on" by default, so `canscreen="false"` turns it off
     @property({ type: Boolean, reflect: true, rerender: true }) canscreen: boolean = true;
@@ -77,9 +79,15 @@ export class CallControls extends CustomElement {
         return html`
             <pap-button data-control="${control}" part="${control}" size="icon" type="button" color="${filled ? color : "secondary"}" variant="${filled ? "filled" : "outline"}" aria-label="${label}" aria-pressed="${on ? "true" : "false"}" popovertarget="${`tip-${control}`}" @click="${this.handleToggle}">
                 <pap-icon name="${`/icons/${on ? icon : offIcon}.svg`}" aria-hidden="true"></pap-icon>
+                ${control === "chat" && this.unread > 0 ? html`<span class="unread" aria-hidden="true">${this.unread > 99 ? "99+" : String(this.unread)}</span>` : ""}
             </pap-button>
             <pap-tooltip id="${`tip-${control}`}" placement="top" instant>${tip}</pap-tooltip>
         `;
+    }
+
+    private chatLabel() {
+        const label = this.t("chat");
+        return this.unread > 0 ? `${label}, ${this.t("chatUnread", { count: String(this.unread) })}` : label;
     }
 
     render() {
@@ -89,7 +97,7 @@ export class CallControls extends CustomElement {
         {
             return html`
                 <pap-group part="toolbar" aria-label="${t("label")}">
-                    ${this.renderToggle("chat", this.chat, "chat", "chat", t("chat"), this.chat ? t("chatOn") : t("chatOff"))}
+                    ${this.renderToggle("chat", this.chat, "chat", "chat", this.chatLabel(), this.chat ? t("chatOn") : t("chatOff"))}
                     <pap-button part="hangup" size="icon" type="button" color="error" aria-label="${t("hangup")}" popovertarget="tip-hangup" @click="${this.handleHangup}">
                         <pap-icon name="/icons/phone-off.svg" aria-hidden="true"></pap-icon>
                     </pap-button>
@@ -103,7 +111,7 @@ export class CallControls extends CustomElement {
                 ${this.renderToggle("mic", this.mic, "mic", "mic-off", t("mic"), this.mic ? t("micOn") : t("micOff"))}
                 ${this.renderToggle("camera", this.camera, "camera", "camera-off", t("camera"), this.camera ? t("cameraOn") : t("cameraOff"))}
                 ${this.canscreen ? this.renderToggle("screen", this.screen, "screen", "screen-off", t("screen"), this.screen ? t("screenOn") : t("screenOff")) : ""}
-                ${this.renderToggle("chat", this.chat, "chat", "chat", t("chat"), this.chat ? t("chatOn") : t("chatOff"))}
+                ${this.renderToggle("chat", this.chat, "chat", "chat", this.chatLabel(), this.chat ? t("chatOn") : t("chatOff"))}
                 <pap-button part="invite" size="icon" type="button" color="secondary" variant="outline" aria-label="${t("invite")}" popovertarget="tip-invite" @click="${this.handleInvite}">
                     <pap-icon name="/icons/user-plus.svg" aria-hidden="true"></pap-icon>
                 </pap-button>

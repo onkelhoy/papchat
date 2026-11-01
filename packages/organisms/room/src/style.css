@@ -4,7 +4,7 @@
     min-height: 0;
     height: 100%;
     color: var(--text);
-    background-color: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
+    background-color: var(--pc-surface, var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0))));
 }
 
 :host([hidden]) {
@@ -61,6 +61,7 @@ pap-splitter[split="horizontal"]::part(separator) {
 .stage pc-call-stage {
     flex: 1;
     min-height: 0;
+    margin: var(--space-3) var(--space-3) 0;
 }
 
 .stage pc-call-controls {

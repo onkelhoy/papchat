@@ -5,7 +5,7 @@
     box-sizing: border-box;
     min-inline-size: 0;
     min-block-size: 0;
-    border-radius: var(--radius-medium, 0.5rem);
+    border-radius: var(--radius-small, 0.5rem);
     color: var(--text);
     background-color: color-mix(in oklch, var(--primary) 14%, var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0))));
 }

@@ -18,6 +18,9 @@
         --focus-color: light-dark(oklch(56.5% 0.127 65), #efa527);
         /* deeper amber in light mode so the ring stays >= 3:1 */
 
+        /* the main area: white in light mode, where the sidebar keeps the grey --background */
+        --pc-surface: light-dark(#fff, oklch(17% 0 0));
+
         /* Presence, all >= 3:1 against --background in both modes (non-text UI) */
         --pc-available: light-dark(oklch(52% 0.16 150), oklch(74% 0.19 150));
         --pc-busy: light-dark(oklch(54% 0.21 28), oklch(68% 0.19 28));
