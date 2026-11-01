@@ -71,7 +71,11 @@ export function startNotify() {
 
 function show(title: string, body: string, tag: string) {
     // a window behind another app isn't `hidden`, only unfocused
-    if ((!document.hidden && document.hasFocus()) || !canNotify()) return;
+    if ((!document.hidden && document.hasFocus()) || !canNotify())
+    {
+        log("notify: not shown", tag, { hidden: document.hidden, focused: document.hasFocus(), permission: typeof Notification === "undefined" ? "none" : Notification.permission, setting: prefs().notifications });
+        return;
+    }
     try
     {
         // `renotify`: the next message with this tag alerts too, instead of quietly replacing the last
@@ -137,6 +141,7 @@ function watchMessages() {
             if (!room) continue;
             const list = room.messages();
             const newest = list[list.length - 1];
+            log("notify: room", room.id, newest?.id, newest?.state);
             const before = last.get(room.id);
             last.set(room.id, newest?.id ?? "");
             if (!newest || before === newest.id) continue;

@@ -81,7 +81,16 @@ async function open(hash) {
         await self.clients.openWindow(scope + hash);
         return;
     }
-    await client.focus();
+    try
+    {
+        await client.focus();
+    }
+    catch
+    {
+        // the browser refused: a new window still gets the person to the call
+        await self.clients.openWindow(scope + hash);
+        return;
+    }
     if (hash) client.postMessage({ type: "ring", hash, tapped: true });
 }
 
