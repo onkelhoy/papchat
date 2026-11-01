@@ -76,14 +76,28 @@ function show(title: string, body: string, tag: string) {
         log("notify: not shown", tag, { hidden: document.hidden, focused: document.hasFocus(), permission: typeof Notification === "undefined" ? "none" : Notification.permission, setting: prefs().notifications });
         return;
     }
+    void present(title, body, tag);
+}
+
+// through the service worker when there is one: that's how calls arrive, and a click on it opens the app
+async function present(title: string, body: string, tag: string) {
+    // `renotify`: the next message with this tag alerts too, instead of quietly replacing the last
+    const options = { body, tag, renotify: true, data: {} } as NotificationOptions;
     try
     {
-        // `renotify`: the next message with this tag alerts too, instead of quietly replacing the last
-        const note = new Notification(title, { body, tag, renotify: true } as NotificationOptions);
+        const worker = await navigator.serviceWorker?.getRegistration();
+        if (worker)
+        {
+            await worker.showNotification(title, options);
+            log("notify: shown by the worker", tag);
+            return;
+        }
+        const note = new Notification(title, options);
         note.onclick = () => {
             window.focus();
             note.close();
         };
+        log("notify: shown by the page", tag);
     }
     catch (error)
     {
@@ -145,8 +159,11 @@ function watchMessages() {
             const before = last.get(room.id);
             last.set(room.id, newest?.id ?? "");
             if (!newest || before === newest.id) continue;
-            if (Date.now() - newest.at > FRESH_MS) continue;
-            if (newest.uid === mine || newest.variant !== "text") continue;
+            if (Date.now() - newest.at > FRESH_MS || newest.uid === mine || newest.variant !== "text")
+            {
+                log("notify: no alert for", newest.variant, { age: Date.now() - newest.at, mine: newest.uid === mine });
+                continue;
+            }
 
             const from = room.participants().find(p => p.uid === newest.uid)?.name ?? "Someone";
             show(room.title ? `${from} in ${room.title}` : from, newest.text ?? "", `room:${room.id}`);
