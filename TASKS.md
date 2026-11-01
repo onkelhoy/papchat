@@ -4,10 +4,38 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ---
 
-## ▶ Resume here (refreshed 2026-10-31)
+## ▶ Handover (2026-11-01, read this first)
+
+The user closed the session that wrote this and wants a fresh session to plan and implement. They said "sync it all and fix all tasks".
+
+**1. The upgrade is NOT ready: webrtc 0.0.7 isn't on npm.** Checked against the registry on 2026-11-01: `@papit/webrtc` latest is still 0.0.6 (last published 2026-10-28), while `@papit/signal-server` 0.0.6 and `@papit/peer-message` 0.0.4 are out. Papit PR #164 is merged and papit's `packages/network/webrtc/package.json` says 0.0.7, so only the publish is missing. All three must move together because the wire protocol has new message types. Run `npm view @papit/webrtc version` first. If it's still 0.0.6, tell the user before doing anything: installed versions here are webrtc 0.0.6, signal-server 0.0.5, peer-message 0.0.3.
+
+**2. Then do T12.1 in this order:** bump `../signal` (separate repo, still pins signal-server 0.0.5, deployed on Render) and have it deployed; bump papchat (`packages/foundations/core/package.json` webrtc, root `package.json` signal-server; peer-message only comes through webrtc); do the merge work. A new client on an old server is untested, and without the server's drain support each member waits about 15 s before closing its socket. Whether today's live 0.0.6 clients work on the new server is unknown: ask the user how to time the deploy against the push.
+
+**3. Nothing from this session is live.** 10 commits on `main` aren't pushed (`git status -sb`), and every push makes a version, so push only when the user says. Global chat fixes, accounts (T11.1-T11.3) and the logs page (T11.5) passed typecheck and build but never ran in a browser. `FINDINGS.md` stays untracked on purpose: it was already untracked and isn't this session's.
+
+**4. The bug that started all this:** the user and their dad can't see each other. Not reproduced, not diagnosed.
+- It's a regression. Calls between them worked for a long time on STUN only and it broke around 2026-10-31 or 11-01, so don't suggest TURN. The user suspects the host handover work.
+- Lead, not a finding: when a lobby join fails, `lobby.ts` (about line 440) retries once and then creates a new lobby, which looks connected with an empty list. That matches what the dad saw. Papit fixed two things that can fail a join, crossed offers stalling for the 15 s handshake timeout and an offer lost to a closing socket, so the upgrade may fix it. Nobody has shown that.
+- To get evidence: after a push, both people press Logs, Turn on logs, reload, open Logs, Copy. Look for `lobby: join failed` then `lobby: creating`, and for `ice-state` and `link` lines.
+- If it's in `@papit/webrtc` or the signal server, send reproduction steps to the papit session (it asked for this). Don't edit the papit repo.
+
+**5. Open decision for the user:** should a failed join stop quietly making a second lobby and say it can't reach the network instead? Proposed, not agreed, no task yet. It's a papchat change, and it wouldn't get anyone connected.
+
+**6. Known gaps from this session:**
+- Global chat, "Can't reach anyone right now": the post is refused and the typed text may be lost. Not checked whether the composer keeps it.
+- A removed linked account stays listed in the other device's Settings, which can't tell deleted from offline. Unlinking it there is what splits the person for their contacts.
+- Logging out stops push, so contacts can't ring you until you've met again with the new token.
+- Logs only cover papchat and client debug words. Turning logs on after a failed start misses it, hence the reload step.
+
+**7. Checks:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and a `failed` in the output counts as failure because the exit code stays 0. `packages/pages/app/tsconfig.json` does NOT cover `views/github/main.ts`: use a temporary tsconfig that extends it with `noEmit`, `rootDir` set to the repo root, `composite` and `incremental` false, `include: []` and `files: [main.ts]`, and confirm with `--listFiles`. In this shell `grep` is ugrep and missed patterns like `(^|[^a-zA-Z.])log\(`, and `git grep -E` doesn't take `\b`, so use Python for anything subtle.
+
+---
+
+## ▶ Resume here (refreshed 2026-11-01)
 
 - **Done:** 100/110 tasks. All build work is in, through Wave 11 (saved chats T10.4-T10.6, linked devices T10.7-T10.10, global chat T10.11, several accounts T11.1-T11.3). What's left is the user's: repros and live checks.
-- **Next:** nothing to build. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
+- **Next:** T12.1 once webrtc 0.0.7 is on npm, see the handover above. Otherwise the user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T12.1 waits on papit #162 being published, and the user tests at the end. T0.6 (go live) is theirs.
 - **Seen in live tests, not fixed (2026-11-01):** (1) two rows for one person in the room list, same name and avatar, gone after a reload, no repro yet. In `main.ts` a saved row shows when no room's summary carries its conversation id, so check a room whose `conversationId` changes without its summary updating, then two direct rooms for one person. (2) `/icons/spritesheet.svg` 404s on the live site. (3) `AbortError: Transition was skipped` in the console, 3 times. (4) Peers can show as Offline while both are open: waiting for console logs.
@@ -816,10 +844,11 @@ Ideas from the user, planned in this order because each phase needs the one befo
 ## Wave 12: papit #162 upgrade (papit session, 2026-11-01)
 
 ### [ ] T12.1 Move to webrtc 0.0.7, signal-server 0.0.6, peer-message 0.0.4 · `opus` · needs those on npm
-- **Blocked:** don't bump until they're published. They're on papit branch `feature/162-webrtc-merge`, partly uncommitted, so details can change. Read the papit READMEs first (webrtc "Merging networks"). Deploy the signal server first, then ship the client: a new client on an old server is untested.
+- **Blocked on webrtc 0.0.7 reaching npm** (signal-server 0.0.6 and peer-message 0.0.4 are out; papit PR #164 is merged). Don't bump one without the others. Read the papit READMEs first (webrtc "Merging networks", signal-server, peer-message), since those notes came from messages sent before the merge. Deploy the signal server first (`../signal` still pins 0.0.5), then ship the client: a new client on an old server is untested.
 - **do:** replace the mass restart in `lobby.ts` (`merge`, `handleMerge`, `rejoin`, the `MERGE` message and its spread timing, about `:551-622`) with host-only `client.merge(serverId, password?)`. Set `acceptMerge` on hosts, because the default refuses every merge. Handle `merged`, which fires in both groups and changes `network.id` in the group that moved: update whatever is keyed on the old id. Invites to the moved network answer `not-found`. The larger network stays, and both need the same topology and config.
 - **Remove:** the #23 workarounds, `c["reregister"]` (`lobby.ts:743`) and `c["serverNetwork"]` (`lobby.ts:781`).
-- **Check:** unwanted links now close a few seconds after any member change (`network.prune`), so nothing may rely on a stale link staying up. Already checked: papchat never sends `network.join` itself, and has no custom topology (`ring` is a reserved name now).
+- **Limits from papit:** a merged network must fit 256 KB, about 250 members with full profiles. If a host crashes before any link has crossed, the groups carry on apart. Only tested on Chromium, largest real merges chord 5+5, never across real networks or NAT. The papit main also has the #159/#160 fixes papchat lacks.
+- **Check:** unwanted links now close a few seconds after any member change (`network.prune`, which doesn't mean the peer left), so nothing may rely on a stale link staying up. Not audited yet: start with `Verifier`'s `ready: c.links.length > 0` in `lobby.ts`, `quietSend`, and global chat's `unreachable`, since a broadcast only uses open links. Already checked: papchat never sends `network.join` itself, and has no custom topology (`ring` is a reserved name now).
 - **done when:** typecheck + build pass. User test: the dad connection (broke around 2026-11-01, a regression, not missing TURN), Offline peers, a merge in a real network.
 
 ---
