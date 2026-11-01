@@ -18,7 +18,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-11-01)
 
-- **Done:** 108/117 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
+- **Done:** 111/120 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
 - **Next:** ship and retest, see the handover above. Otherwise the user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T0.6 (go live) is theirs.
@@ -874,3 +874,13 @@ Ideas from the user, planned in this order because each phase needs the one befo
 - T3.1: `ringtones.json` lists `beep-boom` (default pref) and `quack`. Optional `ringback.mp3` / `message.mp3` also missing (synth fallback used).
 - T3.10 papit gaps: (1) `@papit/web-component`'s property deep-compare throws on `null` inside objects (`Object.keys(null)`), so never pass `null` for streams or in tile objects, use `undefined`. (2) It also calls any two `MediaStream`s equal (no own keys), so swapping one stream for another of the same shape is not seen; `hasChanged` can't force it (it only vetoes, the deep compare still runs). (3) The dev server (`npx @papit/server`) import map leaves out transitive deps (`@papit/treeview`, `@papit/popover`, …), so `localhost:3001/views/github/` fails to load; fine in the static build.
 - **T6.5, incoming calls on phones:** `views/github/style.css` `.incoming` says "full width on phones" but has no rule for it, so the card is only as wide as its content. Add `@media (max-width: 799.98px) { .incoming { left: var(--space-4); } }` (it already has `right`) so `pc-incoming-call` fills the width up to its 22rem max.
+
+### [x] T12.9 A presenter doesn't see their own screen, and the calling label · `opus` · needs T12.7
+- Done: `stageTiles` drops the presenter's own screen tile, as `tilesOf` already did for calls. The ringing tile says "Calling {name}…", and "(You)" gets a real gap.
+
+### [x] T12.10 Call volume and muting someone for yourself · `opus` · needs —
+- Done: `prefs.callVolume` with a slider in Settings → Audio, and a Mute button on each tile with sound. Both reach the stage's players and `elsewhereAudio`. Mutes are kept in the page only. iPhones ignore `audio.volume`, so there the slider does nothing and Mute still works.
+- Phones: the screen stays on during a call (wake lock). Earpiece routing and a call that survives a locked phone are not built: the browser gives no reliable way to do them on iOS. That needs a native wrapper.
+
+### [x] T12.11 Contacts belong to the networks you know them from · `opus` · needs —
+- Done: `Contact.networks`, filled when a contact is saved or seen. The member list and the invite picker show `knownHere` contacts only. Contacts saved before this show everywhere until they're next seen. A saved contact can still ring you from anywhere. Saved chats are unchanged: they still show in every network (T10.4).

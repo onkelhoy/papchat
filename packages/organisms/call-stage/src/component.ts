@@ -6,7 +6,7 @@ import type { VideoTile } from "@papchat/video-tile";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { CallTile, PinEvent } from "./types";
+import type { CallTile, PinEvent, SilenceChange } from "./types";
 
 type Mode = "empty" | "grid" | "focus" | "overlay";
 
@@ -28,8 +28,10 @@ const MAX_COLS = 3;
  *
  * @property {CallTile[]} tiles the participants (property only; assign a new array to update)
  * @property {string} sinkid output device id for remote audio (empty = default)
+ * @property {number} volume how loud the others play, 0 to 1 (phones without `audio.volume` ignore it)
  *
  * @fires pin `CustomEvent<{ id: string, pinned: boolean }>` a tile was pinned or unpinned (bubbles, composed)
+ * @fires silence `CustomEvent<{ uid: string, silenced: boolean }>` someone was muted or unmuted for you (bubbles, composed)
  *
  * @csspart tiles the layout container
  * @csspart tile every `pc-video-tile`
@@ -41,6 +43,7 @@ export class CallStage extends CustomElement {
 
     @property({ type: Array, attribute: false, rerender: true }) tiles: CallTile[] = [];
     @property({ type: String, rerender: true }) sinkid: string = "";
+    @property({ type: Number, rerender: true }) volume: number = 1;
 
     // undefined: follow `tiles[].pinned`; "": nothing pinned; otherwise the pinned tile id
     @property({ type: String, attribute: false, rerender: true }) private pinnedId?: string;
@@ -106,6 +109,7 @@ export class CallStage extends CustomElement {
             if (row.self !== !!tile.self) row.self = !!tile.self;
             if (row.ringing !== !!tile.ringing) row.ringing = !!tile.ringing;
             if (row.pinned !== (tile === pinned)) row.pinned = tile === pinned;
+            if (row.silenced !== !!tile.silenced) row.silenced = !!tile.silenced;
         });
     }
 
@@ -121,6 +125,8 @@ export class CallStage extends CustomElement {
                 audio.srcObject = stream;
                 if (stream) audio.play().catch(() => { /* autoplay blocked until a user gesture */ });
             }
+            audio.muted = !!remote[i]?.silenced;
+            audio.volume = Math.min(1, Math.max(0, this.volume));
 
             if (this.sinks.get(audio) !== this.sinkid)
             {
@@ -142,6 +148,16 @@ export class CallStage extends CustomElement {
         this.dispatchEvent(new CustomEvent<PinEvent>("pin", { detail: { id, pinned: e.detail.pinned }, bubbles: true, composed: true }));
     }
 
+    @bind
+    private handleSilence(e: CustomEvent<{ silenced: boolean }>) {
+        e.stopPropagation();
+        const id = (e.target as HTMLElement).closest<HTMLElement>("pc-video-tile[data-id]")?.dataset.id;
+        const tile = this.list.find(item => item.id === id);
+        if (!tile) return;
+
+        this.dispatchEvent(new CustomEvent<SilenceChange>("silence", { detail: { uid: tile.profile.uid, silenced: e.detail.silenced }, bubbles: true, composed: true }));
+    }
+
     render() {
         const list = this.list;
         const { mode, featured } = this.layout(list);
@@ -152,7 +168,7 @@ export class CallStage extends CustomElement {
         const style = `--n: ${n}; --cols: ${cols}; --rows: ${Math.ceil(n / cols) || 1}; --cols-narrow: ${narrow}; --rows-narrow: ${Math.ceil(n / narrow) || 1}; --others: ${others}`;
 
         return html`
-            <div class="tiles" part="tiles" role="group" aria-label="${this.t("label")}" data-mode="${mode}" style="${style}" @pin="${this.handlePin}">
+            <div class="tiles" part="tiles" role="group" aria-label="${this.t("label")}" data-mode="${mode}" style="${style}" @pin="${this.handlePin}" @silence="${this.handleSilence}">
                 ${list.length === 0 ? html`<div class="empty">${this.t("empty")}</div>` : ""}
                 ${list.map(tile => html`<pc-video-tile
                     key="${tile.id}"

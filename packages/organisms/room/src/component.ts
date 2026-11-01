@@ -45,6 +45,7 @@ const NARROW = "(max-width: 40rem)";
  * @property {boolean} nocall no Call and Video buttons in the header
  * @property {boolean} textonly the composer offers no files or GIFs
  * @property {string} sinkid output device id for remote audio
+ * @property {number} volume how loud the others play in a call, 0 to 1
  * @property {string[]} recentEmoji recently used emoji for the composer's picker (property only)
  * @property {GifState | null} gifs GIF results for the composer's picker, null hides GIFs (property only)
  *
@@ -78,6 +79,7 @@ export class Room extends CustomElement {
     @property({ type: Boolean, rerender: true }) screen: boolean = false;
     @property({ type: Boolean, rerender: true }) canscreen: boolean = true;
     @property({ type: String, rerender: true }) sinkid: string = "";
+    @property({ type: Number, rerender: true }) volume: number = 1;
     @property({ type: Array, attribute: false, rerender: true }) recentEmoji: string[] = [];
     @property({ type: Object, attribute: false, rerender: true }) gifs: GifState | null = null;
 
@@ -88,7 +90,7 @@ export class Room extends CustomElement {
     @property({ type: Boolean, attribute: false, rerender: true }) private showChat: boolean = false;
 
     @query("pc-conversation") private conversation?: HTMLElement & { messages: ChatMessage[]; profiles: Record<string, Profile>; me: string; typing: string[]; files: FileEntry[]; recentEmoji: string[]; gifs: GifState | null; textonly: boolean };
-    @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string };
+    @query("pc-call-stage") private stage?: HTMLElement & { tiles: CallTile[]; sinkid: string; volume: number };
 
     @query("pc-call-controls") private controls?: HTMLElement & { mic: boolean; camera: boolean; screen: boolean; chat: boolean; viewer: boolean; canscreen: boolean; unread: number };
 
@@ -133,6 +135,7 @@ export class Room extends CustomElement {
         {
             stage.tiles = this.tiles;
             stage.sinkid = this.sinkid;
+            stage.volume = this.volume;
         }
 
         const controls = this.controls;

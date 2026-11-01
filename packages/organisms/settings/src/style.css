@@ -197,3 +197,9 @@ pap-dialog::part(main) {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+input[type="range"] {
+    inline-size: 100%;
+    margin: 0;
+    accent-color: var(--primary);
+}

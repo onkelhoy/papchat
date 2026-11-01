@@ -41,6 +41,7 @@ export const [buzzed, setBuzzed] = signal<{ room: string; uid: string; name: str
 export function setPrefs(partial: Partial<Prefs>) {
     const next = { ...prefs(), ...partial, v: 1 as const };
     next.volume = Math.min(1, Math.max(0, next.volume));
+    next.callVolume = Math.min(1, Math.max(0, next.callVolume));
     storage.prefs.set(next);
     setPrefsSignal(next);
 }

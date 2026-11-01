@@ -24,6 +24,8 @@ export type Prefs = {
     dialtone: string;
     noiseReduction: NoiseReduction;
     volume: number;
+    // how loud the others play in a call
+    callVolume: number;
     language: string;
     autoDeclineBusy: boolean;
     notifications: boolean;
@@ -80,6 +82,8 @@ export type Contact = {
     name: string;
     color: string;
     token: string;
+    // the networks you know them from, by name ("" is the public one). Absent: saved before this was kept
+    networks?: string[];
     // last time they told us
     at: number;
 };

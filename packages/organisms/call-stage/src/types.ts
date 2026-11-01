@@ -13,6 +13,9 @@ export type CallTile = {
     ringing?: boolean;
     /** initial pinned state; once a tile is pinned or unpinned in the stage, that choice wins */
     pinned?: boolean;
+    /** you muted them: only you stop hearing them */
+    silenced?: boolean;
 };
 
 export type PinEvent = { id: string; pinned: boolean };
+export type SilenceChange = { uid: string; silenced: boolean };

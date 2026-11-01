@@ -4,7 +4,10 @@
     "language": "en"
   },
   "pc-video-tile": {
-    "calling": "Calling…",
+    "calling": "Calling {name}…",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "silenced": "Muted for you",
     "muted": "Microphone off",
     "you": "You",
     "pin": "Pin",

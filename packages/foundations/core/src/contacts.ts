@@ -7,7 +7,7 @@ import { log } from "./log";
 import { samePerson } from "./people";
 import { pushToken } from "./push";
 import { allRooms, getRoom, Room } from "./room";
-import { me, members, rooms } from "./state";
+import { me, members, network, rooms } from "./state";
 import { storage } from "./storage";
 import type { Contact, Profile } from "./types";
 
@@ -38,10 +38,18 @@ export function contactsOf(uid: string): Contact[] {
     return contacts().filter(contact => contact.token && samePerson(contact.uid, uid));
 }
 
+const here = () => network()?.name ?? "";
+
+/** True when they belong in the list of the network you're in. Unknown shows until they're next seen somewhere. */
+export function knownHere(contact: Contact): boolean {
+    return contact.networks?.includes(here()) ?? true;
+}
+
 export function saveContact(next: Omit<Contact, "at">) {
     if (next.uid === me()?.uid) return;
     const others = storage.contacts.get().filter(c => c.uid !== next.uid);
-    commit([{ ...next, at: Date.now() }, ...others].slice(0, LIMITS.contacts));
+    const networks = [...new Set([...(contactOf(next.uid)?.networks ?? []), ...(next.networks ?? [here()])])];
+    commit([{ ...next, networks, at: Date.now() }, ...others].slice(0, LIMITS.contacts));
 }
 
 export function forgetContact(uid: string) {
@@ -107,9 +115,9 @@ function schedule(uid: string) {
 // a name or colour changes while someone is around: keep what's saved in step, later than the effect
 function refresh(profile: Profile) {
     const contact = contactOf(profile.uid);
-    if (contact && (contact.name !== profile.name || contact.color !== profile.color))
+    if (contact && (contact.name !== profile.name || contact.color !== profile.color || !contact.networks?.includes(here())))
     {
-        setTimeout(() => saveContact({ ...contact, name: profile.name, color: profile.color }), 0);
+        setTimeout(() => saveContact({ ...contact, name: profile.name, color: profile.color, networks: [here()] }), 0);
     }
 }
 

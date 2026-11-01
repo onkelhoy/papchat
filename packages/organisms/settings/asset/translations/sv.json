@@ -39,6 +39,8 @@
     "notify-hint": "Webbläsaren frågar om tillåtelse.",
     "network": "Nätverk",
     "ringtone": "Ringsignal",
+    "call-volume": "Samtalsvolym",
+    "call-volume-hint": "Hur högt andra hörs i ett samtal. På en iPhone använder du sidoknapparna.",
     "dialtone": "Kopplingston (medan ditt samtal ringer)",
     "audio": "Ljud",
     "video": "Video",

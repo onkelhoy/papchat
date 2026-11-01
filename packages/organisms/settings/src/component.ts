@@ -292,6 +292,11 @@ export class Settings extends CustomElement {
     }
 
     @bind
+    private handleCallVolume(e: Event) {
+        this.emitPrefs({ callVolume: Number((e.currentTarget as HTMLInputElement).value) });
+    }
+
+    @bind
     private handleNoise(level: Prefs["noiseReduction"], e: Event) {
         // the radio being unchecked fires change too
         if (!(e.currentTarget as HTMLInputElement).checked) return;
@@ -457,6 +462,11 @@ export class Settings extends CustomElement {
                             <div class="field">
                                 <pc-device-picker kind="audiooutput" data-device="speaker" @change="${this.handleSpeaker}"></pc-device-picker>
                             </div>
+                            <label class="field">
+                                <span>${this.t("call-volume")}</span>
+                                <input type="range" min="0" max="1" step="0.05" value="${String(prefs?.callVolume ?? 1)}" @input="${this.handleCallVolume}" />
+                                <span class="hint">${this.t("call-volume-hint")}</span>
+                            </label>
                             <div class="field">
                                 <span>${this.t("ringtone")}</span>
                                 <pc-ringtone-picker class="ring" label="${this.t("ringtone")}" @change="${this.handleTone}" @volume="${this.handleVolume}"></pc-ringtone-picker>

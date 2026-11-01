@@ -4,7 +4,10 @@
     "language": "sv"
   },
   "pc-video-tile": {
-    "calling": "Ringer…",
+    "calling": "Ringer {name}…",
+    "mute": "Stäng av ljudet",
+    "unmute": "Slå på ljudet",
+    "silenced": "Avstängd för dig",
     "muted": "Mikrofonen är av",
     "you": "Du",
     "pin": "Fäst",

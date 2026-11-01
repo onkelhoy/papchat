@@ -12,7 +12,7 @@ import type { Profile } from "@papchat/core";
 
 // local
 import sheet from "./style.css" with { type: "css" };
-import type { PinEvent } from "./types";
+import type { PinEvent, SilenceEvent } from "./types";
 
 /**
  * One participant in a call: their video (or a large avatar when there is none),
@@ -34,8 +34,10 @@ import type { PinEvent } from "./types";
  * @property {boolean} screen a screen share: video uses `fit="contain"` (reflected)
  * @property {boolean} ringing the call is still ringing them: pulses and says so (reflected)
  * @property {boolean} pinned pinned state (reflected, toggled by the Pin button)
+ * @property {boolean} silenced you muted this person's sound, for you only (reflected, toggled by the Mute button)
  *
  * @fires pin `CustomEvent<{ pinned: boolean }>` after the Pin button toggled `pinned` (bubbles, composed)
+ * @fires silence `CustomEvent<{ silenced: boolean }>` after the Mute button toggled `silenced` (bubbles, composed)
  * @fires speaking `CustomEvent<{ speaking: boolean }>` from the inner level meter (bubbles, composed)
  *
  * @csspart video the `pc-video`
@@ -57,6 +59,7 @@ export class VideoTile extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) screen: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) pinned: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) ringing: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) silenced: boolean = false;
 
     // bumped when the video stream gains or loses tracks, so render() re-checks them
     @property({ type: Number, attribute: false, rerender: true }) private tracks: number = 0;
@@ -146,6 +149,12 @@ export class VideoTile extends CustomElement {
     }
 
     @bind
+    private handleSilence() {
+        this.silenced = !this.silenced;
+        this.dispatchEvent(new CustomEvent<SilenceEvent>("silence", { detail: { silenced: this.silenced }, bubbles: true, composed: true }));
+    }
+
+    @bind
     private handleFullscreen() {
         if (document.fullscreenElement === this)
         {
@@ -189,11 +198,17 @@ export class VideoTile extends CustomElement {
             <div class="footer">
                 <span class="label" part="label">
                     ${this.muted ? html`<pap-icon class="mic-off" name="/icons/mic-off.svg" role="img" aria-label="${this.t("muted")}"></pap-icon>` : ""}
-                    <span class="name">${name}${this.self ? html` <span class="you">(${this.t("you")})</span>` : ""}${this.ringing ? html` <span class="you">${this.t("calling")}</span>` : ""}</span>
+                    ${this.silenced ? html`<pap-icon class="silenced" name="/icons/volume-off.svg" role="img" aria-label="${this.t("silenced")}"></pap-icon>` : ""}
+                    <span class="name">${this.ringing ? this.t("calling", { name }) : name}${this.self ? html`<span class="you">(${this.t("you")})</span>` : ""}</span>
                 </span>
                 ${this.muted ? "" : html`<pc-level-meter @speaking="${this.handleSpeaking}"></pc-level-meter>`}
             </div>
             <div class="actions" part="actions">
+                ${this.audio && !this.self ? html`
+                    <pap-button type="button" size="small" variant="filled" color="secondary" @click="${this.handleSilence}">
+                        ${this.silenced ? this.t("unmute") : this.t("mute")}
+                    </pap-button>
+                ` : ""}
                 <pap-button type="button" size="small" variant="filled" color="secondary" @click="${this.handlePin}">
                     ${this.pinned ? this.t("unpin") : this.t("pin")}
                 </pap-button>

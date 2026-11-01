@@ -41,6 +41,7 @@ import {
     contactLink,
     contactOf,
     contactProfile,
+    knownHere,
     contacts,
     denoise,
     disablePush,
@@ -494,7 +495,7 @@ effect(() =>
     // a person with two saved devices is one row, and none when any device of theirs is here
     const here = members();
     const seen: string[] = [];
-    list.contacts = contacts().filter(c =>
+    list.contacts = contacts().filter(knownHere).filter(c =>
     {
         if (here.some(p => samePerson(p.uid, c.uid)) || seen.some(uid => samePerson(uid, c.uid))) return false;
         seen.push(c.uid);
@@ -556,6 +557,9 @@ effect(() =>
     view.textonly = false;
 });
 
+// who you've muted in a call: only you stop hearing them, and it lasts until you reload
+const [silenced, setSilenced] = signal<string[]>([]);
+
 // the open room: call stage and controls
 effect(() =>
 {
@@ -571,6 +575,7 @@ effect(() =>
     view.screen = !!captures.screen;
     view.canscreen = canScreen;
     view.sinkid = prefs().devices.speaker ?? "";
+    view.volume = prefs().callVolume;
     view.tiles = room.incall ? tilesOf(room) : [];
 });
 
@@ -604,7 +609,7 @@ function tilesOf(room: Room): CallTile[] {
         const theirs = streams.filter(s => s.uid === p.uid);
         const of = (name: string) => theirs.find(s => s.name === name)?.stream;
         const mic = of("mic");
-        tiles.push({ id: p.uid, profile: p, video: of("camera"), audio: mic, muted: flags[p.uid] ? !flags[p.uid].mic : !mic });
+        tiles.push({ id: p.uid, profile: p, video: of("camera"), audio: mic, muted: flags[p.uid] ? !flags[p.uid].mic : !mic, silenced: silenced().includes(p.uid) });
 
         const screen = of("screen");
         if (screen) tiles.push({ id: `${p.uid}:screen`, profile: p, video: screen, screen: true, pinned: true });
@@ -623,7 +628,7 @@ const elsewhereAudio = new Map<string, HTMLAudioElement>();
 effect(() =>
 {
     const shown = elsewhere() ? null : current();
-    const streams = new Map<string, MediaStream>();
+    const streams = new Map<string, CallTile>();
     const tiles = rooms().flatMap(summary =>
     {
         const room = getRoom(summary.id);
@@ -631,7 +636,7 @@ effect(() =>
     });
     const stage = currentStage();
     if (stage && !shownStage()) tiles.push(...stageTiles(stage));
-    for (const tile of tiles) if (!tile.self && tile.audio) streams.set(tile.audio.id, tile.audio);
+    for (const tile of tiles) if (!tile.self && tile.audio) streams.set(tile.audio.id, tile);
 
     for (const [id, audio] of elsewhereAudio)
     {
@@ -641,18 +646,65 @@ effect(() =>
         elsewhereAudio.delete(id);
     }
     const sink = prefs().devices.speaker ?? "";
-    for (const [id, stream] of streams)
+    for (const [id, tile] of streams)
     {
-        if (elsewhereAudio.has(id)) continue;
+        const playing = elsewhereAudio.get(id);
+        if (playing)
+        {
+            playing.muted = !!tile.silenced;
+            playing.volume = prefs().callVolume;
+            continue;
+        }
         const audio = document.createElement("audio");
         audio.hidden = true;
-        audio.srcObject = stream;
+        audio.muted = !!tile.silenced;
+        audio.volume = prefs().callVolume;
+        audio.srcObject = tile.audio!;
         document.body.append(audio);
         elsewhereAudio.set(id, audio);
         if (sink) void (audio as HTMLAudioElement & { setSinkId?(id: string): Promise<void> }).setSinkId?.(sink).catch(() => { });
         audio.play().catch(error => log("call: audio didn't start", error));
     }
 });
+
+// a phone that locks by itself takes the mic with it, so the screen stays on during a call
+let wakeLock: WakeLockSentinel | null = null;
+let wantAwake = false;
+let waking = false;
+async function syncWakeLock() {
+    if (!wantAwake)
+    {
+        const lock = wakeLock;
+        wakeLock = null;
+        await lock?.release().catch(() => { });
+        return;
+    }
+    if (wakeLock || waking || document.hidden || !navigator.wakeLock) return;
+
+    waking = true;
+    try
+    {
+        const lock = await navigator.wakeLock.request("screen");
+        lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });
+        wakeLock = lock;
+        if (!wantAwake) await syncWakeLock();
+    }
+    catch (error)
+    {
+        log("call: couldn't keep the screen on", error);
+    }
+    finally
+    {
+        waking = false;
+    }
+}
+effect(() =>
+{
+    wantAwake = !!currentStage() || rooms().some(summary => getRoom(summary.id)?.incall);
+    void syncWakeLock();
+});
+// the browser drops the lock whenever the page is hidden
+document.addEventListener("visibilitychange", () => void syncWakeLock());
 
 // a new stage (going live, watching) opens; picking a room leaves the stage running in the background
 let lastStage: Stage | null = null;
@@ -779,6 +831,7 @@ effect(() =>
     view.screen = !!captures.screen;
     view.canscreen = canScreen;
     view.sinkid = prefs().devices.speaker ?? "";
+    view.volume = prefs().callVolume;
     view.tiles = stageTiles(stage);
 });
 
@@ -788,13 +841,12 @@ function stageTiles(stage: Stage): CallTile[] {
     if (stage.mine)
     {
         const captures = stage.captures();
-        const tiles: CallTile[] = [{ id: presenter.uid, profile: presenter, video: captures.camera, muted: !captures.mic, self: true }];
-        if (captures.screen) tiles.push({ id: `${presenter.uid}:screen`, profile: presenter, video: captures.screen, screen: true, self: true, pinned: true });
-        return tiles;
+        // your own screen isn't shown back to you here either
+        return [{ id: presenter.uid, profile: presenter, video: captures.camera, muted: !captures.mic, self: true }];
     }
 
     const streams = stage.streams();
-    const tiles: CallTile[] = [{ id: presenter.uid, profile: presenter, video: streams.camera, audio: streams.mic, muted: !streams.mic }];
+    const tiles: CallTile[] = [{ id: presenter.uid, profile: presenter, video: streams.camera, audio: streams.mic, muted: !streams.mic, silenced: silenced().includes(presenter.uid) }];
     if (streams.screen) tiles.push({ id: `${presenter.uid}:screen`, profile: presenter, video: streams.screen, screen: true, pinned: true });
     return tiles;
 }
@@ -1259,13 +1311,18 @@ view.addEventListener("invite", () =>
     const here = new Set(stage ? [] : room!.participants().map(p => p.uid));
     const online = members().filter(p => !here.has(p.uid) && p.uid !== me()?.uid);
     // saved contacts get rung on their device, so only a call can take them
-    const away = !stage && room?.incall ? contacts().filter(c => !here.has(c.uid) && !online.some(p => p.uid === c.uid)).map(contactProfile) : [];
+    const away = !stage && room?.incall ? contacts().filter(knownHere).filter(c => !here.has(c.uid) && !online.some(p => p.uid === c.uid)).map(contactProfile) : [];
     picker.members = [...online, ...away];
     picker.offline = away.map(p => p.uid);
     picker.link = !stage && room?.incall ? callLink(room) : "";
     picker.open = true;
 });
 view.addEventListener("devices", openSettings);
+view.addEventListener("silence", (e) =>
+{
+    const { uid, silenced: on } = (e as CustomEvent<{ uid: string; silenced: boolean }>).detail;
+    setSilenced(list => on ? [...list.filter(other => other !== uid), uid] : list.filter(other => other !== uid));
+});
 
 picker.addEventListener("invite", (e) =>
 {

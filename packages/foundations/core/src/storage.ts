@@ -30,6 +30,7 @@ export const DEFAULT_PREFS: Prefs = {
     dialtone: "",
     noiseReduction: "off",
     volume: 0.8,
+    callVolume: 1,
     language: "",
     autoDeclineBusy: false,
     notifications: true,
@@ -175,6 +176,7 @@ export const storage = {
                 if (typeof value[key] === typeof DEFAULT_PREFS[key]) (prefs as Record<string, unknown>)[key] = value[key];
             }
             prefs.volume = Math.min(1, Math.max(0, prefs.volume));
+            prefs.callVolume = Math.min(1, Math.max(0, prefs.callVolume));
             return prefs;
         },
         set(value: Prefs) {

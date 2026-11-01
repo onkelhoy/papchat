@@ -39,6 +39,8 @@
     "contact-qr": "QR code that saves you as a contact",
     "network": "Network",
     "ringtone": "Ringtone",
+    "call-volume": "Call volume",
+    "call-volume-hint": "How loud other people are in a call. On an iPhone, use the side buttons.",
     "dialtone": "Dial tone (while your call rings)",
     "audio": "Audio",
     "video": "Video",

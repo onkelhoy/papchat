@@ -220,7 +220,8 @@ function readContact(raw: unknown) {
     if (typeof raw !== "object" || raw === null) return;
     const { uid, name, color, token } = raw as Record<string, unknown>;
     if (typeof uid !== "string" || typeof name !== "string" || typeof token !== "string" || !uid || !token) return;
-    addLinkedContact({ uid, name, color: typeof color === "string" ? color : "", token } as Omit<Contact, "at">);
+    const networks = (raw as Record<string, unknown>).networks;
+    addLinkedContact({ uid, name, color: typeof color === "string" ? color : "", token, ...(Array.isArray(networks) ? { networks: networks.filter(item => typeof item === "string") } : {}) } as Omit<Contact, "at">);
 }
 
 // ---------------------------------------------------------------- new messages

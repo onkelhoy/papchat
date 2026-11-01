@@ -17,6 +17,7 @@ A Teams-style chat, call and broadcast app that runs **entirely peer to peer** i
 - **Keep your chats**: text and GIFs stay on your device, so a chat is still there tomorrow with nobody online. Messages show sending, sent or not sent, and what didn't go out is delivered when that person is back.
 - **Link your devices**: show a QR code or a link, accept on both devices, and they're one person with the same chats, name and colour. Calls ring all of them.
 - **Global chat**: one line everyone in your network shares, broadcast over the chord network. It's never saved and never notifies, and you can mute anyone for yourself.
+- **Contacts by network**: your contact list only shows people you know from the network you are in. Saved chats belong to people, so they show in every network.
 - **Offline calls**: turn on call notifications and the people you meet can ring your device with the app closed. A notification opens the normal answer card. People can also save you from a link or QR code, and saved contacts stay in the sidebar.
 - **Settings**: profile, ringtone and volume, devices, theme (light, dark, system), language (English or Swedish, switched live), notifications and keyboard shortcuts (`M` mic, `V` camera, `S` screen, `Esc` closes dialogs).
 

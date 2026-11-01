@@ -104,10 +104,12 @@ pc-video {
 }
 
 .you {
+    margin-inline-start: 0.25em;
     opacity: 0.8;
 }
 
-.mic-off {
+.mic-off,
+.silenced {
     flex: none;
     inline-size: 1rem;
     block-size: 1rem;
