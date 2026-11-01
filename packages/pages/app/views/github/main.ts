@@ -586,18 +586,15 @@ effect(() =>
     list.incall = [...uids];
 });
 
-// one tile per person (camera + mic) plus one per screen share, which starts pinned (PLAN §6.7)
+// one tile per person (camera + mic) plus one per screen someone else shares, which starts pinned (PLAN §6.7)
 function tilesOf(room: Room): CallTile[] {
     const mine = me();
     const tiles: CallTile[] = [];
     const captures = room.captures();
     const flags = room.flags();
 
-    if (mine)
-    {
-        tiles.push({ id: mine.uid, profile: mine, video: captures.camera, muted: !captures.mic, self: true });
-        if (captures.screen) tiles.push({ id: `${mine.uid}:screen`, profile: mine, video: captures.screen, screen: true, self: true, pinned: true });
-    }
+    // your own screen isn't shown back to you: it's what you're already looking at, the others are what you want to see
+    if (mine) tiles.push({ id: mine.uid, profile: mine, video: captures.camera, muted: !captures.mic, self: true });
 
     const streams = room.streams();
     const incall = new Set(room.othersInCall());
