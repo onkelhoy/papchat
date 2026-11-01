@@ -3,6 +3,9 @@ name: pages
 on:
   push:
     branches: [main]
+    # notes and docs aren't a release
+    paths-ignore:
+      - "**.md"
   workflow_dispatch:
 
 permissions:
