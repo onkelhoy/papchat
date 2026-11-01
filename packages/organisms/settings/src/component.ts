@@ -339,7 +339,7 @@ export class Settings extends CustomElement {
     @bind
     private handleNotifications(e: Event) {
         const checked = !!(e.currentTarget as HTMLInputElement).checked;
-        if (checked === !!this.prefs?.notifications) return;
+        if (checked === this.notifying) return;
 
         if (checked) this.emit("request-notifications");
         else
@@ -347,6 +347,11 @@ export class Settings extends CustomElement {
             this.emitPrefs({ notifications: false });
             this.emit("push-disable");
         }
+    }
+
+    // what's really happening: the setting alone defaults to on, with nothing allowed or set up yet
+    private get notifying() {
+        return !!this.prefs?.notifications && this.pushstate !== "off";
     }
 
     private renderPush() {
@@ -501,7 +506,7 @@ export class Settings extends CustomElement {
 
                         <pap-tabpanel value="notifications">
                             <label class="toggle">
-                                <pap-switch checked="${prefs?.notifications ? "true" : ""}" @change="${this.handleNotifications}"></pap-switch>
+                                <pap-switch checked="${this.notifying ? "true" : ""}" @change="${this.handleNotifications}"></pap-switch>
                                 <span>${this.t("notify")}</span>
                             </label>
                             <p class="hint">${this.t("notify-hint")}</p>
