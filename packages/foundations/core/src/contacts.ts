@@ -3,6 +3,7 @@ import { effect, signal } from "@papit/signals";
 import { LIMITS } from "./config";
 import { lobbyClient, on, peerOf } from "./lobby";
 import { log } from "./log";
+import { samePerson } from "./people";
 import { pushToken } from "./push";
 import { allRooms, getRoom, Room } from "./room";
 import { me, members, rooms } from "./state";
@@ -31,6 +32,11 @@ export function contactOf(uid: string): Contact | null {
 }
 
 /** Newest first; the oldest drops out past `LIMITS.contacts`. Yourself is never a contact. */
+/** Every saved device of a person, so a call wakes all of them. */
+export function contactsOf(uid: string): Contact[] {
+    return contacts().filter(contact => contact.token && samePerson(contact.uid, uid));
+}
+
 export function saveContact(next: Omit<Contact, "at">) {
     if (next.uid === me()?.uid) return;
     const others = storage.contacts.get().filter(c => c.uid !== next.uid);

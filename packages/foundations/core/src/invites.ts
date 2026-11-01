@@ -1,7 +1,7 @@
 import { effect } from "@papit/signals";
 
 import { LIMITS } from "./config";
-import { contactOf, contactProfile, forgetContact } from "./contacts";
+import { contactOf, contactsOf, contactProfile, forgetContact } from "./contacts";
 import { signedBy, uidOfKey } from "./keys";
 import { on, peerOf, profileOf, send, sendAll } from "./lobby";
 import { log } from "./log";
@@ -11,7 +11,7 @@ import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
 import { directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
 import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
-import type { DeclineReason, IncomingCall, Invite, InviteKind, Profile, Ring, RoomKind } from "./types";
+import type { Contact, DeclineReason, IncomingCall, Invite, InviteKind, Profile, Ring, RoomKind } from "./types";
 
 // Invites over the lobby (PLAN §2.4): `invite`, `invite.accept`, `invite.decline`, `invite.cancel`.
 // Chat invites auto-join (toast + unread, no ring). Call/video/stage invites are kept as pending
@@ -36,7 +36,8 @@ type Outgoing = {
     timer: ReturnType<typeof setTimeout>;
     watch: () => void;
     // set when this call rang a closed app: that device still needs telling when it stops
-    token: string;
+    // the saved devices rung by push, none for someone in the lobby
+    devices: Contact[];
 };
 // rooms being joined from an invite right now, so a repeated invite doesn't join twice
 const joining = new Set<string>();
@@ -142,8 +143,8 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     if (!profile || uid === profile.uid) return null;
     const name = nameOf(uid) ?? "that person";
     // not in the lobby: their device can still be woken
-    const token = peerOf(uid) ? "" : contactOf(uid)?.token ?? "";
-    if (!peerOf(uid) && !token)
+    const devices = peerOf(uid) ? [] : contactsOf(uid);
+    if (!peerOf(uid) && devices.length === 0)
     {
         toast("warning", `Couldn't reach ${name}`);
         return null;
@@ -176,7 +177,7 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     }
     if (kind === "video") await room.start("camera");
 
-    if (!token && !room.invite(uid, kind))
+    if (devices.length === 0 && !room.invite(uid, kind))
     {
         toast("warning", `Couldn't reach ${name}`);
         giveUp(room);
@@ -191,46 +192,50 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
         // by person: answering on any device counts
         ringing: new Set([personOf(uid)]),
         // the callee declines with `timeout` itself; this covers one that vanished
-        timer: setTimeout(() => expire(call), (token ? LIMITS.ringOfflineMs : LIMITS.ringMs) + 3_000),
+        timer: setTimeout(() => expire(call), (devices.length > 0 ? LIMITS.ringOfflineMs : LIMITS.ringMs) + 3_000),
         watch: effect(() => {
             const here = target.participants().map(p => personOf(p.uid)).filter(u => !before.has(u));
             if (here.length > 0) setTimeout(() => answered(call, here), 0);
             // hung up while ringing (the chat stays, so there's no `leave` to catch it)
             if (!target.oncall()) setTimeout(() => endCall(call, true), 0);
         }),
-        token,
+        devices,
     };
     outgoing.set(room.id, call);
     ringback();
     room.addEventListener("leave", () => endCall(call, true), { once: true });
-    if (token) void ringDevice(call, uid, kind);
+    if (devices.length > 0) void ringDevices(call, uid, kind);
     return room;
 }
 
 // the ringing UI is already up: the caller hears it while a sleeping server wakes
-async function ringDevice(call: Outgoing, uid: string, kind: Extract<RoomKind, "call" | "video">) {
+async function ringDevices(call: Outgoing, uid: string, kind: Extract<RoomKind, "call" | "video">) {
     const room = call.room;
-    const status = await pushCall(call.token, { id: room.network, password: room.password }, kind, true);
-    log("invites: pushed a call", uid, status);
-    if (status === "sent") return;
-    if (status === "gone") forgetContact(uid);
+    if (await pushAll(call.devices, room, kind, true)) return;
     if (outgoing.get(room.id) !== call) return;
 
     toast("warning", `Couldn't reach ${nameOf(uid) ?? "that person"}`);
-    call.token = "";
+    call.devices = [];
     call.ringing.delete(personOf(uid));
     finishIfEmpty(call);
 }
 
 /** Rings a saved contact into a running call. Nothing follows it: the ring just runs out. */
 export async function ringContact(room: Room, uid: string, kind: Extract<RoomKind, "call" | "video">) {
-    const contact = contactOf(uid);
-    if (!contact) return;
-    const status = await pushCall(contact.token, { id: room.network, password: room.password }, kind, false);
-    log("invites: pushed an invite", uid, status);
-    if (status === "sent") return;
-    if (status === "gone") forgetContact(uid);
-    toast("warning", `Couldn't reach ${contact.name}`);
+    const devices = contactsOf(uid);
+    if (devices.length === 0 || await pushAll(devices, room, kind, false)) return;
+    toast("warning", `Couldn't reach ${devices[0].name}`);
+}
+
+// true when at least one device took it; a device that's gone for good is forgotten
+async function pushAll(devices: Contact[], room: Room, kind: Extract<RoomKind, "call" | "video">, direct: boolean): Promise<boolean> {
+    const results = await Promise.all(devices.map(async device => {
+        const status = await pushCall(device.token, { id: room.network, password: room.password }, kind, direct);
+        log("invites: pushed", device.uid, status);
+        if (status === "gone") forgetContact(device.uid);
+        return status;
+    }));
+    return results.includes("sent");
 }
 
 /**
@@ -503,8 +508,8 @@ function endCall(call: Outgoing, cancel: boolean) {
 
 // a closed app has no lobby to hear `invite.cancel` on
 function cancelDevice(call: Outgoing) {
-    if (call.token) pushCancel(call.token, call.room.network);
-    call.token = "";
+    for (const device of call.devices) pushCancel(device.token, call.room.network);
+    call.devices = [];
 }
 
 function unknownProfile(uid: string): Profile {
