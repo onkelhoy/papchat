@@ -65,23 +65,22 @@ export class QrScanner extends CustomElement {
 
         try
         {
-            const [stream, jsqr] = await Promise.all([
-                navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" } } }),
-                import("./vendor/jsqr"),
-            ]);
+            // the camera first, on its own: whatever fails after this must be able to stop it
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" } } });
             if (run !== this.run)
             {
                 stream.getTracks().forEach(track => track.stop());
                 return;
             }
             this.stream = stream;
+
+            const jsqr = await import("./vendor/jsqr");
+            if (run !== this.run) return;
             const video = this.video;
-            if (!video)
-            {
-                this.stop();
-                this.emitError("failed");
-                return;
-            }
+            if (!video) throw new Error("no video element");
+
+            // the attribute alone doesn't mute a video made from a template
+            video.muted = true;
             video.srcObject = stream;
             await video.play();
             this.look(run, jsqr.default);
@@ -89,6 +88,8 @@ export class QrScanner extends CustomElement {
         catch (error)
         {
             if (run !== this.run) return;
+            console.warn("[papchat] qr-scanner: couldn't start", error);
+            this.stop();
             const name = error instanceof DOMException ? error.name : "";
             this.emitError(name === "NotAllowedError" || name === "SecurityError" ? "denied" : name === "NotFoundError" ? "missing" : "failed");
         }

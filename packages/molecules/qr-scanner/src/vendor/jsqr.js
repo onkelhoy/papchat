@@ -1,14 +1,5 @@
-// jsQR 1.4.0 (https://github.com/cozmo/jsQR), Apache-2.0. Kept here so it ships inside the bundle: every declared dependency stays an import the page would have to resolve.
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else if(typeof exports === 'object')
-		exports["jsQR"] = factory();
-	else
-		root["jsQR"] = factory();
-})(typeof self !== 'undefined' ? self : this, function() {
+// jsQR 1.4.0 (https://github.com/cozmo/jsQR), Apache-2.0. Kept here so it ships inside the bundle, with its UMD wrapper swapped for an ES export (the wrapper needs a global `this`, which a module doesn't have): every declared dependency stays an import the page would have to resolve.
+const jsQR = (function () {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -10100,4 +10091,6 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 
 /***/ })
 /******/ ])["default"];
-});
+})();
+
+export default jsQR;
