@@ -8,8 +8,8 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 **The full story is in `PAPIT-UPGRADE-NOTES.md`: what was done, why, how to ship it and what to test.**
 
-- **T12.1 is done locally and nothing is live.** papchat is on webrtc 0.0.7, signal-server 0.0.6, peer-message 0.0.4; `../signal` has its bump committed. Neither repo is pushed, so check `git status -sb` in both.
-- **Ship in this order:** push `../signal`, wait for Render, then push papchat. The new server is safe for today's clients: every wire change is additive.
+- **T12.1 is done locally and nothing is live.** papchat is on webrtc 0.0.7, signal-server 0.0.6, peer-message 0.0.4; `../signal` is pushed and live on 0.0.6 (checked with `signal.drain`). papchat isn't pushed.
+- **To ship:** push papchat, then everyone reloads. The new server is safe for today's clients: every wire change is additive.
 - **The dad bug has a likely cause, found by reading only.** A host back on a new socket keeps its peer id and the server only knows the socket's id, so a newcomer can't link to it. webrtc 0.0.7 half fixes that, and `greet` in `lobby.ts` covers the rest. Not run anywhere yet.
 - **Still open:** the papit finding in the notes needs sending to the papit session; the question of a failed join quietly making a second lobby is still the user's.
 - **Checks:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and a `failed` in the output counts as failure because the exit code stays 0. `packages/pages/app/tsconfig.json` does NOT cover `views/github/main.ts`: use a temporary tsconfig that extends it with `noEmit`, `rootDir` set to the repo root, `composite` and `incremental` false, `include: []` and `files: [main.ts]`, and confirm with `--listFiles`. In this shell `grep` is ugrep and missed patterns like `(^|[^a-zA-Z.])log\(`, and `git grep -E` doesn't take `\b`, so use Python for anything subtle.

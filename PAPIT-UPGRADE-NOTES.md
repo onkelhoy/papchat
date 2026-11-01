@@ -5,15 +5,15 @@ Written 2026-11-01. It covers the move to webrtc 0.0.7, signal-server 0.0.6 and 
 ## Where things stand
 
 - **Tasks:** 101/110 done. T12.1 is finished. The other 9 need you: T0.6, T6.9, T7.6, T7.8, T7.18, T8.6, T9.8, T10.12 and T11.4 are live checks or need a repro.
-- **Nothing is live.** All of this is committed locally. papchat is 13 commits ahead of GitHub and `../signal` is 1 ahead.
+- **The server is live, the client isn't.** `../signal` is pushed, and the live server answered `signal.drain` on 2026-11-01, which only 0.0.6 does. papchat is still only committed locally.
 - **Nothing has run.** Typecheck, the build and the `main.ts` check pass. No browser, no real network, and no real merge. The server was only started once to check it answers `/health`.
 
 ## How to ship it
 
 The order matters, because a new client on the old server is slow and can't merge.
 
-1. Push `../signal` (`git push` on `master`). Render redeploys it.
-2. Wait until it's up. `https://render-webrtc-signal-server.onrender.com/health` answers `{"ok":true}`.
+1. Push `../signal` (`git push` on `master`). Render redeploys it. **Done.**
+2. Wait until it's up. **Done.** `/health` can't show this, because the old server answers the same.
 3. Push papchat (`git push` on `main`). That's one new version.
 4. You and your dad both reload. A tab left open keeps the old code.
 
