@@ -949,7 +949,6 @@ const GLOBAL_PROBLEMS: Record<GlobalPost, string> = {
     empty: "",
     wait: "globalWait",
     offline: "globalOffline",
-    alone: "globalAlone",
     unreachable: "globalUnreachable",
 };
 

@@ -57,10 +57,10 @@ let lastPost = 0;
 
 /**
  * How a post went. A broadcast only travels over direct peer links, never through the server, so
- * being connected to the network doesn't mean anyone can hear you: `alone` is nobody in the list,
- * `unreachable` is people in the list but no open link to any of them.
+ * being connected to the network doesn't mean anyone can hear you. With nobody in the list a post
+ * still counts as sent; `unreachable` is people in the list but no open link to any of them.
  */
-export type GlobalPost = "sent" | "empty" | "wait" | "offline" | "alone" | "unreachable";
+export type GlobalPost = "sent" | "empty" | "wait" | "offline" | "unreachable";
 
 /** Posts to everyone in this network. */
 export function postGlobal(text: string): GlobalPost {
@@ -72,7 +72,7 @@ export function postGlobal(text: string): GlobalPost {
     if (lobbyStatus() !== "connected") return "offline";
 
     const id = crypto.randomUUID();
-    if (!broadcast(TYPE, { id, text: clean })) return members().length === 0 ? "alone" : "unreachable";
+    if (!broadcast(TYPE, { id, text: clean }) && members().length > 0) return "unreachable";
     lastPost = now;
     add({ id, uid: profile.uid, at: now, variant: "text", text: clean }, profile);
     return "sent";
