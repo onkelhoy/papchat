@@ -18,7 +18,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-11-01)
 
-- **Done:** 105/114 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
+- **Done:** 106/115 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
 - **Next:** ship and retest, see the handover above. Otherwise the user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T0.6 (go live) is theirs.
@@ -848,6 +848,9 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### [x] T12.5 Call audio, new messages in a call, lighter main area · `opus` · needs —
 - User, 2026-11-01. (1) Looking at global chat or another room removed `pc-call-stage` and its hidden audio, so the call went silent. The page now plays a call that isn't on screen. (2) The chat button in a call shows a count of new messages from others. (3) `--pc-surface` is white in light mode for the main area, and the sidebar is the grey `--background`. (4) 12 px around the stage on the sides and top, tiles use `--radius-small` (0.5rem). (5) A failed push setup says so instead of nothing. Typecheck + build pass; not checked by eye.
+
+### [x] T12.6 Names losing their last letter · `opus` · needs —
+- User, 2026-11-01: "henry" saved as "henr". A papit bug, finding #31 in `PAPCHAT-FINDINGS.md`: `pap-input` fires `change` before clearing its cached value, so a controlled input reads the previous keystroke. Onboarding and Settings read it a microtask later. Typecheck + build pass; not run in a browser.
 
 ---
 

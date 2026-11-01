@@ -64,7 +64,9 @@ export class InvitePicker extends CustomElement {
 
     @bind
     private handleSearch(e: Event) {
-        this.query = String((e.currentTarget as HTMLInputElement).value ?? "");
+        // papit finding #31: `change` can hand out the value from before this keystroke, it's right a moment later
+        const field = e.currentTarget as HTMLInputElement;
+        queueMicrotask(() => { this.query = String(field.value ?? ""); });
     }
 
     @bind

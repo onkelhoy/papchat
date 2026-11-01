@@ -90,7 +90,9 @@ export class Onboarding extends CustomElement {
 
     @bind
     private handleName(e: Event) {
-        this.name = String((e.currentTarget as HTMLInputElement).value ?? "");
+        // papit finding #31: `change` can hand out the value from before this keystroke, it's right a moment later
+        const field = e.currentTarget as HTMLInputElement;
+        queueMicrotask(() => { this.name = String(field.value ?? ""); });
     }
 
     @bind
