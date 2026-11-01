@@ -6,10 +6,10 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 99/108 tasks. All build work is in, through Wave 11 (saved chats T10.4-T10.6, linked devices T10.7-T10.10, global chat T10.11, several accounts T11.1-T11.3). What's left is the user's: repros and live checks.
+- **Done:** 99/109 tasks. All build work is in, through Wave 11 (saved chats T10.4-T10.6, linked devices T10.7-T10.10, global chat T10.11, several accounts T11.1-T11.3). What's left is the user's: repros and live checks.
 - **Next:** nothing to build. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
-- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
+- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T12.1 waits on papit #162 being published, and the user tests at the end. T0.6 (go live) is theirs.
 - **Seen in live tests, not fixed (2026-11-01):** (1) two rows for one person in the room list, same name and avatar, gone after a reload, no repro yet. In `main.ts` a saved row shows when no room's summary carries its conversation id, so check a room whose `conversationId` changes without its summary updating, then two direct rooms for one person. (2) `/icons/spritesheet.svg` 404s on the live site. (3) `AbortError: Transition was skipped` in the console, 3 times. (4) Peers can show as Offline while both are open: waiting for console logs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
@@ -804,6 +804,17 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### [ ] T11.4 Accounts live check · `opus` · needs T11.1-T11.3
 - User test: an existing browser keeps its identity and chats; log out, make a second account, switch back; each sees only its own chats; a second tab follows a switch; remove the second account; remove the last one and land on a first visit; remove a linked account and the other device keeps its chats while contacts still see one person with one chat; call notifications come back after logging in.
+
+---
+
+## Wave 12: papit #162 upgrade (papit session, 2026-11-01)
+
+### [ ] T12.1 Move to webrtc 0.0.7, signal-server 0.0.6, peer-message 0.0.4 · `opus` · needs those on npm
+- **Blocked:** don't bump until they're published. They're on papit branch `feature/162-webrtc-merge`, partly uncommitted, so details can change. Read the papit READMEs first (webrtc "Merging networks"). Deploy the signal server first, then ship the client: a new client on an old server is untested.
+- **do:** replace the mass restart in `lobby.ts` (`merge`, `handleMerge`, `rejoin`, the `MERGE` message and its spread timing, about `:551-622`) with host-only `client.merge(serverId, password?)`. Set `acceptMerge` on hosts, because the default refuses every merge. Handle `merged`, which fires in both groups and changes `network.id` in the group that moved: update whatever is keyed on the old id. Invites to the moved network answer `not-found`. The larger network stays, and both need the same topology and config.
+- **Remove:** the #23 workarounds, `c["reregister"]` (`lobby.ts:743`) and `c["serverNetwork"]` (`lobby.ts:781`).
+- **Check:** unwanted links now close a few seconds after any member change (`network.prune`), so nothing may rely on a stale link staying up. Already checked: papchat never sends `network.join` itself, and has no custom topology (`ring` is a reserved name now).
+- **done when:** typecheck + build pass. User test: the dad connection (broke around 2026-11-01, a regression, not missing TURN), Offline peers, a merge in a real network.
 
 ---
 
