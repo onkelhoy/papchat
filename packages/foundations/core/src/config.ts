@@ -24,6 +24,10 @@ export const LIMITS = {
     raceGuardMs: 2_000,
     // the host checks this often for a more canonical lobby: a rogue group coming back only shows up later
     rogueScanMs: 60_000,
+    // a merged network has to fit one message of 256 KB: papit's own limit for full profiles
+    mergeMembers: 250,
+    // after a merge the host tells everyone the password: first this long after it, then this long again
+    mergePasswordMs: [5_000, 25_000],
     messageChars: 4_000,
     // messages kept per room when chats aren't saved
     messagesKept: 500,

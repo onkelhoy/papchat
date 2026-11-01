@@ -30,14 +30,8 @@ const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const RETRY_MIN_MS = 3_000;
 const RETRY_MAX_MS = 30_000;
 const UNREACHABLE_QUIET_MS = 3_000;
-// how long the host stays after telling the group to move, so nobody loses it mid-move
-const MERGE_HOST_DELAY_MS = 1_500;
-const PROBE_TIMEOUT_MS = 20_000;
-// a merge moves everyone: spread them out, so a big group doesn't hit the server all at once
-const MERGE_SPREAD_PER_PEER_MS = 20;
-const MERGE_SPREAD_MAX_MS = 10_000;
-// host → group: move to the more canonical network. Comes with the password once someone found it.
-const MERGE = "lobby-merge";
+// host → group: a merge keeps the staying network's password, this is it
+const PASSWORD = "lobby-password";
 // host → group: a same-name network exists that we can't get into
 const SEPARATED = "lobby-separated";
 // member → host: this password opens the network we're separated from
@@ -55,7 +49,6 @@ let epoch = 0;
 let running = false;
 let booting = false;
 let guarding = false;
-let rebooting = false;
 // the client's re-register failed: the group still works, but nobody can find it until it's sent again
 let unregistered = false;
 // network + password pairs the host already tried, so a scan doesn't knock on the same door every minute
@@ -108,7 +101,6 @@ export async function startLobby(): Promise<boolean> {
     }
 
     running = true;
-    rebooting = false;
     if (typeof window !== "undefined") window.addEventListener("pagehide", handlePageHide);
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleVisibility);
     beat();
@@ -242,6 +234,17 @@ export function quietSend(uid: string, type: string, payload?: unknown): boolean
     }
 }
 
+/**
+ * A host back on a new socket keeps its peer id, while the server only knows the socket's. A newcomer
+ * can reach it once it has heard from that socket as a member, and in webrtc 0.0.7 the welcome is too
+ * early to count. So whoever's id sorts first, and opens the link, would never get through. Anything
+ * sent now goes through the socket: their first offer is lost, the retry a few seconds later isn't.
+ */
+export function greet(c: Client, newcomers: string[]) {
+    if (c.host !== c.id || c.serverId === c.network?.id) return;
+    for (const peer of newcomers) c.send(peer, "here");
+}
+
 /** Reads the members again after the person map changed. */
 export function refreshMembers() {
     if (running) publish();
@@ -329,6 +332,7 @@ function startClient(): Promise<boolean> {
             rtc: RTC,
             topology: "chord",
             profile: wire(profile!),
+            acceptMerge,
         });
     }
     catch (error)
@@ -375,20 +379,6 @@ function stopClient() {
     {
         log("lobby: close failed", error);
     }
-}
-
-// members drop their socket once linked, so moving network on the same Client can't work: start a
-// fresh one, and `boot` lands it on the canonical lobby
-function rejoin() {
-    if (!running) return;
-    log("lobby: rebuilding the lobby connection");
-    rebooting = true;
-    stopClient();
-    peerByUid = new Map();
-    claimed = new Map();
-    memberByPeer = new Map();
-    setMembers([]);
-    void startClient();
 }
 
 // ---------------------------------------------------------------- boot and election (§2.2)
@@ -452,7 +442,6 @@ async function boot(current: number): Promise<boolean> {
 
         readNetworkSaves(c.network?.meta);
         booting = false;
-        rebooting = false;
         retryMs = RETRY_MIN_MS;
         syncStatus();
         log("lobby: in", c.network?.id, c.host === c.id ? "(host)" : "");
@@ -492,8 +481,8 @@ function retry(current: number) {
     });
 }
 
-// after creating or joining, look once more: if a more canonical lobby showed up, move there.
-// Everyone applies the same order, so simultaneous creators all end up in the same lobby.
+// after creating, and on every scan: if a more canonical lobby showed up, merge with it. Only the
+// younger network's host asks, so simultaneous creators end up in one lobby and never ask each other.
 async function raceGuard(current: number) {
     const c = client;
     if (!c || guarding) return;
@@ -503,15 +492,15 @@ async function raceGuard(current: number) {
     {
         await wait(LIMITS.raceGuardMs);
         alive(current);
-        if (!c.network) return;
+        // only a host can merge, and a member has no socket to look with
+        if (!c.network || c.host !== c.id) return;
 
         const lobbies = await findLobbies(current, c);
         // not listed yet (a re-register is still under way): our id and order aren't known, so decide nothing
-        const own = serverId(c);
-        const mine = lobbies.find(n => n.id === own);
+        const mine = lobbies.find(n => n.id === c.serverId);
         if (!mine)
         {
-            log("lobby: not listed yet, checking again later", own);
+            log("lobby: not listed yet, checking again later", c.serverId);
             return;
         }
 
@@ -520,11 +509,14 @@ async function raceGuard(current: number) {
         for (const target of lobbies)
         {
             if (compare(target, mine) >= 0) break;
-            if (await mayEnter(current, target))
+            // the password is only sent to a network that asks for one
+            const password = target.meta?.locked === true ? network()?.password ?? "" : "";
+            if (!refused.has(refusedKey(target.id, password)))
             {
-                log("lobby: a more canonical lobby exists, moving", mine.id, "→", target.id);
-                await merge(current, c, target.id);
-                return;
+                log("lobby: a more canonical lobby exists, merging", mine.id, "→", target.id);
+                const outcome = await merge(current, c, target.id, password);
+                // anything else is worth another try on the next scan
+                if (outcome !== "refused") return;
             }
             wall ??= target.id;
         }
@@ -546,54 +538,37 @@ async function raceGuard(current: number) {
     }
 }
 
-// the host moves last: the network it hosts dies with it, and a member that missed the message
-// gets another try from whoever takes over as host
-async function merge(current: number, c: Client, target: string, password?: string) {
-    if (c.members.length > 1)
-    {
-        broadcast(MERGE, { network: target, ...(password ? { password } : {}) });
-        await wait(MERGE_HOST_DELAY_MS + mergeSpread(c));
-        alive(current);
-    }
-    rejoin();
-}
-
-function mergeSpread(c: Client): number {
-    return Math.min(c.members.length * MERGE_SPREAD_PER_PEER_MS, MERGE_SPREAD_MAX_MS);
-}
-
-async function mayEnter(current: number, target: NetworkInfo): Promise<boolean> {
-    if (target.meta?.locked !== true) return true;
-
-    const password = network()?.password ?? "";
-    const key = refusedKey(target.id, password);
-    if (refused.has(key)) return false;
-
-    const open = await canEnter(target.id, password);
-    alive(current);
-    if (!open) refused.add(key);
-    return open;
-}
-
-// only joining can test a password. A client with no profile never shows up in anyone's member list.
-// False for a wrong password; anything else throws, because it says nothing about the password.
-async function canEnter(id: string, password: string): Promise<boolean> {
-    const probe = new Client({ url: signalUrl(), rtc: RTC, topology: "chord", timeout: PROBE_TIMEOUT_MS, connectTimeout: PROBE_TIMEOUT_MS });
+// Both groups stay up throughout: the two hosts find each other over the server once, everyone else
+// moves over peer links, and peer ids stay the same. The larger network stays, whichever one asked.
+async function merge(current: number, c: Client, target: string, password: string): Promise<"merged" | "refused" | "failed"> {
     try
     {
-        await probe.ready;
-        await probe.join(id, password || undefined);
-        return true;
+        await serverCall(current, () => c.merge(target, password || undefined));
+        alive(current);
+        return "merged";
     }
     catch (error)
     {
-        if (isWrongPassword(error)) return false;
-        throw error;
+        if (error instanceof Cancelled) throw error;
+        alive(current);
+        if (/wrong password/i.test(String((error as Error)?.message ?? error)))
+        {
+            refused.add(refusedKey(target, password));
+            return "refused";
+        }
+        log("lobby: merge failed", error);
+        return "failed";
     }
-    finally
-    {
-        try { probe.close(); } catch { /* already closed */ }
-    }
+}
+
+// the other host checks the password itself. A merge can move this whole group, so only our own kind counts
+function acceptMerge(info: NetworkInfo, size: number): boolean {
+    const c = client;
+    return !!c?.network
+        && info.meta?.app === APP
+        && info.meta?.kind === "lobby"
+        && info.meta?.network === network()?.name
+        && c.members.length + size <= LIMITS.mergeMembers;
 }
 
 function refusedKey(id: string, password: string): string {
@@ -611,15 +586,23 @@ function markSeparated(target: string | null) {
     if (target || changed) broadcast(SEPARATED, { network: target });
 }
 
-function handleMerge(payload: { network?: unknown; password?: unknown }, from: LobbyFrom) {
+function handlePassword(payload: { password?: unknown }, from: LobbyFrom) {
     const c = client;
-    if (!c?.network || c.host === c.id || from.peer !== c.host) return;
-
     const net = network();
-    if (net && typeof payload?.password === "string") setNetwork({ name: net.name, password: payload.password });
-    log("lobby: the group is moving");
-    // outside the client's own event dispatch; a second message finds another client and stops
-    setTimeout(() => { if (client === c) rejoin(); }, Math.random() * mergeSpread(c));
+    if (!c?.network || !net || c.host === c.id || from.peer !== c.host || typeof payload?.password !== "string") return;
+    if (payload.password !== net.password) setNetwork({ ...net, password: payload.password });
+}
+
+// whoever moved doesn't know the password yet, and their next reload would be refused. Links are still
+// opening after a merge, so it goes out more than once
+async function sharePassword(current: number) {
+    for (const delay of LIMITS.mergePasswordMs)
+    {
+        await wait(delay);
+        const net = network();
+        if (current !== epoch || !net || client?.host !== client?.id) return;
+        broadcast(PASSWORD, { password: net.password });
+    }
 }
 
 function handleSeparated(payload: { network?: unknown }, from: LobbyFrom) {
@@ -673,17 +656,8 @@ async function tryUnlock(current: number, c: Client, password: string) {
         // an earlier password in the queue already worked
         if (!target || !net) return;
 
-        if (await canEnter(target, password))
-        {
-            alive(current);
-            setNetwork({ name: net.name, password });
-            setSeparated(null);
-            await merge(current, c, target, password);
-            return;
-        }
-        alive(current);
-        refused.add(refusedKey(target, password));
-        refuse(c, unlocks.get(password) ?? []);
+        const outcome = await merge(current, c, target, password);
+        if (outcome === "refused") refuse(c, unlocks.get(password) ?? []);
     }
     catch (error)
     {
@@ -704,9 +678,9 @@ function refuse(c: Client, peers: string[]) {
 }
 
 // these go by peer id, not by person, so they don't wait for a proof
-const ANYONE = new Set(["here", MERGE, SEPARATED, UNLOCK, UNLOCK_REFUSED]);
+const ANYONE = new Set(["here", PASSWORD, SEPARATED, UNLOCK, UNLOCK_REFUSED]);
 
-on(MERGE, handleMerge);
+on(PASSWORD, handlePassword);
 on(SEPARATED, handleSeparated);
 on(UNLOCK, handleUnlock);
 on(UNLOCK_REFUSED, handleUnlockRefused);
@@ -739,8 +713,10 @@ async function recheck(current: number) {
         {
             log("lobby: registering the network again");
             unregistered = false;
-            // private, and the only way to send it again (papit gap): it reports its own failure as an "error"
-            await serverCall(current, () => c["reregister"]());
+            await serverCall(current, () => c.reregister()).catch((error) => {
+                unregistered = true;
+                throw error;
+            });
         }
         await raceGuard(current);
     }
@@ -771,14 +747,6 @@ async function join(current: number, c: Client, id: string) {
         if (isWrongPassword(error)) throw new WrongPassword();
         throw error;
     }
-}
-
-/**
- * The id the server knows this network by. After a re-register that differs from `c.network.id`, which keeps
- * the old one, and only `serverNetwork` has the new one: it's private, so read it around the type (papit gap).
- */
-export function serverId(c: Client): string | null {
-    return c["serverNetwork"] ?? c.network?.id ?? null;
 }
 
 // canonical = smallest meta.created, then smallest id
@@ -859,7 +827,7 @@ function syncStatus() {
     }
     if (!client)
     {
-        setLobbyStatus(rebooting ? "reconnecting" : "closed");
+        setLobbyStatus("closed");
         return;
     }
 
@@ -867,7 +835,7 @@ function syncStatus() {
     if (status === "connected" || status === "connecting")
     {
         if (status === "connected" && client.network && !booting) setLobbyStatus("connected");
-        else setLobbyStatus(rebooting ? "reconnecting" : "connecting");
+        else setLobbyStatus("connecting");
         return;
     }
     setLobbyStatus(status);
@@ -889,6 +857,7 @@ function attach(c: Client) {
     c.addEventListener("message", handleMessage);
     c.addEventListener("unreachable", handleUnreachable);
     c.addEventListener("host", handleHost);
+    c.addEventListener("merged", handleMerged);
     c.addEventListener("error", handleError);
 }
 
@@ -901,6 +870,7 @@ function detach(c: Client) {
     c.removeEventListener("message", handleMessage);
     c.removeEventListener("unreachable", handleUnreachable);
     c.removeEventListener("host", handleHost);
+    c.removeEventListener("merged", handleMerged);
     c.removeEventListener("error", handleError);
 }
 
@@ -938,6 +908,7 @@ function handleMembers(event: Event) {
         const c = client!;
         const { members, profiles } = (event as CustomEvent<{ members: string[]; profiles: Record<string, unknown> }>).detail;
         const byPeer = new Map<string, Member>();
+        const newcomers: string[] = [];
         const now = Date.now();
 
         for (const peer of members)
@@ -947,14 +918,18 @@ function handleMembers(event: Event) {
             if (!member) continue;
             byPeer.set(peer, member);
             // a newcomer counts as heard; a known one keeps its time (a join elsewhere isn't a sign of life)
-            if (!heardAt.has(peer)) heardAt.set(peer, now);
+            if (!heardAt.has(peer))
+            {
+                heardAt.set(peer, now);
+                newcomers.push(peer);
+            }
         }
         for (const peer of heardAt.keys())
         {
             if (!byPeer.has(peer)) heardAt.delete(peer);
         }
 
-
+        greet(c, newcomers);
         claimed = byPeer;
         verifier?.sync([...byPeer]);
         applyProofs();
@@ -1041,6 +1016,25 @@ function handleHost(event: Event) {
     catch (error)
     {
         log("lobby: host handler failed", error);
+    }
+}
+
+// fires in both groups, and the one that moved has the other network's id, meta and password from here on
+function handleMerged(event: Event) {
+    if (event.target !== client) return;
+    try
+    {
+        const c = client!;
+        const merged = (event as CustomEvent<NetworkInfo>).detail;
+        log("lobby: merged into", merged.id, c.host === c.id ? "(host)" : "");
+        readNetworkSaves(merged.meta);
+        setSeparated(null);
+        syncStatus();
+        if (c.host === c.id && network()) void sharePassword(epoch);
+    }
+    catch (error)
+    {
+        log("lobby: merged handler failed", error);
     }
 }
 

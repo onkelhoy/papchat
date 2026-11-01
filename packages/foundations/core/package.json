@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@papit/signals": "0.0.1",
-    "@papit/webrtc": "0.0.6",
+    "@papit/webrtc": "0.0.7",
     "@sapphi-red/web-noise-suppressor": "0.4.1"
   },
   "devDependencies": {

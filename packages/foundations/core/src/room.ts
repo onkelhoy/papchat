@@ -8,7 +8,7 @@ import { canSave, conversations, directId, hasMessage, loadMessages, markSent, m
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { PROOF, Verifier } from "./keys";
-import { profileOf, readMember, send as lobbySend, sendAll as lobbySendAll, serverId, type Member } from "./lobby";
+import { greet, profileOf, readMember, send as lobbySend, sendAll as lobbySendAll, type Member } from "./lobby";
 import { log, logClient } from "./log";
 import { personOf, samePerson } from "./people";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
@@ -61,9 +61,6 @@ export type RoomOptions = {
     conversation?: string;
 };
 
-// a re-register takes a moment after the socket is back, and tells nobody: look a few times
-const ID_CHECK_MS = 2_000;
-const ID_CHECK_TRIES = 15;
 const TITLE_MAX = 80;
 
 class Cancelled extends Error { }
@@ -144,10 +141,12 @@ export class Room extends EventTarget {
     private lastTypingSent = 0;
     private lastBuzzSent = 0;
     private lastBuzzFrom = new Map<string, number>();
-    private idTimer: ReturnType<typeof setTimeout> | null = null;
     private handlers = new Map<string, Set<RoomHandler>>();
     private stateHandlers = new Map<string, Set<RoomHandler>>();
     private stateListener: ((event: Event) => void) | null = null;
+
+    // peers already seen in the member list
+    private known = new Set<string>();
 
     private constructor(id: string, kind: RoomKind, password: string, title: string, direct: string | null, unread: number) {
         super();
@@ -169,9 +168,10 @@ export class Room extends EventTarget {
         [this.flags, this.setFlags] = signal<Record<string, MediaFlags>>({});
         [this.oncall, this.setOncall] = signal(false);
 
+        // only has to arrive, see `greet`
+        this.onMessage("here", () => { });
         this.onMessage("chat", this.handleChat);
         this.onMessage("buzz", this.handleBuzz);
-        this.onMessage("room-id", this.handleRoomId);
         this.onMessage("ack", this.handleAck);
         this.onMessage("history.offer", this.handleOffer);
         this.onMessage("history.want", this.handleWant);
@@ -773,7 +773,6 @@ export class Room extends EventTarget {
     private dropClient() {
         const old = this._client;
         this._client = null;
-        this.clearIdTimer();
         this.verifier?.stop();
         this.verifier = null;
         if (!old) return;
@@ -827,39 +826,10 @@ export class Room extends EventTarget {
         this.stateHandlers.clear();
     }
 
-    private clearIdTimer() {
-        if (this.idTimer) clearTimeout(this.idTimer);
-        this.idTimer = null;
-    }
-
     private useNetwork(id: string) {
         log("room: new server id", this.network, "→", id);
         this.network = id;
         saveSession();
-    }
-
-    // after a re-register: the host tells the room, because only it can see the new id. Also on every
-    // member change: a newcomer's welcome carries the old one.
-    private shareServerId() {
-        const c = this._client;
-        if (!c?.network || c.host !== c.id) return;
-        const id = serverId(c);
-        if (!id || id === c.network.id) return;
-        if (id !== this.network) this.useNetwork(id);
-        c.broadcast("room-id", { network: id });
-    }
-
-    // Client doesn't say when a re-register is done
-    private watchServerId() {
-        this.clearIdTimer();
-        const before = this.network;
-        let tries = ID_CHECK_TRIES;
-        const check = () => {
-            this.idTimer = null;
-            this.shareServerId();
-            if (this.network === before && --tries > 0) this.idTimer = setTimeout(check, ID_CHECK_MS);
-        };
-        this.idTimer = setTimeout(check, ID_CHECK_MS);
     }
 
     private alive(current: number) {
@@ -908,6 +878,8 @@ export class Room extends EventTarget {
             if (member) claims.set(peer, member);
         }
         this.verifier?.sync([...claims]);
+        greet(c, [...claims.keys()].filter(peer => !this.known.has(peer)));
+        this.known = new Set(claims.keys());
 
         for (const [peer, member] of claims)
         {
@@ -1257,16 +1229,14 @@ export class Room extends EventTarget {
         logClient(c, "room");
         c.addEventListener("members", this.handleMembers);
         c.addEventListener("message", this.handleMessage);
-        c.addEventListener("status", this.handleClientStatus);
-        c.addEventListener("host", this.handleHost);
+        c.addEventListener("server-id", this.handleServerId);
         c.addEventListener("error", this.handleError);
     }
 
     private detach(c: Client) {
         c.removeEventListener("members", this.handleMembers);
         c.removeEventListener("message", this.handleMessage);
-        c.removeEventListener("status", this.handleClientStatus);
-        c.removeEventListener("host", this.handleHost);
+        c.removeEventListener("server-id", this.handleServerId);
         c.removeEventListener("error", this.handleError);
     }
 
@@ -1276,7 +1246,6 @@ export class Room extends EventTarget {
         {
             const { members, profiles } = (event as CustomEvent<{ members: string[]; profiles: Record<string, unknown> }>).detail;
             this.applyMembers(this._client!, members, profiles);
-            this.shareServerId();
         }
         catch (error)
         {
@@ -1284,22 +1253,9 @@ export class Room extends EventTarget {
         }
     };
 
-    private handleClientStatus = (event: Event) => {
-        if (event.target !== this._client) return;
-        if ((event as CustomEvent).detail === "connected" && this._client?.network) this.watchServerId();
-    };
-
-    // a member promoted to host had no socket, so it opens one and re-registers: `status` doesn't change
-    private handleHost = (event: Event) => {
-        const c = this._client;
-        if (event.target !== c || (event as CustomEvent<string>).detail !== c?.id) return;
-        this.watchServerId();
-    };
-
-    private handleRoomId: RoomHandler<{ network?: unknown }> = (payload, from) => {
-        const c = this._client;
-        if (!c || from.peer !== c.host || typeof payload?.network !== "string") return;
-        if (payload.network !== this.network) this.useNetwork(payload.network);
+    // a re-register: fires on the host, and on the members when its member list says so
+    private handleServerId = (event: Event) => {
+        if (event.target === this._client) this.useNetwork((event as CustomEvent<string>).detail);
     };
 
     private handleMessage = (event: Event) => {
@@ -1313,7 +1269,7 @@ export class Room extends EventTarget {
         this.whenProven(sender, () => dispatch(this.handlers, type, payload, this.from(sender)));
     };
 
-    // nothing from someone who hasn't proven who they are yet; they get `room-id` and the rest after
+    // nothing from someone who hasn't proven who they are yet; they get the rest after
     private whenProven(peer: string, run: () => void) {
         if (this.verifier?.verified(peer)) run();
         else this.verifier?.hold(peer, run);
