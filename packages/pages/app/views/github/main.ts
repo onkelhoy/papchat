@@ -58,6 +58,7 @@ import {
     listNetworks,
     placeCall,
     requestNotifications,
+    canNotify,
     openOfflineChat,
     askNotifications,
     ringContact,
@@ -303,7 +304,7 @@ async function boot() {
             if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
         },
     }));
-    void refreshPush();
+    void (canNotify() ? enablePush() : refreshPush());
     void ringtone.loadTones();
     void ringtone.loadDialtones();
     onboarding.colors = [...PALETTE];
@@ -900,12 +901,6 @@ settings.addEventListener("language-change", (e) =>
 settings.addEventListener("request-notifications", async () =>
 {
     if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
-});
-settings.addEventListener("push-enable", async () =>
-{
-    const result = await enablePush();
-    if (result === "denied") toast("warning", t("notificationsDenied"));
-    else if (result === "failed") toast("warning", t("pushFailed"));
 });
 settings.addEventListener("push-disable", () => void disablePush());
 settings.addEventListener("delete-chats", () =>

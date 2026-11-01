@@ -2,6 +2,7 @@ import { effect } from "@papit/signals";
 
 import { setStatus } from "./identity";
 import { log } from "./log";
+import { enablePush } from "./push";
 import { getRoom } from "./room";
 import { buzzed, incoming, me, prefs, rooms, setPrefs } from "./state";
 
@@ -25,7 +26,7 @@ export function canNotify(): boolean {
     return typeof Notification !== "undefined" && Notification.permission === "granted" && prefs().notifications;
 }
 
-/** Asks the browser for permission (call from a click) and stores the answer in prefs. */
+/** Asks the browser for permission (call from a click), stores the answer in prefs, and a yes covers calls with the app closed too. */
 export async function requestNotifications(): Promise<boolean> {
     if (typeof Notification === "undefined") return false;
     let answer: NotificationPermission = Notification.permission;
@@ -39,6 +40,7 @@ export async function requestNotifications(): Promise<boolean> {
     }
     const granted = answer === "granted";
     setPrefs({ notifications: granted });
+    if (granted) void enablePush();
     return granted;
 }
 

@@ -65,7 +65,6 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @fires network-change `{ network }` from the Network tab's `pc-network-picker` (`null` = public); the page reconnects
  * @fires networks-refresh the Network tab wants a fresh `networks` list
  * @fires request-notifications switch turned on: the page asks for permission, then sets `prefs.notifications`
- * @fires push-enable the call notifications button was pressed (a tap, so the page can ask for permission)
  * @fires push-disable the button to turn them off was pressed
  * @fires link-device "Link my profile" was pressed
  * @fires remove-device `{ uid }` a linked device was removed, after a second press to confirm
@@ -336,17 +335,11 @@ export class Settings extends CustomElement {
         if (checked === !!this.prefs?.notifications) return;
 
         if (checked) this.emit("request-notifications");
-        else this.emitPrefs({ notifications: false });
-    }
-
-    @bind
-    private handlePushEnable() {
-        this.emit("push-enable");
-    }
-
-    @bind
-    private handlePushDisable() {
-        this.emit("push-disable");
+        else
+        {
+            this.emitPrefs({ notifications: false });
+            this.emit("push-disable");
+        }
     }
 
     private renderPush() {
@@ -357,17 +350,16 @@ export class Settings extends CustomElement {
         return html`
             <div class="field push">
                 <span>${this.t("push")}</span>
-                <p class="hint">${this.t(on ? "push-on" : "push-hint")}</p>
-                ${on || install ? "" : html`<pap-button size="small" disabled="${busy && "true"}" @click="${this.handlePushEnable}">${this.t(busy ? "push-busy" : "push-enable")}</pap-button>`}
+                <p class="hint">${this.t(busy ? "push-busy" : on ? "push-on" : "push-hint")}</p>
                 ${install ? html`<p class="hint">${this.t("push-install")}</p>` : ""}
-                ${on ? html`<pap-button size="small" variant="clear" @click="${this.handlePushDisable}">${this.t("push-disable")}</pap-button>` : ""}
                 <p class="hint">${this.t("push-privacy")}</p>
                 ${on && this.contactlink ? html`
-                    <div class="contact">
+                    <details class="contact">
+                        <summary>${this.t("contact-share")}</summary>
                         <p class="hint">${this.t("contact-hint")}</p>
                         <pc-share-link link="${this.contactlink}"></pc-share-link>
                         <pc-qr-code value="${this.contactlink}" label="${this.t("contact-qr")}"></pc-qr-code>
-                    </div>
+                    </details>
                 ` : ""}
             </div>
         `;

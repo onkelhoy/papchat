@@ -1,6 +1,7 @@
 import { effect, signal } from "@papit/signals";
 
 import { LIMITS } from "./config";
+import { conversations } from "./history";
 import { lobbyClient, on, peerOf } from "./lobby";
 import { log } from "./log";
 import { samePerson } from "./people";
@@ -10,7 +11,7 @@ import { me, members, rooms } from "./state";
 import { storage } from "./storage";
 import type { Contact, Profile } from "./types";
 
-// People you can ring with nobody online: everyone you've met who has call notifications on. A push
+// People you can ring with nobody online: everyone you've connected with who has notifications on. A push
 // token is too long for the 1 KB profile (it holds the whole subscription), so it travels in its own
 // message, to each person once. What a member sends is proven to be from them, a link isn't, so a
 // link only ever adds someone new.
@@ -135,9 +136,11 @@ effect(() => {
             if (token) schedule(person.uid);
         }
     }
+    // the lobby is strangers: only someone you've connected with gets the code that rings this device
+    const known = conversations().map(conversation => conversation.direct).filter(uid => uid !== null);
     for (const person of people)
     {
         refresh(person);
-        if (token) schedule(person.uid);
+        if (token && (contactOf(person.uid) || known.some(uid => samePerson(uid, person.uid)))) schedule(person.uid);
     }
 });
