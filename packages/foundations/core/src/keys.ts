@@ -78,6 +78,28 @@ function keepFirst(fresh: CryptoKeyPair): Promise<CryptoKeyPair> {
     });
 }
 
+/** Deletes the key of a slot for good. Its private half exists nowhere else. */
+export function deleteDeviceKey(slot: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const open = indexedDB.open(DB, 1);
+        open.onupgradeneeded = () => open.result.createObjectStore(STORE);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+            const db = open.result;
+            const tx = db.transaction(STORE, "readwrite");
+            tx.objectStore(STORE).delete(inSlot(RECORD, slot));
+            tx.oncomplete = () => {
+                db.close();
+                resolve();
+            };
+            tx.onabort = () => {
+                db.close();
+                reject(tx.error);
+            };
+        };
+    });
+}
+
 let device: DeviceKey | null = null;
 let loading: Promise<DeviceKey> | null = null;
 

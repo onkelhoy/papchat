@@ -3,3 +3,6 @@ export type AccountRow = { slot: string; uid: string; name: string; color: strin
 
 /** Detail of the `account-pick` event. */
 export type AccountPickEvent = { slot: string };
+
+/** Detail of the `account-remove` event. */
+export type AccountRemoveEvent = { slot: string };

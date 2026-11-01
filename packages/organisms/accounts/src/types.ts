@@ -1,1 +1,1 @@
-export type { AccountPickEvent, AccountRow } from "@papchat/account-list";
+export type { AccountPickEvent, AccountRemoveEvent, AccountRow } from "@papchat/account-list";

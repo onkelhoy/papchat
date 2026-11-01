@@ -6,10 +6,10 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-10-31)
 
-- **Done:** 96/104 tasks. All build work is in, through Wave 10 (saved chats T10.4-T10.6, linked devices T10.7-T10.10, global chat T10.11). What's left is the user's: repros and live checks.
+- **Done:** 99/108 tasks. All build work is in, through Wave 11 (saved chats T10.4-T10.6, linked devices T10.7-T10.10, global chat T10.11, several accounts T11.1-T11.3). What's left is the user's: repros and live checks.
 - **Next:** nothing to build. The user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
-- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
+- **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks, and the user tests at the end. T0.6 (go live) is theirs.
 - **Seen in live tests, not fixed (2026-11-01):** (1) two rows for one person in the room list, same name and avatar, gone after a reload, no repro yet. In `main.ts` a saved row shows when no room's summary carries its conversation id, so check a room whose `conversationId` changes without its summary updating, then two direct rooms for one person. (2) `/icons/spritesheet.svg` 404s on the live site. (3) `AbortError: Transition was skipped` in the console, 3 times. (4) Peers can show as Offline while both are open: waiting for console logs.
 - **Icons:** each component keeps its SVGs in its own `asset/icons/<id>.svg` and loads them as `/icons/<id>.svg` (no spritesheet, nothing in the theme: `@papit/server` skips theme packages' assets).
 - **Papit bugs:** `/Users/henry/Developer/projects/papit/PAPCHAT-FINDINGS.md` (#1-#20, "Fix first" at the top). Before writing templates read #10 and #20 (conditional `html` templates: never `cond ? html`A` : html`B``, and give every conditional template one root element), #16 (pap-radio: unique `name` per instance, `checked` binding `cond ? "true" : ""`), #18 (pap-menu must not be a direct shadow-root child), #17 (pap-switch shows no text: wrap it in a `<label>`).
@@ -796,10 +796,14 @@ Ideas from the user, planned in this order because each phase needs the one befo
 - **done when:** log out, pick, switch and add all work in the build; typecheck + build pass.
 - Done: `core/src/accounts.ts` has `logOut()` and `openAccount(slot)`, both stop push (one subscription per browser) with a 3 s limit, clear this tab's rooms and reload every tab. `pc-account-list` is shared by `pc-accounts` (the dialog) and `pc-onboarding`. Adding an account is logging out. An invite waiting at login goes back in the address before an account opens, so the opened account follows it.
 
-### [ ] T11.3 Remove account · `opus` · needs T11.2
+### [x] T11.3 Remove account · `opus` · needs T11.2
 - **do:** remove an account after a confirmation: tell linked devices, stop push, delete its key, chats and settings. Can't be undone.
 - **files:** `core/src/accounts.ts`, `core/src/keys.ts`, `core/src/history.ts`, `core/src/storage.ts`, `molecules/account-list`, page, translations, README.
 - **done when:** a removed account is gone from the list and its data from the browser; typecheck + build pass.
+- Done: `removeAccount(slot)` in `core/src/accounts.ts`, and `leaveAccount()` in `account.ts` signs the device's own removal. Order: chats, key, list. Only the open account can tell linked devices, and only those online then; removing an account that isn't open tells nobody. Removing the last account puts the browser back to a first visit.
+
+### [ ] T11.4 Accounts live check · `opus` · needs T11.1-T11.3
+- User test: an existing browser keeps its identity and chats; log out, make a second account, switch back; each sees only its own chats; a second tab follows a switch; remove the second account; remove the last one and land on a first visit; a linked device hears a removal; call notifications come back after logging in.
 
 ---
 

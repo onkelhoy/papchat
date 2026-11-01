@@ -1,7 +1,10 @@
+import { leaveAccount } from "./account";
+import { deleteHistory } from "./history";
+import { deleteDeviceKey } from "./keys";
 import { log } from "./log";
 import { disablePush } from "./push";
-import { me, prefs } from "./state";
-import { storage } from "./storage";
+import { me, prefs, setSavedAccounts } from "./state";
+import { slot as openSlot, storage } from "./storage";
 
 // Several accounts on one browser. Logging out keeps everything and asks for no password, so anyone
 // using this browser can open any account here: it keeps people apart, it doesn't keep them out.
@@ -10,6 +13,8 @@ import { storage } from "./storage";
 const TABS = "papchat-accounts";
 // a page with no service worker never answers: logging out shouldn't hang on that
 const PUSH_WAIT_MS = 3_000;
+// the goodbye to linked devices has to leave before the page does
+const GOODBYE_MS = 500;
 
 function reload() {
     // rooms belong to the account that was open
@@ -54,4 +59,54 @@ export async function openAccount(slot: string) {
     await stopPush();
     storage.accounts.open(slot);
     changed();
+}
+
+async function wipe(slot: string) {
+    await deleteHistory(slot);
+    await deleteDeviceKey(slot);
+    storage.accounts.forget(slot);
+}
+
+/**
+ * Deletes an account from this browser for good: its key, chats, contacts and settings. Only the open
+ * account can tell its linked devices, and only those online right now; a device that doesn't hear it
+ * keeps the link, which does nothing. Chats go before the key and the list last, so a failure leaves
+ * the account listed. False when it failed.
+ */
+export async function removeAccount(slot: string): Promise<boolean> {
+    const isOpen = slot === openSlot && !!me();
+    const language = prefs().language;
+    try
+    {
+        if (isOpen)
+        {
+            await leaveAccount();
+            await new Promise(resolve => setTimeout(resolve, GOODBYE_MS));
+            await stopPush();
+        }
+        await wipe(slot);
+
+        const left = storage.accounts.get();
+        if (left.length === 0)
+        {
+            const blank = storage.accounts.blank();
+            if (blank) await wipe(blank);
+            storage.accounts.reset(language);
+            changed();
+            return true;
+        }
+        if (isOpen)
+        {
+            storage.accounts.close(language);
+            changed();
+            return true;
+        }
+        setSavedAccounts(left);
+        return true;
+    }
+    catch (error)
+    {
+        log("accounts: removing failed", error);
+        return false;
+    }
 }

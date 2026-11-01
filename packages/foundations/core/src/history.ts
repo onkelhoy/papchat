@@ -327,6 +327,22 @@ export async function deleteAllConversations() {
     changed();
 }
 
+/** Deletes every saved chat of a slot, the database itself. */
+export async function deleteHistory(slot: string) {
+    if (typeof indexedDB === "undefined") return;
+    // another slot's database has no connection here; the open one has to let go first
+    if (inSlot(DB, slot) === inSlot(DB))
+    {
+        (await opening?.catch(() => null))?.close();
+        opening = null;
+    }
+    await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.deleteDatabase(inSlot(DB, slot));
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
 /** Folds one conversation into another by message id: someone's two devices turn out to be one person. */
 export async function moveConversation(from: string, to: Conversation) {
     if (from === to.id) return;

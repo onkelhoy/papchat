@@ -11,7 +11,7 @@ import type { AccountRow } from "./types";
 
 /**
  * "Manage accounts" dialog: every account in this browser, and a way to add one. It holds no logic of
- * its own. `account-pick` from the list passes straight through.
+ * its own. `account-pick` and `account-remove` from the list pass straight through.
  *
  * @element pc-accounts
  *

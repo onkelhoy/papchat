@@ -166,6 +166,20 @@ export async function removeDevice(uid: string): Promise<boolean> {
     return true;
 }
 
+/** Takes this device out of its account for good, telling whoever can hear it right now. */
+export async function leaveAccount() {
+    const own = deviceKey();
+    const devices = linkedDevices().filter(device => !device.self).map(device => device.uid);
+    if (!own || devices.length === 0) return;
+
+    const at = Date.now();
+    const removal: DeviceRemoval = { key: own.key, by: own.key, at, sig: await own.sign(removalText(own.key, at)) };
+    const current = account();
+    commit({ ...current, removed: [...current.removed, removal] });
+    const data = ownAccount();
+    for (const uid of new Set([...devices, ...members().map(person => person.uid)])) quietSend(uid, TYPE, data);
+}
+
 // ---------------------------------------------------------------- who is who
 
 /** Brings the person map, your device list and everything keyed by person up to date. */

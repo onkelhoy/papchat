@@ -37,6 +37,7 @@
     "globalUnreachable": "Når ingen just nu",
     "cantQueue": "Chattar sparas inte på den här enheten, så det här kan inte vänta tills de är tillbaka",
     "savedFiles": "Filer kan bara skickas när någon är online",
-    "chatsDeleted": "Sparade chattar borttagna"
+    "chatsDeleted": "Sparade chattar borttagna",
+    "accountRemoveFailed": "Kunde inte ta bort kontot"
   }
 }

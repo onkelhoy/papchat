@@ -57,7 +57,8 @@
   "dependencies": {
     "@papit/web-component": "0.0.14",
     "@papit/translator": "0.1.1",
-    "@papchat/avatar": "*"
+    "@papchat/avatar": "*",
+    "@papit/button": "0.1.10"
   },
   "peerDependencies": {
     "react": "^19"

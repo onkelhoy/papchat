@@ -21,6 +21,9 @@ const ACTIVE = "papchat:active";
 // the slot a new account will take, kept so a logged out page doesn't make a new key on every load
 const BLANK = "papchat:blank";
 
+// what `debug` and `session` aren't: everything an account has in localStorage
+const ACCOUNT_KEYS = Object.values(KEYS).filter(key => key !== KEYS.debug && key !== KEYS.session);
+
 export const DEFAULT_PREFS: Prefs = {
     v: 1,
     ringtone: "beep-boom",
@@ -263,6 +266,22 @@ export const storage = {
         close(language: string) {
             write(local, ACTIVE, null);
             write(local, inSlot(KEYS.prefs, blankSlot()), { ...DEFAULT_PREFS, language });
+        },
+        /** Deletes what a slot has in localStorage and takes it off the list. */
+        forget(of: string) {
+            for (const key of ACCOUNT_KEYS) write(local, inSlot(key, of), undefined);
+            write(local, LIST, storage.accounts.get().filter(account => account.slot !== of));
+        },
+        /** The last account is gone: the browser starts over, in the language you were using. */
+        reset(language: string) {
+            write(local, ACTIVE, undefined);
+            write(local, BLANK, undefined);
+            write(local, inSlot(KEYS.prefs, ""), { ...DEFAULT_PREFS, language });
+        },
+        /** The slot a new account would take, null when none is set aside. */
+        blank(): string | null {
+            const value = read(local, BLANK);
+            return typeof value === "string" && value ? value : null;
         },
     },
     debug: {

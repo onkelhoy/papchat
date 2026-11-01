@@ -37,6 +37,7 @@
     "globalUnreachable": "Can't reach anyone right now",
     "cantQueue": "Chats aren't saved on this device, so this can't wait until they're back",
     "savedFiles": "Files can only be sent while someone's online",
-    "chatsDeleted": "Saved chats deleted"
+    "chatsDeleted": "Saved chats deleted",
+    "accountRemoveFailed": "Couldn't remove that account"
   }
 }

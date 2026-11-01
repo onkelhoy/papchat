@@ -54,6 +54,7 @@ let instances = 0;
  *
  * @fires submit `CustomEvent<{ name, color, language, network }>` valid form submitted; `network` is `joining` (bubbles, composed)
  * @fires account-pick `CustomEvent<{ slot }>` a saved account was picked, from `pc-account-list` (bubbles, composed)
+ * @fires account-remove `CustomEvent<{ slot }>` removing a saved account was confirmed, from `pc-account-list` (bubbles, composed)
  * @fires link-device "Already use papchat?" was pressed (bubbles, composed)
  * @fires language-change `CustomEvent<{ value }>` the language was changed, so the page can translate live (bubbles, composed)
  * @csspart dialog the `pap-dialog`

@@ -44,6 +44,7 @@ import {
     disablePush,
     logOut,
     openAccount,
+    removeAccount,
     savedAccounts,
     enablePush,
     forgetContact,
@@ -1254,6 +1255,12 @@ onboarding.addEventListener("account-pick", (e) =>
 });
 accounts.addEventListener("account-pick", (e) => void openAccount((e as CustomEvent<{ slot: string }>).detail.slot));
 accounts.addEventListener("add-account", () => void logOut());
+async function handleAccountRemove(e: Event)
+{
+    if (!await removeAccount((e as CustomEvent<{ slot: string }>).detail.slot)) toast("warning", t("accountRemoveFailed"));
+}
+onboarding.addEventListener("account-remove", handleAccountRemove);
+accounts.addEventListener("account-remove", handleAccountRemove);
 header.addEventListener("manage-accounts", () => { accounts.open = true; });
 header.addEventListener("log-out", () => void logOut());
 effect(() =>

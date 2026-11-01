@@ -4,6 +4,11 @@
     "language": "en"
   },
   "pc-account-list": {
-    "current": "Open now"
+    "current": "Open now",
+    "remove": "Remove",
+    "remove-account": "Remove {name}",
+    "warning": "This deletes {name}'s chats, contacts and identity from this browser. It can't be undone.",
+    "cancel": "Cancel",
+    "confirm": "Remove for good"
   }
 }
