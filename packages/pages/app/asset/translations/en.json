@@ -10,6 +10,7 @@
     "inviteFailed": "Couldn't reach {name}",
     "cameraFailed": "Couldn't start the camera",
     "micFailed": "Couldn't start the microphone",
+    "offlineChatNeedsSaving": "Turn on saved chats to write to someone who's offline",
     "notificationsDenied": "Notifications are blocked in the browser settings",
     "notificationsAsk": "Get a notification for calls and messages?",
     "notificationsAllow": "Turn on",

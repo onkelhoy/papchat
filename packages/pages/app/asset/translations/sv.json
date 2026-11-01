@@ -10,6 +10,7 @@
     "inviteFailed": "Kunde inte nå {name}",
     "cameraFailed": "Kunde inte starta kameran",
     "micFailed": "Kunde inte starta mikrofonen",
+    "offlineChatNeedsSaving": "Slå på sparade chattar för att skriva till någon som är offline",
     "notificationsDenied": "Notiser är blockerade i webbläsarens inställningar",
     "notificationsAsk": "Vill du få notiser om samtal och meddelanden?",
     "notificationsAllow": "Slå på",

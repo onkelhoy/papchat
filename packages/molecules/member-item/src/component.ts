@@ -33,7 +33,7 @@ import type { MemberAction, MemberActionEvent, MemberFilesEvent } from "./types"
  * @property {boolean} incall   shows a small phone icon (reflected)
  * @property {boolean} canInvite shows "Invite to current room" in the menu (attribute `caninvite`)
  * @property {boolean} muted hidden in global chat: the menu offers to unmute (reflected)
- * @property {boolean} offline a saved contact who isn't here: shows Offline, the menu has Call / Video call / Remove, and a click opens it (reflected)
+ * @property {boolean} offline a saved contact who isn't here: shows Offline, the menu has Chat / Call / Video call / Remove, and a click opens the chat (reflected)
  *
  * Files dragged onto a row (not your own) highlight it (`:state(drop)`); dropping them fires `member-files`.
  *
@@ -207,10 +207,8 @@ export class MemberItem extends CustomElement {
         this.activate();
     }
 
-    // nobody to chat with when they're offline, and a call shouldn't start from a stray click
     private activate() {
-        if (this.offline) this.trigger?.click();
-        else this.dispatchAction("chat");
+        this.dispatchAction("chat");
     }
 
     // right-click, Shift+F10 and the Menu key all fire contextmenu: open our menu instead
@@ -278,12 +276,10 @@ export class MemberItem extends CustomElement {
                 <span aria-hidden="true">⋯</span>
             </button>
             <pap-menu id="menu" placement="bottom-right" @toggle="${this.handleMenuToggle}">
-                ${this.offline ? "" : html`
-                    <pap-menuitem data-action="chat" @click="${this.handleSelect}">
-                        <pap-icon name="/icons/chat.svg" aria-hidden="true"></pap-icon>
-                        <span>${this.t("chat")}</span>
-                    </pap-menuitem>
-                `}
+                <pap-menuitem data-action="chat" @click="${this.handleSelect}">
+                    <pap-icon name="/icons/chat.svg" aria-hidden="true"></pap-icon>
+                    <span>${this.t("chat")}</span>
+                </pap-menuitem>
                 <pap-menuitem data-action="call" @click="${this.handleSelect}">
                     <pap-icon name="/icons/phone.svg" aria-hidden="true"></pap-icon>
                     <span>${this.t("call")}</span>

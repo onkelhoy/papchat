@@ -56,6 +56,7 @@ import {
     listNetworks,
     placeCall,
     requestNotifications,
+    openOfflineChat,
     askNotifications,
     ringContact,
     ringtone,
@@ -1195,10 +1196,21 @@ list.addEventListener("watch", async (e) =>
 });
 
 // from the sidebar and from the room's People tab (both bubble to document)
+async function chatWith(uid: string) {
+    const contact = contactOf(uid);
+    if (!contact || peerOf(uid))
+    {
+        await openChat(uid);
+        return;
+    }
+    const { name, color } = contact;
+    if (!await openOfflineChat({ uid, name, color })) toast("warning", t("offlineChatNeedsSaving"));
+}
+
 document.addEventListener("member-action", (e) =>
 {
     const { uid, action } = (e as CustomEvent<{ uid: string; action: string }>).detail;
-    if (action === "chat") void openChat(uid);
+    if (action === "chat") void chatWith(uid);
     else if (action === "call" || action === "video") void placeCall(uid, action);
     else if (action === "invite") invite(uid);
     else if (action === "remove") forgetContact(uid);

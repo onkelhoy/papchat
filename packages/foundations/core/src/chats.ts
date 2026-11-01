@@ -2,11 +2,11 @@ import { effect } from "@papit/signals";
 
 import { LIMITS } from "./config";
 import { cleanGif } from "./gif";
-import { canSave, conversations, loadMessages, outbox, saveMessages, setViewing, unsent, viewing } from "./history";
+import { canSave, conversations, directId, loadMessages, outbox, saveConversation, saveMessages, setViewing, unsent, viewing } from "./history";
 import { openChat } from "./invites";
 import { peerOf } from "./lobby";
 import { log } from "./log";
-import { samePerson } from "./people";
+import { personOf, samePerson } from "./people";
 import { allRooms, directRoom, Room, selectRoom } from "./room";
 import { me, members } from "./state";
 import type { ChatMessage, Conversation, ConversationMember, Gif, Profile } from "./types";
@@ -53,6 +53,31 @@ export async function openConversation(id: string) {
     }
     selectRoom(null);
     await show(conversation);
+}
+
+/** Opens the 1:1 with someone who isn't here. What you write waits for them. False when nothing can wait: saving is off. */
+export async function openOfflineChat(person: ConversationMember): Promise<boolean> {
+    const mine = me()?.uid;
+    if (!mine) return false;
+
+    const id = directId(mine, person.uid);
+    let conversation = conversations().find(entry => entry.id === id);
+    if (!conversation)
+    {
+        if (!canSave()) return false;
+        conversation = { id, direct: personOf(person.uid), title: "", members: [person], at: Date.now() };
+        await saveConversation(conversation);
+    }
+
+    const room = openRoom(id);
+    if (room)
+    {
+        selectRoom(room.id);
+        return true;
+    }
+    selectRoom(null);
+    await show(conversation);
+    return true;
 }
 
 /** The conversation on screen again, after something changed it. */

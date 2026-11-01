@@ -52,7 +52,7 @@ The row is a focusable `listitem` (put it in a `role="list"`, e.g. a `pap-group`
 | `self`      | `self`      | `boolean`                   | `false` | this is you: "You" badge, no menu, no events (reflected) |
 | `incall`    | `incall`    | `boolean`                   | `false` | small phone icon (reflected)                             |
 | `canInvite` | `caninvite` | `boolean`                   | `false` | adds "Invite to current room" to the menu                |
-| `offline`   | `offline`   | `boolean`                   | `false` | a saved contact: Offline, menu with Call / Video call / Remove, a click opens it (reflected) |
+| `offline`   | `offline`   | `boolean`                   | `false` | a saved contact: Offline, menu with Chat / Call / Video call / Remove, a click opens the chat (reflected) |
 | `compact`   | `compact`   | `boolean`                   | `false` | avatar only (collapsed sidebar); name and status in a tooltip, menu on right-click (reflected) |
 
 | Event           | Detail                                                             | Description                                                                            |
