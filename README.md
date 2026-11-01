@@ -159,6 +159,9 @@ The worker only handles push, and nothing is cached. iOS 16.4+ only pushes to an
 - **Offline messages need both of you online at once.** Nothing wakes the other device, and linked devices only meet in the same network.
 - **Removing a device isn't a wipe.** It keeps what it has, and people who were offline only hear about it the next time they meet one of your devices.
 - **Global chat has no moderator.** Every client rate-limits senders and keeps its own mutes. Late joiners see nothing earlier.
+- **The iPhone silent switch mutes ringtones.** It silences Web Audio, and overriding that while the mic is live risks the call.
+- **GIFs come from GIPHY.** Searching sends your search to GIPHY from your browser, and the key is visible in the page's code, which is normal for a browser key.
+- **An invite link is the password.** It sits in the hash, so it never reaches a server or its logs, but anyone holding a link can join.
 - **Files:** 100 MB cap, late joiners do not get earlier files, and files cannot be shared on a stage.
 - **Rogue merges take time.** Two groups can stay split for up to about a minute after the server returns. A merge needs the two hosts to reach each other: if they can't, or a host crashes before any link has crossed, the groups carry on apart and the next scan tries again. A merged network can't go over 250 people. Calls and chats carry on throughout.
 - **Split rooms stay split.** If a room loses its peer links and both sides re-register, they can't find each other. A stage re-registered by its presenter keeps handing out its old id in invites.
@@ -169,8 +172,8 @@ None of these block papchat; they are candidates for upstream issues.
 
 1. **SDP over the lobby.** `Client` cannot take a custom signalling transport. A `signal` option (any link) would make "handshake through chord" literal and server-free after the lobby.
 2. **Channel back-pressure.** `Channel` has no `bufferedAmount` or `bufferedamountlow`, so file transfer has to guess its pacing.
-3. **No public server id.** After a re-register, `client.network.id` keeps the old id and the new one is private, with no event when it changes. papchat reads `serverNetwork` and polls for it.
-4. **One socket per network.** Every room and stage opens its own signal socket.
+3. **One socket per network.** Every room and stage opens its own signal socket. webrtc 0.0.7 has `client.room()`, which opens a room over the peers you already have with no socket; papchat doesn't use it yet.
+4. **A new socket and a newcomer.** A host back on a new socket keeps its peer id, and a newcomer doesn't learn the socket from the welcome, so papchat's host says something to each newcomer (`greet`). The newcomer's first link attempt is still lost, so that join takes about 17 s.
 5. **Multicast host handover.** If the presenter drops, the tree re-roots under a host with no capture, so the stage just ends.
 6. **Design system.** No select or combobox, avatar, toast or progress in papit, so papchat has `pc-*` versions that could be upstreamed.
 7. **`@papit/web-component` property compare** throws on `null` inside objects and treats any two `MediaStream`s as equal, so streams are passed as `undefined` or set imperatively.
