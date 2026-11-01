@@ -151,7 +151,9 @@ The worker only handles push, and nothing is cached. iOS 16.4+ only pushes to an
 - **STUN only.** Some corporate and mobile NATs will not connect without a TURN relay.
 - **Mesh rooms are capped at 8 people.** Stages scale further, but each hop in the tree re-encodes.
 - **A push token can ring your device.** Whoever holds it can show you a notification, and everyone you meet gets it, in the public lobby too. It can't pretend to be someone else, because calls are signed. Turning call notifications off cancels the token.
-- **Declining from a closed app** can't reach a caller outside your lobby, so they ring out the 60 s. Someone still listed in the lobby with a locked phone gets a normal invite rather than a push until they go stale.
+- **Declining from a closed app** can't reach a caller outside your lobby, so they ring out the 60 s.
+- **Push needs a meeting first.** A device can only be rung by push by people it has told its token, so someone who turns notifications on has to be online with you once afterwards. Only calls are pushed: a message doesn't reach an app that's frozen or closed.
+- **Background phones look online.** A phone in the background stays listed for up to 2.5 minutes. A call still reaches it, because a device that doesn't confirm an invite within 2.5 s gets a push as well. If a call is answered on another device, a phone that was pushed keeps ringing until the notification is tapped.
 - **Free hosting for the signal server.** The first connect after it has been idle takes about 30 to 60 s; the header shows "waking up the server…".
 - **No server, so no safety net.** Chats live only on your devices, and Safari can evict data from a site that isn't installed. Names are self-chosen.
 - **"Don't save" is a request.** A network can ask its members not to save chats, but any device can keep what it receives.

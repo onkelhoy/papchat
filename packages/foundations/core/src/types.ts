@@ -28,7 +28,8 @@ export type Prefs = {
     autoDeclineBusy: boolean;
     notifications: boolean;
     // asked once whether to turn them on: a refresh doesn't ask again
-    notificationsAsked: boolean;
+    // when we last offered notifications, 0 for never
+    notificationsAskedAt: number;
     // when the name or colour last changed: your linked devices keep the newest
     profileAt: number;
     devices: { mic?: string; camera?: string; speaker?: string };

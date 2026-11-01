@@ -18,7 +18,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-11-01)
 
-- **Done:** 102/111 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
+- **Done:** 103/112 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
 - **Next:** ship and retest, see the handover above. Otherwise the user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T0.6 (go live) is theirs.
@@ -689,7 +689,7 @@ Client side of web push. `@papit/signal-server` 0.0.5 has it (Render is live), a
 
 ### [ ] T9.8 Wave 9 server bump + live check · `opus` · needs T9.4-T9.7, push released
 - Render is done (user, 2026-10-31; `GET /push/key` answers `persistent: true`), there were no stubs to replace, and the README is updated. Only the user test is left: phone with the app closed gets the call, answers, hang-up clears it, missed call, dead token, a contact link and its QR code scanned on a phone, the worker registering on Pages.
-- **Known limits to check:** someone still listed in the lobby with a locked phone gets a normal invite, not a push, until they go stale (up to 150 s). Declining from a closed app can't reach a caller outside your lobby. A removed contact comes back the next time you meet them.
+- **Known limits to check:** Declining from a closed app can't reach a caller outside your lobby. A removed contact comes back the next time you meet them.
 
 ---
 
@@ -839,6 +839,9 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### [x] T12.2 Ring networks · `opus` · needs T12.1
 - Asked for by the user, 2026-11-01. "Make it a ring network" in `pc-network-picker`, which only counts when it creates the network: a joined network keeps its own topology. The list marks a ring. `rememberTopology` keeps `Network.ring` true to what the device is really in, so the last one reloading brings the same kind back. A ring and a chord with one name stay apart, without asking, because `merge()` refuses them. They show no "separated" hint, since that one is about passwords. Typecheck + build pass; not run in a browser.
+
+### [x] T12.3 Phones that don't ring · `opus` · needs T9.4
+- User, 2026-11-01: no notification on the phone, and with the app in the background they still show as online. (1) The offer was once per device, marked as done the moment it showed, and iOS Safari skipped it silently because `Notification` doesn't exist before install. `notificationsAskedAt` offers it again after a week until someone decides, and iOS gets the Add to Home Screen message. (2) `placeCall` only pushed to people not in the lobby, so a frozen phone that was still listed got an invite and nothing else. A visible device now answers `invite.seen`, and after `inviteSeenMs` every saved device that didn't gets a push, on top of the invite. Typecheck + build pass; not run on a phone. Left out: a pushed phone keeps ringing if the call is answered on another device (a `cancel` push says "missed", which is wrong there, and would also hit the device that answered); messages aren't pushed.
 
 ---
 

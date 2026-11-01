@@ -14,6 +14,7 @@
     "notificationsDenied": "Notiser är blockerade i webbläsarens inställningar",
     "notificationsAsk": "Vill du få notiser om samtal och meddelanden?",
     "notificationsAllow": "Slå på",
+    "notificationsInstall": "Tryck på Dela och sedan Lägg till på hemskärmen och öppna papchat därifrån för att få samtal när papchat är stängt",
     "pushFailed": "Kunde inte aktivera samtalsnotiser. Försök igen om en minut",
     "shortcutMic": "Stäng av eller slå på mikrofonen (i samtal eller på scen)",
     "shortcutCamera": "Slå på eller av kameran",

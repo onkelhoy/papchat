@@ -321,7 +321,7 @@ async function boot() {
         onAction: async () => {
             if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
         },
-    }));
+    }), () => toast("info", t("notificationsInstall"), { duration: 0 }));
     void (canNotify() ? enablePush() : refreshPush());
     void ringtone.loadTones();
     void ringtone.loadDialtones();

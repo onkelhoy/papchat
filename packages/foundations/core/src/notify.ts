@@ -2,7 +2,7 @@ import { effect } from "@papit/signals";
 
 import { setStatus } from "./identity";
 import { log } from "./log";
-import { enablePush } from "./push";
+import { enablePush, pushState } from "./push";
 import { getRoom } from "./room";
 import { buzzed, incoming, me, prefs, rooms, setPrefs } from "./state";
 
@@ -14,6 +14,8 @@ const AWAY_MS = 5 * 60_000;
 const FLASH_MS = 1_000;
 // a message this old came from history, not from someone writing now
 const FRESH_MS = 2 * 60_000;
+// someone who hasn't answered is asked again now and then, not on every visit
+const ASK_AGAIN_MS = 7 * 24 * 60 * 60_000;
 
 let started = false;
 let awayTimer: ReturnType<typeof setTimeout> | undefined;
@@ -45,18 +47,27 @@ export async function requestNotifications(): Promise<boolean> {
 }
 
 /**
- * Once ever, as soon as there's a profile: calls `prompt` unless the browser already settled it. The
- * browser's own question needs a click on most browsers, so `prompt` shows a button that calls
- * `requestNotifications`. Until that's a yes the setting stays off, so it never shows on and does nothing.
+ * As soon as there's a profile, and again a week later for as long as nobody decided: calls `prompt`
+ * unless the browser already settled it. The browser's own question needs a click on most browsers, so
+ * `prompt` shows a button that calls `requestNotifications`. Until that's a yes the setting stays off,
+ * so it never shows on and does nothing. iOS has nothing to ask with before the app is installed, so
+ * `install` says how to get there.
  */
-export function askNotifications(prompt: () => void) {
-    if (typeof Notification === "undefined") return;
+export function askNotifications(prompt: () => void, install: () => void) {
     effect(() => {
-        if (!me() || prefs().notificationsAsked) return;
+        if (!me() || Date.now() - prefs().notificationsAskedAt < ASK_AGAIN_MS) return;
+        if (pushState() === "install")
+        {
+            setPrefs({ notificationsAskedAt: Date.now() });
+            install();
+            return;
+        }
+        if (typeof Notification === "undefined") return;
+
         const permission = Notification.permission;
-        const on = permission === "granted" && prefs().notifications;
-        setPrefs({ notificationsAsked: true, notifications: on });
-        if (!on && permission !== "denied") prompt();
+        if (permission === "denied" || (permission === "granted" && prefs().notifications)) return;
+        setPrefs({ notificationsAskedAt: Date.now(), notifications: false });
+        prompt();
     });
 }
 

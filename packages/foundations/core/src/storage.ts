@@ -33,7 +33,7 @@ export const DEFAULT_PREFS: Prefs = {
     language: "",
     autoDeclineBusy: false,
     notifications: true,
-    notificationsAsked: false,
+    notificationsAskedAt: 0,
     profileAt: 0,
     devices: {},
     sidebarOpen: true,

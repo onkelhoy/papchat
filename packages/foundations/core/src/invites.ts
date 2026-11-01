@@ -3,7 +3,7 @@ import { effect } from "@papit/signals";
 import { LIMITS } from "./config";
 import { contactOf, contactsOf, contactProfile, forgetContact } from "./contacts";
 import { signedBy, uidOfKey } from "./keys";
-import { on, peerOf, profileOf, send, sendAll } from "./lobby";
+import { on, peerOf, profileOf, quietSend, send, sendAll } from "./lobby";
 import { log } from "./log";
 import { devicesOf, personOf, samePerson } from "./people";
 import { callText, closeNotification, pushCall, pushCancel } from "./push";
@@ -35,9 +35,12 @@ type Outgoing = {
     ringing: Set<string>;
     timer: ReturnType<typeof setTimeout>;
     watch: () => void;
-    // set when this call rang a closed app: that device still needs telling when it stops
-    // the saved devices rung by push, none for someone in the lobby
+    // the saved devices rung by push: they still need telling when it stops
     devices: Contact[];
+    // devices in use that saw the invite, so they need no push
+    seen: Set<string>;
+    // pushes whoever hasn't seen the invite: someone listed in the lobby can still be asleep
+    unseen?: ReturnType<typeof setTimeout>;
 };
 // rooms being joined from an invite right now, so a repeated invite doesn't join twice
 const joining = new Set<string>();
@@ -143,7 +146,8 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
     if (!profile || uid === profile.uid) return null;
     const name = nameOf(uid) ?? "that person";
     // not in the lobby: their device can still be woken
-    const devices = peerOf(uid) ? [] : contactsOf(uid);
+    const saved = contactsOf(uid);
+    let devices = peerOf(uid) ? [] : saved;
     if (!peerOf(uid) && devices.length === 0)
     {
         toast("warning", `Couldn't reach ${name}`);
@@ -179,9 +183,13 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
 
     if (devices.length === 0 && !room.invite(uid, kind))
     {
-        toast("warning", `Couldn't reach ${name}`);
-        giveUp(room);
-        return null;
+        if (saved.length === 0)
+        {
+            toast("warning", `Couldn't reach ${name}`);
+            giveUp(room);
+            return null;
+        }
+        devices = saved;
     }
 
     // whoever is already in the chat hasn't answered yet: only newcomers (or `invite.accept`) count
@@ -192,7 +200,7 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
         // by person: answering on any device counts
         ringing: new Set([personOf(uid)]),
         // the callee declines with `timeout` itself; this covers one that vanished
-        timer: setTimeout(() => expire(call), (devices.length > 0 ? LIMITS.ringOfflineMs : LIMITS.ringMs) + 3_000),
+        timer: setTimeout(() => expire(call), (saved.length > 0 ? LIMITS.ringOfflineMs : LIMITS.ringMs) + 3_000),
         watch: effect(() => {
             const here = target.participants().map(p => personOf(p.uid)).filter(u => !before.has(u));
             if (here.length > 0) setTimeout(() => answered(call, here), 0);
@@ -200,13 +208,25 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
             if (!target.oncall()) setTimeout(() => endCall(call, true), 0);
         }),
         devices,
+        seen: new Set(),
     };
     outgoing.set(room.id, call);
     syncCalling();
     ringback();
     room.addEventListener("leave", () => endCall(call, true), { once: true });
     if (devices.length > 0) void ringDevices(call, uid, kind);
+    else if (saved.length > 0) call.unseen = setTimeout(() => void ringUnseen(call, uid, kind), LIMITS.inviteSeenMs);
     return room;
+}
+
+// the invite is still out, so one that can't be pushed just rings until it runs out
+async function ringUnseen(call: Outgoing, uid: string, kind: Extract<RoomKind, "call" | "video">) {
+    if (outgoing.get(call.room.id) !== call || !call.ringing.has(personOf(uid))) return;
+    const devices = contactsOf(uid).filter(device => !call.seen.has(device.uid));
+    if (devices.length === 0) return;
+    log("invites: no sign of the invite, pushing", uid);
+    call.devices = devices;
+    await pushAll(devices, call.room, kind, true);
 }
 
 // the ringing UI is already up: the caller hears it while a sleeping server wakes
@@ -317,6 +337,9 @@ on<unknown>("invite", (payload, from) => {
     }
     // a call in a room you're already in (your 1:1) rings like any other
 
+    // a hidden app says nothing: it may be frozen a moment from now, and the push is what still rings then
+    if (!document.hidden) quietSend(invite.from, "invite.seen", { room: invite.room });
+
     const status = me()?.status;
     if (status === "dnd")
     {
@@ -328,7 +351,13 @@ on<unknown>("invite", (payload, from) => {
         send(invite.from, "invite.decline", { room: invite.room, reason: "busy" });
         return;
     }
-    ring(invite);
+    ring(invite, document.hidden ? LIMITS.ringOfflineMs : LIMITS.ringMs);
+});
+
+on<unknown>("invite.seen", (payload, from) => {
+    const id = readId(payload);
+    const call = id ? outgoingOf(id) : undefined;
+    if (call && from.uid) call.seen.add(from.uid);
 });
 
 on<unknown>("invite.cancel", (payload) => {
@@ -513,6 +542,7 @@ function endCall(call: Outgoing, cancel: boolean) {
     if (!outgoing.delete(call.room.id)) return;
     syncCalling();
     clearTimeout(call.timer);
+    clearTimeout(call.unseen);
     call.watch();
     stopRinging();
     if (cancel && call.ringing.size > 0)
