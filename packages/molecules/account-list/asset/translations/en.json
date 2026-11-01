@@ -9,6 +9,7 @@
     "remove-account": "Remove {name}",
     "warning": "This deletes {name}'s chats, contacts and identity from this browser. It can't be undone.",
     "cancel": "Cancel",
-    "confirm": "Remove for good"
+    "confirm": "Remove for good",
+    "warning-linked": "This removes {name} from this browser only. Your other linked device stays this person and keeps its chats and contacts. Anything that hasn't reached it yet is lost."
   }
 }

@@ -147,6 +147,8 @@ export type SavedAccount = {
     color: string;
     /** When it was last changed. */
     at: number;
+    /** It's linked to another device, which keeps being this person when it's removed here. */
+    linked: boolean;
 };
 
 export type Session = {

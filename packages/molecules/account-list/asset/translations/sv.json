@@ -9,6 +9,7 @@
     "remove-account": "Ta bort {name}",
     "warning": "Det här raderar chattar, kontakter och identitet för {name} från den här webbläsaren. Det går inte att ångra.",
     "cancel": "Avbryt",
-    "confirm": "Ta bort för gott"
+    "confirm": "Ta bort för gott",
+    "warning-linked": "Det här tar bort {name} bara från den här webbläsaren. Din andra länkade enhet är fortfarande samma person och behåller sina chattar och kontakter. Det som inte hunnit dit försvinner."
   }
 }

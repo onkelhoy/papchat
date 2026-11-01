@@ -1,4 +1,3 @@
-import { leaveAccount } from "./account";
 import { deleteHistory } from "./history";
 import { deleteDeviceKey } from "./keys";
 import { log } from "./log";
@@ -13,8 +12,6 @@ import { slot as openSlot, storage } from "./storage";
 const TABS = "papchat-accounts";
 // a page with no service worker never answers: logging out shouldn't hang on that
 const PUSH_WAIT_MS = 3_000;
-// the goodbye to linked devices has to leave before the page does
-const GOODBYE_MS = 500;
 
 function reload() {
     // rooms belong to the account that was open
@@ -68,22 +65,19 @@ async function wipe(slot: string) {
 }
 
 /**
- * Deletes an account from this browser for good: its key, chats, contacts and settings. Only the open
- * account can tell its linked devices, and only those online right now; a device that doesn't hear it
- * keeps the link, which does nothing. Chats go before the key and the list last, so a failure leaves
- * the account listed. False when it failed.
+ * Deletes an account from this browser for good: its key, chats, contacts and settings. Chats go
+ * before the key and the list last, so a failure leaves the account listed. False when it failed.
+ *
+ * Nobody is told, on purpose. A linked account lives on in its other device, and a signed removal would
+ * split that person in two for everyone who knows them: their chats stay under the old uid and new ones
+ * start apart. Left alone, the link stays valid and the person stays who they were.
  */
 export async function removeAccount(slot: string): Promise<boolean> {
     const isOpen = slot === openSlot && !!me();
     const language = prefs().language;
     try
     {
-        if (isOpen)
-        {
-            await leaveAccount();
-            await new Promise(resolve => setTimeout(resolve, GOODBYE_MS));
-            await stopPush();
-        }
+        if (isOpen) await stopPush();
         await wipe(slot);
 
         const left = storage.accounts.get();

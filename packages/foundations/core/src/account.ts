@@ -6,8 +6,8 @@ import { lobbyClient, on, peerOf, quietSend, refreshMembers } from "./lobby";
 import { log } from "./log";
 import { people, personOf, setPeople } from "./people";
 import { allRooms, getRoom, rekeyDirects, Room } from "./room";
-import { me, members, rooms } from "./state";
-import { storage } from "./storage";
+import { me, members, rooms, setSavedAccounts } from "./state";
+import { activeLinks, storage } from "./storage";
 import type { AccountData, DeviceLink, DeviceRemoval, LinkedDevice } from "./types";
 
 // An account is a set of device keys. A link is two signatures, each device signing it, so neither can
@@ -33,11 +33,6 @@ export const removalText = (key: string, at: number) => `papchat unlink\n${key}\
 export const [account, setAccount] = signal<AccountData>(storage.account.get());
 /** Your devices, this one first. Just this one until you link another. */
 export const [linkedDevices, setLinkedDevices] = signal<LinkedDevice[]>([]);
-
-/** A removal counts against links made before it: linking again after one is a new link. */
-export function activeLinks(data: AccountData): DeviceLink[] {
-    return data.links.filter(link => !data.removed.some(removal => (removal.key === link.a || removal.key === link.b) && removal.at >= link.at));
-}
 
 /** The keys connected by the given links: every group of two or more. */
 export function keyGroups(links: DeviceLink[]): string[][] {
@@ -117,6 +112,7 @@ export function ownAccount(): AccountData {
 function commit(next: AccountData) {
     storage.account.set(next);
     setAccount(next);
+    setSavedAccounts(storage.accounts.get());
 }
 
 /** Takes in links and removals from anyone, verifying each new one. True when something changed. */
@@ -164,20 +160,6 @@ export async function removeDevice(uid: string): Promise<boolean> {
     await apply();
     for (const device of hearers) quietSend(device, TYPE, ownAccount());
     return true;
-}
-
-/** Takes this device out of its account for good, telling whoever can hear it right now. */
-export async function leaveAccount() {
-    const own = deviceKey();
-    const devices = linkedDevices().filter(device => !device.self).map(device => device.uid);
-    if (!own || devices.length === 0) return;
-
-    const at = Date.now();
-    const removal: DeviceRemoval = { key: own.key, by: own.key, at, sig: await own.sign(removalText(own.key, at)) };
-    const current = account();
-    commit({ ...current, removed: [...current.removed, removal] });
-    const data = ownAccount();
-    for (const uid of new Set([...devices, ...members().map(person => person.uid)])) quietSend(uid, TYPE, data);
 }
 
 // ---------------------------------------------------------------- who is who

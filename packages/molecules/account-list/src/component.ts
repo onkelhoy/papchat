@@ -68,7 +68,7 @@ export class AccountList extends CustomElement {
                         >${this.t("remove")}</pap-button>
                         ${this.asking === account.uid ? html`
                             <div class="confirm" role="alert">
-                                <p>${this.t("warning", { name: account.name })}</p>
+                                <p>${this.t(account.linked ? "warning-linked" : "warning", { name: account.name })}</p>
                                 <div class="choices">
                                     <pap-button size="small" variant="clear" @click="${() => { this.asking = ""; }}">${this.t("cancel")}</pap-button>
                                     <pap-button size="small" @click="${() => this.handleRemove(account)}">${this.t("confirm")}</pap-button>

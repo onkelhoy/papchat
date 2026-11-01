@@ -1,4 +1,4 @@
-import type { AccountData, Contact, Debug, Network, Prefs, Profile, PushRecord, SavedAccount, Session } from "./types";
+import type { AccountData, Contact, DeviceLink, Debug, Network, Prefs, Profile, PushRecord, SavedAccount, Session } from "./types";
 
 const KEYS = {
     profile: "papchat:profile",
@@ -107,13 +107,26 @@ function hasProfileFields(value: unknown): value is Record<string, unknown> {
         && ["available", "busy", "away", "dnd"].includes(value.status as string);
 }
 
-function isSavedAccount(value: unknown): value is SavedAccount {
+function isSavedAccount(value: unknown): value is Omit<SavedAccount, "linked"> {
     return isObject(value)
         && typeof value.slot === "string"
         && typeof value.uid === "string"
         && typeof value.name === "string"
         && typeof value.color === "string"
         && typeof value.at === "number";
+}
+
+/** A removal counts against links made before it: linking again after one is a new link. */
+export function activeLinks(data: AccountData): DeviceLink[] {
+    return data.links.filter(link => !data.removed.some(removal => (removal.key === link.a || removal.key === link.b) && removal.at >= link.at));
+}
+
+// an account's data also holds the links of people it met, so only its own key counts
+function isLinked(of: string): boolean {
+    const profile = read(local, inSlot(KEYS.profile, of));
+    const data = read(local, inSlot(KEYS.account, of));
+    if (!isProfile(profile) || !isObject(data) || !Array.isArray(data.links) || !Array.isArray(data.removed)) return false;
+    return activeLinks(data as AccountData).some(link => link.a === profile.key || link.b === profile.key);
 }
 
 function isContact(value: unknown): value is Contact {
@@ -247,7 +260,8 @@ export const storage = {
     accounts: {
         get(): SavedAccount[] {
             const value = read(local, LIST);
-            return Array.isArray(value) ? value.filter(isSavedAccount).sort((a, b) => b.at - a.at) : [];
+            if (!Array.isArray(value)) return [];
+            return value.filter(isSavedAccount).sort((a, b) => b.at - a.at).map(account => ({ ...account, linked: isLinked(account.slot) }));
         },
         /** Puts this slot's profile on the list. The first profile on a blank slot also opens it. */
         remember(profile: Pick<Profile, "uid" | "name" | "color">) {

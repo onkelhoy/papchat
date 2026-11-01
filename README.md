@@ -22,7 +22,7 @@ A Teams-style chat, call and broadcast app that runs **entirely peer to peer** i
 
 Everything about you lives in your own browser: your profile in `localStorage`, your saved chats and device key in IndexedDB. No chat ever reaches a server.
 
-- **Accounts**: a browser can hold several. The avatar menu has Manage accounts and Log out, and login lists the accounts saved here above the name field. Accounts belong to one browser, so Chrome and Safari each have their own list; linking devices is what makes them one person. There's no password, so anyone using the browser can open any account here, and saved chats aren't encrypted on disk. Logging out turns off call notifications until you log back in, and contacts get your new token when they next meet you. Removing an account deletes its key, chats, contacts and settings for good.
+- **Accounts**: a browser can hold several. The avatar menu has Manage accounts and Log out, and login lists the accounts saved here above the name field. Accounts belong to one browser, so Chrome and Safari each have their own list; linking devices is what makes them one person. There's no password, so anyone using the browser can open any account here, and saved chats aren't encrypted on disk. Logging out turns off call notifications until you log back in, and contacts get your new token when they next meet you. Removing an account deletes its key, chats, contacts and settings from this browser for good. A linked account carries on through its other device: nobody is told, the link stays valid, and the people who know you see the same person with the same chats.
 
 <!-- Screenshots (light and dark, a call, a stage) go here once they have been captured against the live page. -->
 

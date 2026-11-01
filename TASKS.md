@@ -800,10 +800,10 @@ Ideas from the user, planned in this order because each phase needs the one befo
 - **do:** remove an account after a confirmation: tell linked devices, stop push, delete its key, chats and settings. Can't be undone.
 - **files:** `core/src/accounts.ts`, `core/src/keys.ts`, `core/src/history.ts`, `core/src/storage.ts`, `molecules/account-list`, page, translations, README.
 - **done when:** a removed account is gone from the list and its data from the browser; typecheck + build pass.
-- Done: `removeAccount(slot)` in `core/src/accounts.ts`, and `leaveAccount()` in `account.ts` signs the device's own removal. Order: chats, key, list. Only the open account can tell linked devices, and only those online then; removing an account that isn't open tells nobody. Removing the last account puts the browser back to a first visit.
+- Done: `removeAccount(slot)` in `core/src/accounts.ts`. Order: chats, key, list. It tells nobody, on purpose: a signed removal splits a linked person for everyone who knows them, so a linked account is just deleted here and lives on through its other device. The deleted device stays listed in that device's Settings, and removing it there is what would split the person. Removing the last account puts the browser back to a first visit.
 
 ### [ ] T11.4 Accounts live check · `opus` · needs T11.1-T11.3
-- User test: an existing browser keeps its identity and chats; log out, make a second account, switch back; each sees only its own chats; a second tab follows a switch; remove the second account; remove the last one and land on a first visit; a linked device hears a removal; call notifications come back after logging in.
+- User test: an existing browser keeps its identity and chats; log out, make a second account, switch back; each sees only its own chats; a second tab follows a switch; remove the second account; remove the last one and land on a first visit; remove a linked account and the other device keeps its chats while contacts still see one person with one chat; call notifications come back after logging in.
 
 ---
 

@@ -1,5 +1,5 @@
 /** One row. Same shape as `SavedAccount` in @papchat/core. */
-export type AccountRow = { slot: string; uid: string; name: string; color: string };
+export type AccountRow = { slot: string; uid: string; name: string; color: string; linked?: boolean };
 
 /** Detail of the `account-pick` event. */
 export type AccountPickEvent = { slot: string };
