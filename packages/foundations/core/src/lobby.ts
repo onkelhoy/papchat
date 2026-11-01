@@ -303,6 +303,7 @@ export async function listNetworks(): Promise<NetworkEntry[]> {
             entry.members += info.size;
             entry.locked ||= info.meta.locked === true;
             entry.nosave ||= info.meta.history === false;
+            entry.ring ||= topologyOf(info) === "ring";
             found.set(name, entry);
         }
     }
@@ -330,7 +331,8 @@ function startClient(): Promise<boolean> {
         client = new Client({
             url: signalUrl(),
             rtc: RTC,
-            topology: "chord",
+            // only counts for a network this client creates: a joined one keeps its own
+            topology: network()?.ring ? "ring" : "chord",
             profile: wire(profile!),
             acceptMerge,
         });
@@ -441,6 +443,7 @@ async function boot(current: number): Promise<boolean> {
         alive(current);
 
         readNetworkSaves(c.network?.meta);
+        rememberTopology(c);
         booting = false;
         retryMs = RETRY_MIN_MS;
         syncStatus();
@@ -509,6 +512,8 @@ async function raceGuard(current: number) {
         for (const target of lobbies)
         {
             if (compare(target, mine) >= 0) break;
+            // a merge needs the same topology, so asking would only be refused every scan
+            if (topologyOf(target) !== topologyOf(mine)) continue;
             // the password is only sent to a network that asks for one
             const password = target.meta?.locked === true ? network()?.password ?? "" : "";
             if (!refused.has(refusedKey(target.id, password)))
@@ -747,6 +752,18 @@ async function join(current: number, c: Client, id: string) {
         if (isWrongPassword(error)) throw new WrongPassword();
         throw error;
     }
+}
+
+function topologyOf(n: NetworkInfo): string {
+    return typeof n.topology === "string" ? n.topology : n.topology.name;
+}
+
+// whoever ends up alone and reloads creates the network again, and it should come back as what it was
+function rememberTopology(c: Client) {
+    const net = network();
+    if (!net || !c.network) return;
+    const ring = topologyOf(c.network) === "ring";
+    if (ring !== !!net.ring) setNetwork({ ...net, ring });
 }
 
 // canonical = smallest meta.created, then smallest id

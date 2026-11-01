@@ -42,7 +42,7 @@ The component never connects. It fires `network-change` and the page decides: Se
 
 | Event | Detail | When |
 | --- | --- | --- |
-| `network-change` | `{ network: { name, password } \| null }` | Join on an open listed network, or the join-or-create form. `null` = public. A locked listed network fills the form's name and focuses the password instead. |
+| `network-change` | `{ network: { name, password, nosave?, ring? } \| null }` | Join on an open listed network, or the join-or-create form. `null` = public. A locked listed network fills the form's name and focuses the password instead. |
 | `networks-refresh` | none | Refresh pressed; set a fresh `networks`. |
 
 Both bubble and are composed. Parts: `list`, `form`.

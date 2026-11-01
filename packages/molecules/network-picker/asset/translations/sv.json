@@ -22,6 +22,9 @@
     "link-hint-public": "Alla som har länken kan gå med.",
     "nosave": "Be alla att inte spara chattar",
     "nosave-hint": "Gäller bara när det här skapar ett nytt nätverk. Det är en begäran, inte en regel: alla enheter kan behålla det de tar emot.",
-    "nosaved": "chattar sparas inte"
+    "nosaved": "chattar sparas inte",
+    "ring": "Gör det till ett ringnätverk",
+    "ring-hint": "Gäller bara när det här skapar ett nytt nätverk. Alla kopplar upp sig mot två personer i stället för flera, så det belastar varje enhet mindre, men meddelanden tar längre tid i en stor grupp.",
+    "ringed": "ring"
   }
 }

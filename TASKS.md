@@ -18,7 +18,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-11-01)
 
-- **Done:** 101/110 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
+- **Done:** 102/111 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
 - **Next:** ship and retest, see the handover above. Otherwise the user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T0.6 (go live) is theirs.
@@ -836,6 +836,9 @@ Ideas from the user, planned in this order because each phase needs the one befo
 - **Check:** unwanted links now close a few seconds after any member change (`network.prune`, which doesn't mean the peer left), so nothing may rely on a stale link staying up. Not audited yet: start with `Verifier`'s `ready: c.links.length > 0` in `lobby.ts`, `quietSend`, and global chat's `unreachable`, since a broadcast only uses open links. Already checked: papchat never sends `network.join` itself, and has no custom topology (`ring` is a reserved name now).
 - **done when:** typecheck + build pass. User test: the dad connection (broke around 2026-11-01, a regression, not missing TURN), Offline peers, a merge in a real network.
 - Done, see `PAPIT-UPGRADE-NOTES.md`. `merge()`, `acceptMerge`, `merged` and `sharePassword` replace the mass restart, the `MERGE` message and the password probe; rooms use `server-id`, so `room-id` and its polling went. Audit of `network.prune`: `Verifier`, `quietSend`, global chat and the stage query all still work, because prune only closes links once every wanted link is up, and mesh clients never prune. Added `greet`, see the notes. Typecheck + build pass; never run in a browser, and the user's test is still to do.
+
+### [x] T12.2 Ring networks · `opus` · needs T12.1
+- Asked for by the user, 2026-11-01. "Make it a ring network" in `pc-network-picker`, which only counts when it creates the network: a joined network keeps its own topology. The list marks a ring. `rememberTopology` keeps `Network.ring` true to what the device is really in, so the last one reloading brings the same kind back. A ring and a chord with one name stay apart, without asking, because `merge()` refuses them. They show no "separated" hint, since that one is about passwords. Typecheck + build pass; not run in a browser.
 
 ---
 

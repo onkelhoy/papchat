@@ -4,7 +4,8 @@ export type NetworkEntry = {
     members: number;
     locked: boolean;
     nosave?: boolean;
+    ring?: boolean;
 };
 
 /** Detail of `network-change`: `null` = the public papchat network, an empty password = open. */
-export type NetworkChangeEvent = { network: { name: string; password: string; nosave?: boolean } | null };
+export type NetworkChangeEvent = { network: { name: string; password: string; nosave?: boolean; ring?: boolean } | null };

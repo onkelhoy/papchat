@@ -22,6 +22,9 @@
     "link-hint-public": "Anyone with this link can join.",
     "nosave": "Ask everyone not to save chats",
     "nosave-hint": "Only when this makes a new network. It's a request, not a rule: any device can keep what it receives.",
-    "nosaved": "chats not saved"
+    "nosaved": "chats not saved",
+    "ring": "Make it a ring network",
+    "ring-hint": "Only when this makes a new network. Everyone links to two people instead of several, so it's lighter on each device, but messages take longer in a big group.",
+    "ringed": "ring"
   }
 }

@@ -186,7 +186,7 @@ export const storage = {
         get(): Network | null {
             const value = read(local, inSlot(KEYS.network));
             if (!isObject(value) || typeof value.name !== "string" || !value.name.trim()) return null;
-            return { name: value.name.trim(), password: typeof value.password === "string" ? value.password : "", ...(value.nosave === true ? { nosave: true } : {}) };
+            return { name: value.name.trim(), password: typeof value.password === "string" ? value.password : "", ...(value.nosave === true ? { nosave: true } : {}), ...(value.ring === true ? { ring: true } : {}) };
         },
         set(value: Network | null) {
             write(local, inSlot(KEYS.network), value ?? undefined);

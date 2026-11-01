@@ -45,6 +45,8 @@ export type Network = {
     password: string;
     // creating it: ask everyone in it not to save chats
     nosave?: boolean;
+    // creating it: a ring instead of a chord network
+    ring?: boolean;
 };
 
 /** One network on the signal server, for the network list. `name` is "" for the public one. */
@@ -54,6 +56,7 @@ export type NetworkEntry = {
     locked: boolean;
     // its creator asked everyone not to save chats
     nosave?: boolean;
+    ring?: boolean;
 };
 
 /** Someone who can be rung with nobody online. `token` is their push token (push.ts). */
