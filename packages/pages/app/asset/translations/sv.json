@@ -11,6 +11,8 @@
     "cameraFailed": "Kunde inte starta kameran",
     "micFailed": "Kunde inte starta mikrofonen",
     "notificationsDenied": "Notiser är blockerade i webbläsarens inställningar",
+    "notificationsAsk": "Vill du få notiser om samtal och meddelanden?",
+    "notificationsAllow": "Slå på",
     "pushFailed": "Kunde inte aktivera samtalsnotiser. Försök igen om en minut",
     "shortcutMic": "Stäng av eller slå på mikrofonen (i samtal eller på scen)",
     "shortcutCamera": "Slå på eller av kameran",

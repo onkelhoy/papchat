@@ -27,6 +27,8 @@ export type Prefs = {
     language: string;
     autoDeclineBusy: boolean;
     notifications: boolean;
+    // asked once whether to turn them on: a refresh doesn't ask again
+    notificationsAsked: boolean;
     devices: { mic?: string; camera?: string; speaker?: string };
     sidebarOpen: boolean;
     // emoji picked in the composer, newest first (at most 24)

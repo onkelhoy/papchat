@@ -11,6 +11,8 @@
     "cameraFailed": "Couldn't start the camera",
     "micFailed": "Couldn't start the microphone",
     "notificationsDenied": "Notifications are blocked in the browser settings",
+    "notificationsAsk": "Get a notification for calls and messages?",
+    "notificationsAllow": "Turn on",
     "pushFailed": "Couldn't turn on call notifications. Try again in a minute",
     "shortcutMic": "Mute or unmute the microphone (in a call or on stage)",
     "shortcutCamera": "Turn the camera on or off",

@@ -56,6 +56,7 @@ import {
     listNetworks,
     placeCall,
     requestNotifications,
+    askNotifications,
     ringContact,
     ringtone,
     sinkSupported,
@@ -292,6 +293,13 @@ async function boot() {
     await startAccount();
     startSync();
     startNotify();
+    askNotifications(() => toast("info", t("notificationsAsk"), {
+        action: t("notificationsAllow"),
+        duration: 0,
+        onAction: async () => {
+            if (!await requestNotifications()) toast("warning", t("notificationsDenied"));
+        },
+    }));
     void refreshPush();
     void ringtone.loadTones();
     void ringtone.loadDialtones();

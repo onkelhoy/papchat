@@ -42,6 +42,22 @@ export async function requestNotifications(): Promise<boolean> {
     return granted;
 }
 
+/**
+ * Once ever, as soon as there's a profile: calls `prompt` unless the browser already settled it. The
+ * browser's own question needs a click on most browsers, so `prompt` shows a button that calls
+ * `requestNotifications`. Until that's a yes the setting stays off, so it never shows on and does nothing.
+ */
+export function askNotifications(prompt: () => void) {
+    if (typeof Notification === "undefined") return;
+    effect(() => {
+        if (!me() || prefs().notificationsAsked) return;
+        const permission = Notification.permission;
+        const on = permission === "granted" && prefs().notifications;
+        setPrefs({ notificationsAsked: true, notifications: on });
+        if (!on && permission !== "denied") prompt();
+    });
+}
+
 /** Wires the watchers. Safe to call more than once. */
 export function startNotify() {
     if (started || typeof document === "undefined") return;
