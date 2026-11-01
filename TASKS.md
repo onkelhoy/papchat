@@ -782,6 +782,26 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ---
 
+## Wave 11: several accounts on one browser (user, 2026-11-01)
+
+### [x] T11.1 Accounts in storage · `opus` · needs —
+- **do:** let one browser hold several accounts, with nothing visible changing yet.
+- **files:** `core/src/{storage,keys,history,identity,types}.ts`.
+- **done when:** an existing browser keeps its identity and chats; typecheck + build pass.
+- Done: each account has a slot. The first one's slot is "", so its names have no suffix and nothing is migrated; other slots suffix every per-account name via `inSlot` (localStorage keys, the history database and tab channel, the key's IndexedDB record). `debug` and `session` aren't per account. `papchat:accounts` is the list, `papchat:active` the open slot (missing = "", null = logged out), `papchat:blank` the slot a new account takes. The slot is fixed at import because modules read storage then, so changing account has to reload.
+
+### [ ] T11.2 Log out, switching, Manage accounts · `opus` · needs T11.1
+- **do:** the avatar menu gets Manage accounts and Log out. Login lists saved accounts above the name field; picking one opens it, a name makes a new one.
+- **files:** `core/src/accounts.ts` (new), `molecules/account-list` (new), `organisms/accounts` (new), `organisms/onboarding`, `organisms/app-header`, page, translations.
+- **done when:** log out, pick, switch and add all work in the build; typecheck + build pass.
+
+### [ ] T11.3 Remove account · `opus` · needs T11.2
+- **do:** remove an account after a confirmation: tell linked devices, stop push, delete its key, chats and settings. Can't be undone.
+- **files:** `core/src/accounts.ts`, `core/src/keys.ts`, `core/src/history.ts`, `core/src/storage.ts`, `molecules/account-list`, page, translations, README.
+- **done when:** a removed account is gone from the list and its data from the browser; typecheck + build pass.
+
+---
+
 ## Notes
 <!-- Cross-task issues, changes needed outside a task's files, decisions. Newest first. -->
 - **Webrtc 0.0.6 no longer emits the `reconnect` error (2026-10-31):** the list of `this.error` types in the bundle has none, so `lobby.ts:287` / `:691` and `room.ts:738` / `:1141` don't run, and the T1.1 gap note below is out of date. A dropped socket leaves links up and the host re-registers by itself. T8.3 and T8.5 clean this up.

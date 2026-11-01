@@ -35,6 +35,7 @@ function randomColor(): string {
 // writes storage, updates `me` and tells the lobby and every room
 function commit(profile: Profile): Profile {
     storage.profile.set(profile);
+    storage.accounts.remember(profile);
     setMe(profile);
     setLobbyProfile(profile);
     setRoomsProfile(profile);

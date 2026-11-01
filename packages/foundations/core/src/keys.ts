@@ -1,4 +1,5 @@
 import { log } from "./log";
+import { inSlot } from "./storage";
 
 // Your identity is a key pair on this device, not a name. The private key can't be exported, so it
 // never leaves the browser, and your uid is a hash of the public key: nobody can claim a uid without
@@ -60,10 +61,10 @@ function keepFirst(fresh: CryptoKeyPair): Promise<CryptoKeyPair> {
             const tx = db.transaction(STORE, "readwrite");
             const store = tx.objectStore(STORE);
             let pair = fresh;
-            const stored = store.get(RECORD);
+            const stored = store.get(inSlot(RECORD));
             stored.onsuccess = () => {
                 if (stored.result) pair = stored.result as CryptoKeyPair;
-                else store.put(fresh, RECORD);
+                else store.put(fresh, inSlot(RECORD));
             };
             tx.oncomplete = () => {
                 db.close();

@@ -138,6 +138,17 @@ export type SessionRoom = {
     kind: RoomKind;
 };
 
+/** One account on this browser, as the list shows it. Its data stays closed until it's opened. */
+export type SavedAccount = {
+    /** Where its data lives, "" for the first account. */
+    slot: string;
+    uid: string;
+    name: string;
+    color: string;
+    /** When it was last changed. */
+    at: number;
+};
+
 export type Session = {
     rooms: SessionRoom[];
 };

@@ -5,6 +5,7 @@ import { cleanGif } from "./gif";
 import { log } from "./log";
 import { personOf } from "./people";
 import { prefs } from "./state";
+import { inSlot } from "./storage";
 import type { ChatMessage, Conversation, ConversationMember } from "./types";
 
 // Saved chats: conversations and their messages, on this device only, in IndexedDB. Files aren't kept.
@@ -65,7 +66,7 @@ let opening: Promise<IDBDatabase> | null = null;
 
 function open(): Promise<IDBDatabase> {
     opening ??= new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB, 1);
+        const request = indexedDB.open(inSlot(DB), 1);
         request.onupgradeneeded = () => {
             const db = request.result;
             db.createObjectStore(CONVERSATIONS, { keyPath: "id" });
@@ -105,7 +106,7 @@ async function attempt<T>(fallback: T, work: (db: IDBDatabase) => Promise<T>): P
 // ---------------------------------------------------------------- list
 
 // other tabs of this browser save too
-const tabs = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(TABS);
+const tabs = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(inSlot(TABS));
 if (tabs) tabs.onmessage = () => void refresh();
 
 async function refresh() {
