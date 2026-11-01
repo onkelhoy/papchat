@@ -1,5 +1,4 @@
 :host {
-    --pc-sidebar: var(--background, light-dark(oklch(96% 0 0), oklch(17% 0 0)));
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -33,6 +32,8 @@
 pap-sidebar {
     grid-area: sidebar;
     --shade-1: var(--pc-sidebar);
+    /* what sits in it, like the ring around an avatar, draws on this background */
+    --background: var(--pc-sidebar);
     background-color: var(--pc-sidebar);
     border-inline-end: 1px solid light-dark(oklch(88% 0.01 264), oklch(28% 0.015 264));
 }
@@ -46,6 +47,7 @@ pap-sidebar:not([open])::part(header) {
 /* the phone's sidebar */
 pap-drawer {
     --drawer-background: var(--pc-sidebar);
+    --background: var(--pc-sidebar);
 }
 
 [part="main"] {
