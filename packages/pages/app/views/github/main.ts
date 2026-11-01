@@ -187,7 +187,7 @@ const t = (key: string, vars?: Record<string, string>) => useTranslator("app")(k
 // pap-icon fetches its file per icon and can render before the fetch lands, leaving the icon empty
 // (papit finding #13): load the sprites once into its shared registry, then re-name any icon that
 // rendered empty so it picks them up. Icons created later find them straight away.
-const ICON_FILES = ["/icons/spritesheet.svg", "/icons/sun.svg", "/icons/moon.svg", "/icons/computer.svg"];
+const ICON_FILES = ["/icons/sun.svg", "/icons/moon.svg", "/icons/computer.svg"];
 
 async function preloadIcons() {
     await customElements.whenDefined("pap-icon");
@@ -511,7 +511,8 @@ effect(() =>
 
     // saved conversations with no room right now come last, latest first
     const live = rooms();
-    const open = new Set(live.map(r => r.conversation));
+    // read from the room: a summary keeps the id from its last update, and a stale one shows a second row
+    const open = new Set(live.map(r => getRoom(r.id)?.conversationId ?? r.conversation));
     const saved = conversations()
         .filter(c => !open.has(c.id))
         .map((c): RoomSummary => ({ id: c.id, kind: "chat", title: c.title, participants: c.members.map(memberProfile), unread: 0, incall: false, live: false, saved: true }));
@@ -1020,12 +1021,20 @@ view.addEventListener("send", (e) =>
     if (globalOpen())
     {
         const problem = GLOBAL_PROBLEMS[postGlobal(text)];
-        if (problem) toast("info", t(problem));
+        if (problem)
+        {
+            e.preventDefault();
+            toast("info", t(problem));
+        }
     }
     else if (stage) stage.send(text);
     else if (viewing())
     {
-        if (!sendSaved(text)) toast("warning", t("cantQueue"));
+        if (!sendSaved(text))
+        {
+            e.preventDefault();
+            toast("warning", t("cantQueue"));
+        }
     }
     else if (text.trim().toLowerCase() === "/buzz") sendBuzz();
     else current()?.send(text);

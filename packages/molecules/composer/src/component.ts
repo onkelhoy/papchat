@@ -85,7 +85,7 @@ type PickTab = "emoji" | "gifs";
  * @property {GifState | null} gifs `{ items, loading }` GIF results from the host; null hides GIFs (property only)
  * @property {boolean} textonly no attach button, for a chat that can't carry files (reflected)
  *
- * @fires send `CustomEvent<{ text: string }>` trimmed text, the field is cleared afterwards
+ * @fires send `CustomEvent<{ text: string }>` trimmed text, the field is cleared afterwards. Cancelable: `preventDefault()` puts the text back
  * @fires typing `CustomEvent<void>` at most once per second while the user types
  * @fires files `CustomEvent<{ files: File[] }>` files chosen with the attach button
  * @fires emoji `CustomEvent<{ emoji: string }>` an emoji was inserted (picker or autocomplete), to update the recent list
@@ -218,7 +218,13 @@ export class Composer extends CustomElement {
         this.filled = false;
         this.lastTyping = 0;
         this.syncPreview();
-        this.dispatchEvent(new CustomEvent<SendEvent>("send", { detail: { text }, bubbles: true, composed: true }));
+        const sent = this.dispatchEvent(new CustomEvent<SendEvent>("send", { detail: { text }, bubbles: true, composed: true, cancelable: true }));
+        if (sent) return;
+
+        // whoever listens couldn't send it: nothing typed is lost
+        this.field.value = text;
+        this.filled = true;
+        this.syncPreview();
     }
 
     @bind

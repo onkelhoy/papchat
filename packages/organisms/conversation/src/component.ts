@@ -41,7 +41,7 @@ const TOP_THRESHOLD = 80;
  * @property {GifState | null} gifs GIF results for the composer's picker, null hides GIFs (property only)
  * @property {boolean} textonly the composer offers no files or GIFs
  *
- * @fires send `CustomEvent<{ text: string }>` re-dispatched from the composer
+ * @fires send `CustomEvent<{ text: string }>` re-dispatched from the composer. Cancelable: `preventDefault()` keeps the text in the field
  * @fires typing `CustomEvent<void>` re-dispatched from the composer
  * @fires files `CustomEvent<{ files: File[] }>` re-dispatched from the composer, or dropped on the element
  * @fires emoji `CustomEvent<{ emoji: string }>` from the composer: an emoji was inserted (bubbles, composed)
@@ -220,7 +220,8 @@ export class Conversation extends CustomElement {
     @bind
     private handleSend(e: CustomEvent<SendEvent>) {
         e.stopPropagation();
-        this.dispatchEvent(new CustomEvent<SendEvent>("send", { detail: { text: e.detail.text }, bubbles: true, composed: true }));
+        const sent = this.dispatchEvent(new CustomEvent<SendEvent>("send", { detail: { text: e.detail.text }, bubbles: true, composed: true, cancelable: true }));
+        if (!sent) e.preventDefault();
     }
 
     @bind

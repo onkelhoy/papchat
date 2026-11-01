@@ -90,6 +90,12 @@ pc-app-shell:not([sidebaropen]) .foot {
     max-width: calc(100% - 2 * var(--space-4));
 }
 
+@media (max-width: 799.98px) {
+    .incoming {
+        left: var(--space-4);
+    }
+}
+
 .logo {
     font-weight: 700;
     font-size: 1.125rem;

@@ -40,7 +40,7 @@ npm install @papchat/composer
 
 | Event    | Detail              | Description                                                                                              |
 | -------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
-| `send`   | `{ text: string }`  | Enter or the send button (Shift+Enter is a new line and continues a list or quote; Ctrl/Cmd+B/I/U format); text is trimmed, the field is cleared. Nothing fires for empty/whitespace text |
+| `send`   | `{ text: string }`  | Enter or the send button (Shift+Enter is a new line and continues a list or quote; Ctrl/Cmd+B/I/U format); text is trimmed, the field is cleared. Nothing fires for empty/whitespace text. Cancelable: `preventDefault()` puts the text back |
 | `typing` | -                   | at most once per second while the field has text                                                         |
 | `files`  | `{ files: File[] }` | files chosen with the attach button (`pap-file-input`, multiple)                                         |
 | `gif-search` | `{ query: string }` | the popover wants GIF results ("" = trending): on open, and 300 ms after the search stops changing. Answer by setting `gifs` |
