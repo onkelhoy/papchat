@@ -1,3 +1,4 @@
+import { signal } from "@papit/signals";
 import { Client } from "@papit/webrtc";
 
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
@@ -6,7 +7,7 @@ import { PROOF, Verifier } from "./keys";
 import { log, logClient } from "./log";
 import { devicesOf, personOf, samePerson } from "./people";
 import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
-import type { Network, NetworkEntry, Profile, Status } from "./types";
+import type { Network, NetworkEntry, NetworkHealth, Profile, Status } from "./types";
 
 // The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in. A private network
 // (`network()`) is the same thing under its own name and password, so only its members meet. Find the canonical
@@ -30,6 +31,8 @@ const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const RETRY_MIN_MS = 3_000;
 const RETRY_MAX_MS = 30_000;
 const UNREACHABLE_QUIET_MS = 3_000;
+// some of what the health shows has no event, like a member's socket closing
+const HEALTH_MS = 3_000;
 // host → group: a merge keeps the staying network's password, this is it
 const PASSWORD = "lobby-password";
 // host → group: a same-name network exists that we can't get into
@@ -71,6 +74,13 @@ const handlers = new Map<string, Set<LobbyHandler>>();
 const timers = new Set<{ id: ReturnType<typeof setTimeout>; resolve: () => void }>();
 const lastUnreachable = new Map<string, number>();
 
+/** How this device is doing in its network, null while it isn't in one. */
+export const [networkHealth, setNetworkHealth] = signal<NetworkHealth | null>(null);
+let healthTimer: ReturnType<typeof setInterval> | undefined;
+let healthShown = "null";
+let listed: boolean | undefined;
+let lastMerge: NetworkHealth["merge"];
+
 // presence (PLAN §2.2): peer → when we last heard from it (any message, or its arrival)
 const heardAt = new Map<string, number>();
 let heartbeat: ReturnType<typeof setTimeout> | null = null;
@@ -104,6 +114,7 @@ export async function startLobby(): Promise<boolean> {
     if (typeof window !== "undefined") window.addEventListener("pagehide", handlePageHide);
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleVisibility);
     beat();
+    healthTimer = setInterval(reportHealth, HEALTH_MS);
     return startClient();
 }
 
@@ -115,6 +126,8 @@ export function stopLobby() {
     if (typeof document !== "undefined") document.removeEventListener("visibilitychange", handleVisibility);
     if (heartbeat) clearTimeout(heartbeat);
     heartbeat = null;
+    clearInterval(healthTimer);
+    reportHealth();
     heardAt.clear();
     recent.clear();
     retrying.clear();
@@ -361,6 +374,8 @@ function stopClient() {
     unregistered = false;
     refused.clear();
     unlocks.clear();
+    listed = undefined;
+    lastMerge = undefined;
     setSeparated(null);
     for (const timer of timers)
     {
@@ -501,6 +516,8 @@ async function raceGuard(current: number) {
         const lobbies = await findLobbies(current, c);
         // not listed yet (a re-register is still under way): our id and order aren't known, so decide nothing
         const mine = lobbies.find(n => n.id === c.serverId);
+        listed = !!mine;
+        reportHealth();
         if (!mine)
         {
             log("lobby: not listed yet, checking again later", c.serverId);
@@ -550,6 +567,7 @@ async function merge(current: number, c: Client, target: string, password: strin
     {
         await serverCall(current, () => c.merge(target, password || undefined));
         alive(current);
+        noteMerge("merged", target);
         return "merged";
     }
     catch (error)
@@ -559,11 +577,18 @@ async function merge(current: number, c: Client, target: string, password: strin
         if (/wrong password/i.test(String((error as Error)?.message ?? error)))
         {
             refused.add(refusedKey(target, password));
+            noteMerge("refused", String((error as Error)?.message ?? error));
             return "refused";
         }
         log("lobby: merge failed", error);
+        noteMerge("failed", String((error as Error)?.message ?? error));
         return "failed";
     }
+}
+
+function noteMerge(outcome: "merged" | "refused" | "failed", detail: string) {
+    lastMerge = { at: Date.now(), outcome, detail };
+    reportHealth();
 }
 
 // the other host checks the password itself. A merge can move this whole group, so only our own kind counts
@@ -837,6 +862,7 @@ export function readMember(peer: string, raw: unknown): Member | null {
 
 // lobbyStatus: the socket status, except "connected" only counts once we're in the lobby
 function syncStatus() {
+    reportHealth();
     if (!running)
     {
         setLobbyStatus("idle");
@@ -915,6 +941,31 @@ function handleStatus(event: Event) {
 function applyProofs() {
     memberByPeer = new Map([...claimed].filter(([peer]) => verifier?.verified(peer)));
     publish();
+    reportHealth();
+}
+
+function reportHealth() {
+    const c = client;
+    const info = c?.network;
+    const next: NetworkHealth | null = !c || !info ? null : {
+        id: (c.serverId ?? info.id).slice(0, 8),
+        topology: topologyOf(info),
+        host: c.host === c.id,
+        socket: !!c.socket?.open,
+        listed: c.host === c.id ? listed : undefined,
+        peers: c.members.filter(peer => peer !== c.id).map(peer => ({
+            id: peer.slice(0, 8),
+            name: claimed.get(peer)?.profile.name ?? "",
+            host: peer === c.host,
+            linked: c.links.includes(peer),
+            proven: !!verifier?.verified(peer),
+        })),
+        merge: lastMerge,
+    };
+    const shown = JSON.stringify(next);
+    if (shown === healthShown) return;
+    healthShown = shown;
+    setNetworkHealth(next);
 }
 
 // one entry per uid (newest peer wins), yourself left out

@@ -52,6 +52,7 @@ import {
     removeAccount,
     savedAccounts,
     enablePush,
+    networkHealth,
     forgetContact,
     peerOf,
     pushState,
@@ -814,6 +815,7 @@ effect(() => { settings.profile = me() ?? undefined; });
 effect(() => { settings.prefs = prefs(); });
 effect(() => { settings.network = network()?.name ?? ""; });
 effect(() => { settings.separated = separated() !== null; });
+effect(() => { settings.health = networkHealth() ?? undefined; });
 effect(() => { settings.invitelink = networkLink(network()); });
 effect(() => { settings.pushstate = pushState(); });
 effect(() => { settings.linked = linkedDevices(); });
@@ -981,7 +983,9 @@ logsView.addEventListener("logs-enable", () => setLogging(true));
 logsView.addEventListener("logs-disable", () => setLogging(false));
 logsView.addEventListener("logs-copy", () =>
 {
-    const text = logLines().map(line => `${new Date(line.at).toISOString()} ${line.text}`).join("\n");
+    const lines = logLines().map(line => `${new Date(line.at).toISOString()} ${line.text}`);
+    // where this device stands right now, so two people's logs can be laid side by side
+    const text = [`network: ${JSON.stringify(networkHealth())}`, ...lines].join("\n");
     navigator.clipboard.writeText(text).then(
         () => toast("info", t("logsCopied")),
         () => toast("warning", t("logsCopyFailed")),

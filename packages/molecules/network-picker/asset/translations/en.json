@@ -25,6 +25,26 @@
     "nosaved": "chats not saved",
     "ring": "Make it a ring network",
     "ring-hint": "Only when this makes a new network. Everyone links to two people instead of several, so it's lighter on each device, but messages take longer in a big group.",
-    "ringed": "ring"
+    "ringed": "ring",
+    "health": "This connection",
+    "host": "Host",
+    "host-you": "You",
+    "socket": "Signal server",
+    "socket-on": "Connected",
+    "socket-off": "Not needed, on peer links",
+    "socket-lost": "Lost, trying to reconnect",
+    "listed": "Findable",
+    "listed-yes": "Yes, on the server's list",
+    "listed-no": "No, new people can't find it",
+    "kind": "Network",
+    "merge": "Last merge",
+    "merge-merged": "Merged",
+    "merge-refused": "Refused",
+    "merge-failed": "Failed",
+    "people": "People in this network",
+    "alone": "Only you. Anyone else is in another network.",
+    "peer-linked": "Direct link",
+    "peer-relayed": "No direct link",
+    "peer-checking": "not confirmed yet"
   }
 }

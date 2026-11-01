@@ -36,6 +36,10 @@ label {
     color: var(--text-secondary, inherit);
 }
 
+.warn {
+    color: var(--warning);
+}
+
 .list {
     display: flex;
     flex-direction: column;

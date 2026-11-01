@@ -60,6 +60,20 @@ export type NetworkEntry = {
     ring?: boolean;
 };
 
+/** How this device is doing in its network, for Settings and for copied logs. */
+export type NetworkHealth = {
+    // the id the server has, shortened
+    id: string;
+    topology: string;
+    host: boolean;
+    // this device's own socket. Members let theirs go on purpose, a host needs it
+    socket: boolean;
+    // a host's last look at the server's list, unset for a member or before the first look
+    listed?: boolean;
+    peers: { id: string; name: string; host: boolean; linked: boolean; proven: boolean }[];
+    merge?: { at: number; outcome: "merged" | "refused" | "failed"; detail: string };
+};
+
 /** Someone who can be rung with nobody online. `token` is their push token (push.ts). */
 export type Contact = {
     uid: string;

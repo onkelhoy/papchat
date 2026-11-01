@@ -25,6 +25,26 @@
     "nosaved": "chattar sparas inte",
     "ring": "Gör det till ett ringnätverk",
     "ring-hint": "Gäller bara när det här skapar ett nytt nätverk. Alla kopplar upp sig mot två personer i stället för flera, så det belastar varje enhet mindre, men meddelanden tar längre tid i en stor grupp.",
-    "ringed": "ring"
+    "ringed": "ring",
+    "health": "Den här anslutningen",
+    "host": "Värd",
+    "host-you": "Du",
+    "socket": "Signalserver",
+    "socket-on": "Ansluten",
+    "socket-off": "Behövs inte, på direktlänkar",
+    "socket-lost": "Förlorad, försöker ansluta igen",
+    "listed": "Går att hitta",
+    "listed-yes": "Ja, på serverns lista",
+    "listed-no": "Nej, nya personer hittar det inte",
+    "kind": "Nätverk",
+    "merge": "Senaste sammanslagning",
+    "merge-merged": "Sammanslaget",
+    "merge-refused": "Nekad",
+    "merge-failed": "Misslyckades",
+    "people": "Personer i det här nätverket",
+    "alone": "Bara du. Alla andra är i ett annat nätverk.",
+    "peer-linked": "Direktlänk",
+    "peer-relayed": "Ingen direktlänk",
+    "peer-checking": "inte bekräftad än"
   }
 }

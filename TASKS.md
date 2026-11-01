@@ -18,7 +18,7 @@ The work list for building papchat. `PLAN.md` is the spec, this file is the orde
 
 ## ▶ Resume here (refreshed 2026-11-01)
 
-- **Done:** 103/112 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
+- **Done:** 104/113 tasks. All build work is in, through Wave 12. What's left is the user's: repros and live checks.
 - **Next:** ship and retest, see the handover above. Otherwise the user asks for one task at a time: do one, report, stop. All work goes straight on `main`.
 - **Commit only after typecheck and build pass:** `npx tsc --noEmit -p packages/foundations/core` and `npm run build`, and treat `failed` in the build output as a failure, because the exit code stays 0. Neither covers `views/github/main.ts`; to check it, use a temporary tsconfig with that file in `files` and `rootDir` set to the repo root.
 - **Waiting on the user:** T7.6 (stage screen share) needs their repro (steps in the task). T7.8 / T7.18 / T8.6 / T9.8 / T10.12 / T11.4 / T6.9 are live checks. T0.6 (go live) is theirs.
@@ -842,6 +842,9 @@ Ideas from the user, planned in this order because each phase needs the one befo
 
 ### [x] T12.3 Phones that don't ring · `opus` · needs T9.4
 - User, 2026-11-01: no notification on the phone, and with the app in the background they still show as online. (1) The offer was once per device, marked as done the moment it showed, and iOS Safari skipped it silently because `Notification` doesn't exist before install. `notificationsAskedAt` offers it again after a week until someone decides, and iOS gets the Add to Home Screen message. (2) `placeCall` only pushed to people not in the lobby, so a frozen phone that was still listed got an invite and nothing else. A visible device now answers `invite.seen`, and after `inviteSeenMs` every saved device that didn't gets a push, on top of the invite. Typecheck + build pass; not run on a phone. Left out: a pushed phone keeps ringing if the call is answered on another device (a `cancel` push says "missed", which is wrong there, and would also hit the device that answered); messages aren't pushed.
+
+### [x] T12.4 See what the connection is doing · `opus` · needs T12.1
+- User, 2026-11-01: merges don't seem to happen, a phone is alone in a network while on a call with their dad, and nothing shows why. Settings → Network now shows the host, this device's socket, whether a host is on the server's list, each person's link and proof, and the last merge's result. The same snapshot heads Logs → Copy. Nothing about the merge itself changed: the live server listed one lobby at the time, so there was no second one to merge with, and that needs both sides' panels. Typecheck + build pass; not run in a browser.
 
 ---
 

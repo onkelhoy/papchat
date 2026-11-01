@@ -21,7 +21,7 @@ import "@papchat/level-meter";
 import sheet from "./style.css" with { type: "css" };
 import type {
     DeviceLists, LanguageChangeEvent, Prefs, PrefsChangeEvent, PreviewDeviceEvent,
-    LinkedDevice, NetworkEntry, Profile, ProfileChangeEvent, PushState, Shortcut, Status, Tone,
+    LinkedDevice, NetworkEntry, NetworkHealth, Profile, ProfileChangeEvent, PushState, Shortcut, Status, Tone,
 } from "./types";
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
@@ -53,6 +53,7 @@ type Synced = HTMLElement & Record<string, unknown>;
  * @property {string} network name of the private network in use, "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server, for the Network tab (property only)
  * @property {boolean} separated a same-name network with an unknown password exists (property only)
+ * @property {NetworkHealth | undefined} health how this device is doing in its network (property only)
  * @property {string} invitelink invite link for the network in use (property only)
  * @property {PushState} pushstate calls while the app is closed: `unsupported` hides that section (property only)
  * @property {string} contactlink link that saves you as a contact, "" hides it and its QR code (property only)
@@ -102,6 +103,7 @@ export class Settings extends CustomElement {
     @property({ type: String, rerender: true }) network: string = "";
     @property({ type: Array, attribute: false, rerender: true }) networks: NetworkEntry[] = [];
     @property({ type: Boolean, attribute: false, rerender: true }) separated: boolean = false;
+    @property({ type: Object, attribute: false, rerender: true }) health?: NetworkHealth;
     @property({ type: String, attribute: false, rerender: true }) invitelink: string = "";
     @property({ type: String, attribute: false, rerender: true }) pushstate: PushState = "unsupported";
     @property({ type: String, attribute: false, rerender: true }) contactlink: string = "";
@@ -141,6 +143,7 @@ export class Settings extends CustomElement {
         {
             this.picker.networks = this.networks;
             this.picker.separated = this.separated;
+            this.picker.health = this.health;
             this.picker.link = this.invitelink;
         }
 
