@@ -138,6 +138,7 @@ export class LinkDevice extends CustomElement {
             <div class="confirm">
                 <p class="hint">${state.other ? this.t("confirm-named", { name: state.other }) : this.t("confirm")}</p>
                 <p class="code" aria-label="${this.t("code")}">${state.code}</p>
+                ${state.host ? "" : html`<p class="hint">${this.t("adopts")}</p>`}
                 <p class="hint">${this.t("warning")}</p>
                 <div class="actions">
                     <pap-button variant="clear" type="button" @click="${this.handleDismiss}">${this.t("decline")}</pap-button>

@@ -19,6 +19,7 @@
     "camera-failed": "The camera didn't start. Paste the link instead.",
     "notice-invalid": "That isn't a papchat device link.",
     "notice-expired": "That link has expired. Make a new one.",
+    "adopts": "This device will take the other device's name and colour.",
     "confirm": "Check that both devices show this code.",
     "confirm-named": "Linking to {name}. Check that both devices show this code.",
     "code": "Link code",

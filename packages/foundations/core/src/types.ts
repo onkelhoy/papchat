@@ -29,6 +29,8 @@ export type Prefs = {
     notifications: boolean;
     // asked once whether to turn them on: a refresh doesn't ask again
     notificationsAsked: boolean;
+    // when the name or colour last changed: your linked devices keep the newest
+    profileAt: number;
     devices: { mic?: string; camera?: string; speaker?: string };
     sidebarOpen: boolean;
     // emoji picked in the composer, newest first (at most 24)

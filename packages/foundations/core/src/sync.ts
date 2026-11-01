@@ -6,11 +6,12 @@ import { refreshViewing } from "./chats";
 import { APP, LIMITS, RTC, signalUrl } from "./config";
 import { addLinkedContact, contacts } from "./contacts";
 import { canSave, conversations, messageIds, messagesById, onSaved, readMessage, saveMessages } from "./history";
+import { adoptProfile } from "./identity";
 import { on, otherDevices, quietSend, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { samePerson } from "./people";
 import { allRooms } from "./room";
-import { me, members } from "./state";
+import { me, members, prefs } from "./state";
 import type { ChatMessage, Contact, Conversation, ConversationMember } from "./types";
 
 // Linked devices keep the same chats. Right after linking, and whenever two of them are online together,
@@ -23,6 +24,7 @@ const IDS_MAX = 20_000;
 const STALL_MS = 30_000;
 const LIVE = "sync.live";
 const OPEN = "sync.open";
+const PROFILE = "sync.profile";
 
 export type SyncProgress = { done: number; total: number };
 
@@ -100,6 +102,8 @@ export class DeviceSync {
         this.touch();
         this.out("sync.account", ownAccount());
         this.out("sync.contacts", { contacts: contacts() });
+        const profile = profileState();
+        if (profile) this.out(PROFILE, profile);
         for (const conversation of conversations())
         {
             const ids = await messageIds(conversation.id, 0, IDS_MAX);
@@ -151,6 +155,10 @@ export class DeviceSync {
         if (type === "sync.account")
         {
             await receiveAccount(payload);
+        }
+        else if (type === PROFILE)
+        {
+            readProfile(value);
         }
         else if (type === "sync.contacts")
         {
@@ -228,6 +236,45 @@ function follow() {
         }
     });
 }
+
+// ---------------------------------------------------------------- one name and colour
+
+function profileState() {
+    const profile = me();
+    return profile ? { uid: profile.uid, name: profile.name, color: profile.color, at: prefs().profileAt ?? 0 } : null;
+}
+
+// the newest wins, and the smaller uid when neither has ever changed. Status stays per device
+function readProfile(value: Record<string, unknown>) {
+    const profile = me();
+    const { uid, name, color, at } = value;
+    if (!profile || typeof uid !== "string" || typeof name !== "string" || typeof color !== "string" || typeof at !== "number") return;
+
+    const mine = prefs().profileAt ?? 0;
+    if (at < mine || (at === mine && uid > profile.uid)) return;
+    if (name === profile.name && color === profile.color) return;
+    adoptProfile(name, color, at);
+}
+
+function followProfile() {
+    let sent = "";
+    effect(() => {
+        const profile = me();
+        if (!profile) return;
+        const changed = `${profile.name}\n${profile.color}`;
+        const first = !sent;
+        if (changed === sent) return;
+        sent = changed;
+        if (first) return;
+        for (const device of otherDevices()) quietSend(device, PROFILE, profileState());
+    });
+}
+
+on<unknown>(PROFILE, (payload, from) => {
+    const mine = me()?.uid;
+    if (!mine || !from.uid || !samePerson(from.uid, mine) || from.uid === mine) return;
+    if (typeof payload === "object" && payload !== null) readProfile(payload as Record<string, unknown>);
+});
 
 on<unknown>(LIVE, (payload, from) => {
     const mine = me()?.uid;
@@ -322,6 +369,7 @@ on<unknown>(OPEN, async (payload, from) => {
 /** Starts following and catching up with your other devices. Once, at boot. */
 export function startSync() {
     follow();
+    followProfile();
     effect(() => {
         members();
         // a moment later: proofs and links settle first

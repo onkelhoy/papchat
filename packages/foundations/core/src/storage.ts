@@ -24,6 +24,7 @@ export const DEFAULT_PREFS: Prefs = {
     autoDeclineBusy: false,
     notifications: true,
     notificationsAsked: false,
+    profileAt: 0,
     devices: {},
     sidebarOpen: true,
     recentEmoji: [],

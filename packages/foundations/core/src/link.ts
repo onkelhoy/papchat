@@ -3,7 +3,7 @@ import { Client } from "@papit/webrtc";
 
 import { addLink, deviceLabel, linkText, nameDevice, validLink } from "./account";
 import { APP, LIMITS, RTC, signalUrl } from "./config";
-import { createProfile } from "./identity";
+import { adoptProfile, createProfile } from "./identity";
 import { loadDeviceKey, signedBy, uidOfKey } from "./keys";
 import { startLobby } from "./lobby";
 import { log } from "./log";
@@ -29,12 +29,14 @@ export type LinkState = {
     code: string;
     // what the other device says it is
     other: string;
+    // this device showed the code: it keeps its profile, the other one takes it
+    host: boolean;
     reason?: LinkFailure;
     done: number;
     total: number;
 };
 
-const EMPTY: LinkState = { phase: "starting", url: "", code: "", other: "", done: 0, total: 0 };
+const EMPTY: LinkState = { phase: "starting", url: "", code: "", other: "", host: false, done: 0, total: 0 };
 const CLOSE_DELAY_MS = 1_000;
 
 /** The link in progress, null when there is none. */
@@ -167,7 +169,7 @@ async function handle(target: Session, type: string, payload: unknown) {
         await uidOfKey(value.key);
         target.other = { key: value.key, label: typeof value.label === "string" ? value.label.slice(0, 64) : "" };
         clearTimeout(target.timer);
-        update({ phase: "confirm", url: "", code: await shortCode(own.key, value.key), other: target.other.label });
+        update({ phase: "confirm", url: "", code: await shortCode(own.key, value.key), other: target.other.label, host: target.host });
         return;
     }
     if (type === "link.no")
@@ -247,10 +249,16 @@ async function keep(target: Session, link: DeviceLink) {
     await adopt(target);
 }
 
-// a brand new device becomes the person it just linked to, on the same network
+// a brand new device becomes the person it just linked to, on the same network. Otherwise the device
+// that showed the code keeps its name and colour, and they follow every change from here on (sync.ts)
 async function adopt(target: Session) {
     const theirs = target.theirs;
-    if (me() || !theirs) return;
+    if (!theirs) return;
+    if (me())
+    {
+        if (!target.host) adoptProfile(theirs.name, theirs.color, Date.now());
+        return;
+    }
     if (theirs.network) setNetwork(theirs.network);
     createProfile(theirs.name, theirs.color);
     void startLobby();

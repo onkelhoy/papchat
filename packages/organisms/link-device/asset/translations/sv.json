@@ -19,6 +19,7 @@
     "camera-failed": "Kameran startade inte. Klistra in länken i stället.",
     "notice-invalid": "Det där är ingen enhetslänk från papchat.",
     "notice-expired": "Länken har gått ut. Skapa en ny.",
+    "adopts": "Den här enheten tar över den andra enhetens namn och färg.",
     "confirm": "Kontrollera att båda enheterna visar den här koden.",
     "confirm-named": "Länkar till {name}. Kontrollera att båda enheterna visar den här koden.",
     "code": "Länkkod",

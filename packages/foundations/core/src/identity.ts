@@ -2,7 +2,7 @@ import { deviceKey, loadDeviceKey } from "./keys";
 import { setLobbyProfile } from "./lobby";
 import { log } from "./log";
 import { setRoomsProfile } from "./room";
-import { me, setMe } from "./state";
+import { me, setMe, setPrefs } from "./state";
 import { storage } from "./storage";
 import type { Profile, Status } from "./types";
 
@@ -84,7 +84,7 @@ export function createProfile(name: string, color?: string): Profile {
     });
 }
 
-export function updateProfile(partial: Partial<Pick<Profile, "name" | "color" | "status">>): Profile | null {
+export function updateProfile(partial: Partial<Pick<Profile, "name" | "color" | "status">>, at: number = Date.now()): Profile | null {
     const current = getProfile();
     if (!current) return null;
 
@@ -97,7 +97,13 @@ export function updateProfile(partial: Partial<Pick<Profile, "name" | "color" | 
     if (partial.color) next.color = partial.color;
     if (partial.status && STATUSES.includes(partial.status)) next.status = partial.status;
 
+    if (next.name !== current.name || next.color !== current.color) setPrefs({ profileAt: at });
     return commit(next);
+}
+
+/** Takes the name and colour of a linked device, keeping the time they were set. */
+export function adoptProfile(name: string, color: string, at: number) {
+    return updateProfile({ name, color }, at);
 }
 
 export function setName(name: string) {
