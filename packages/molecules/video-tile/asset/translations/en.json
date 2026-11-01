@@ -4,6 +4,7 @@
     "language": "en"
   },
   "pc-video-tile": {
+    "calling": "Calling…",
     "muted": "Microphone off",
     "you": "You",
     "pin": "Pin",

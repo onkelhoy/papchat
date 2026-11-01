@@ -39,6 +39,7 @@ npm install @papchat/video-tile
 | `self`    | `self`    | `boolean`     | `false` | mirrors the video, reflected (tile video is always muted; remote audio plays in the stage) |
 | `screen`  | `screen`  | `boolean`     | `false` | screen share: `fit="contain"`, not mirrored, reflected                              |
 | `pinned`  | `pinned`  | `boolean`     | `false` | pinned state, reflected, toggled by the Pin button                                  |
+| `ringing` | `ringing` | `boolean` | `false` | the call is still ringing them: pulses and says so, reflected |
 
 | Event      | Detail                  | Description                                                              |
 | ---------- | ----------------------- | ------------------------------------------------------------------------ |

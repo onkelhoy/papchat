@@ -9,6 +9,8 @@ export type CallTile = {
     muted?: boolean;
     screen?: boolean;
     self?: boolean;
+    /** not here yet: the call is still ringing them */
+    ringing?: boolean;
     /** initial pinned state; once a tile is pinned or unpinned in the stage, that choice wins */
     pinned?: boolean;
 };

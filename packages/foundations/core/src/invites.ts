@@ -10,7 +10,7 @@ import { callText, closeNotification, pushCall, pushCancel } from "./push";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
 import { directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
-import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast } from "./state";
+import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast, setCalling } from "./state";
 import type { Contact, DeclineReason, IncomingCall, Invite, InviteKind, Profile, Ring, RoomKind } from "./types";
 
 // Invites over the lobby (PLAN §2.4): `invite`, `invite.accept`, `invite.decline`, `invite.cancel`.
@@ -202,6 +202,7 @@ export async function placeCall(uid: string, kind: Extract<RoomKind, "call" | "v
         devices,
     };
     outgoing.set(room.id, call);
+    syncCalling();
     ringback();
     room.addEventListener("leave", () => endCall(call, true), { once: true });
     if (devices.length > 0) void ringDevices(call, uid, kind);
@@ -217,6 +218,7 @@ async function ringDevices(call: Outgoing, uid: string, kind: Extract<RoomKind, 
     toast("warning", `Couldn't reach ${nameOf(uid) ?? "that person"}`);
     call.devices = [];
     call.ringing.delete(personOf(uid));
+    syncCalling();
     finishIfEmpty(call);
 }
 
@@ -364,6 +366,7 @@ on<unknown>("invite.decline", (payload, from) => {
     {
         stopOtherDevices(call, from.uid);
         call.ringing.delete(personOf(from.uid));
+        syncCalling();
         finishIfEmpty(call);
     }
     const text = {
@@ -454,7 +457,18 @@ function outgoingOf(id: string): Outgoing | undefined {
 function answered(call: Outgoing, uids: string[]) {
     stopRinging();
     for (const uid of uids) call.ringing.delete(uid);
+    syncCalling();
     if (call.ringing.size === 0) endCall(call, false);
+}
+
+function syncCalling() {
+    setCalling(Object.fromEntries([...outgoing].map(([id, call]) => [id, [...call.ringing]])));
+}
+
+/** Someone a call is ringing, who may not be online. */
+export function ringingProfile(uid: string): Profile {
+    const contact = contactsOf(uid)[0];
+    return profileOf(uid) ?? (contact ? contactProfile(contact) : unknownProfile(uid));
 }
 
 function nameOf(uid: string): string | null {
@@ -469,6 +483,7 @@ function expire(call: Outgoing) {
     }
     cancelDevice(call);
     call.ringing.clear();
+    syncCalling();
     finishIfEmpty(call);
 }
 
@@ -496,6 +511,7 @@ function fold(loser: Room, winner: Room) {
 // stops the ringback and watching; `cancel` also tells whoever is still ringing
 function endCall(call: Outgoing, cancel: boolean) {
     if (!outgoing.delete(call.room.id)) return;
+    syncCalling();
     clearTimeout(call.timer);
     call.watch();
     stopRinging();

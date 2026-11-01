@@ -51,7 +51,9 @@ import {
     constraints,
     declineInvite,
     devices,
+    calling,
     incoming,
+    ringingProfile,
     listDevices,
     listNetworks,
     placeCall,
@@ -581,6 +583,11 @@ function tilesOf(room: Room): CallTile[] {
 
         const screen = of("screen");
         if (screen) tiles.push({ id: `${p.uid}:screen`, profile: p, video: screen, screen: true, pinned: true });
+    }
+
+    for (const uid of calling()[room.id] ?? [])
+    {
+        if (![...incall].some(other => samePerson(other, uid))) tiles.push({ id: `ringing:${uid}`, profile: ringingProfile(uid), ringing: true });
     }
     return tiles;
 }

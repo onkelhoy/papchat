@@ -104,6 +104,7 @@ export class CallStage extends CustomElement {
             if (row.muted !== !!tile.muted) row.muted = !!tile.muted;
             if (row.screen !== !!tile.screen) row.screen = !!tile.screen;
             if (row.self !== !!tile.self) row.self = !!tile.self;
+            if (row.ringing !== !!tile.ringing) row.ringing = !!tile.ringing;
             if (row.pinned !== (tile === pinned)) row.pinned = tile === pinned;
         });
     }

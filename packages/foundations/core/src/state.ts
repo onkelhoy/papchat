@@ -28,6 +28,8 @@ export const [rooms, setRooms] = signal<RoomSummary[]>([]);
 export const [activeRoom, setActiveRoom] = signal<string | null>(null);
 export const [stages, setStages] = signal<StageSummary[]>([]);
 export const [incoming, setIncoming] = signal<IncomingCall[]>([]);
+/** Who your outgoing calls are still ringing, by room id. */
+export const [calling, setCalling] = signal<Record<string, string[]>>({});
 export const [toasts, setToasts] = signal<Toast[]>([]);
 export const [audioBlocked, setAudioBlocked] = signal(false);
 /** The last buzz someone sent you (the page shakes, notify shows it while hidden). */

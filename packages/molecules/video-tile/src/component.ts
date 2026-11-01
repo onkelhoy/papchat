@@ -32,6 +32,7 @@ import type { PinEvent } from "./types";
  * @property {boolean} muted remote mic flag: shows the mic-off icon and hides the meter (reflected)
  * @property {boolean} self your own tile: video mirrored (reflected); tile video is always muted, remote audio plays in the stage
  * @property {boolean} screen a screen share: video uses `fit="contain"` (reflected)
+ * @property {boolean} ringing the call is still ringing them: pulses and says so (reflected)
  * @property {boolean} pinned pinned state (reflected, toggled by the Pin button)
  *
  * @fires pin `CustomEvent<{ pinned: boolean }>` after the Pin button toggled `pinned` (bubbles, composed)
@@ -55,6 +56,7 @@ export class VideoTile extends CustomElement {
     @property({ type: Boolean, reflect: true, rerender: true }) self: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) screen: boolean = false;
     @property({ type: Boolean, reflect: true, rerender: true }) pinned: boolean = false;
+    @property({ type: Boolean, reflect: true, rerender: true }) ringing: boolean = false;
 
     // bumped when the video stream gains or loses tracks, so render() re-checks them
     @property({ type: Number, attribute: false, rerender: true }) private tracks: number = 0;
@@ -187,7 +189,7 @@ export class VideoTile extends CustomElement {
             <div class="footer">
                 <span class="label" part="label">
                     ${this.muted ? html`<pap-icon class="mic-off" name="/icons/mic-off.svg" role="img" aria-label="${this.t("muted")}"></pap-icon>` : ""}
-                    <span class="name">${name}${this.self ? html` <span class="you">(${this.t("you")})</span>` : ""}</span>
+                    <span class="name">${name}${this.self ? html` <span class="you">(${this.t("you")})</span>` : ""}${this.ringing ? html` <span class="you">${this.t("calling")}</span>` : ""}</span>
                 </span>
                 ${this.muted ? "" : html`<pc-level-meter @speaking="${this.handleSpeaking}"></pc-level-meter>`}
             </div>

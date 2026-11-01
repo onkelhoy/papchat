@@ -42,7 +42,38 @@ pc-video {
 }
 
 .placeholder pc-avatar {
+    grid-area: 1 / 1;
     --avatar-size-l: var(--video-tile-avatar-size, 5rem);
+}
+
+/* calling them: the same pulse as an incoming call */
+:host([ringing]) .placeholder::before {
+    content: "";
+    grid-area: 1 / 1;
+    box-sizing: border-box;
+    inline-size: var(--video-tile-avatar-size, 5rem);
+    block-size: var(--video-tile-avatar-size, 5rem);
+    border: 3px solid var(--success);
+    border-radius: 50%;
+    opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :host([ringing]) .placeholder::before {
+        animation: ring 1.6s ease-out infinite;
+    }
+}
+
+@keyframes ring {
+    from {
+        transform: scale(0.85);
+        opacity: 0.8;
+    }
+
+    to {
+        transform: scale(1.3);
+        opacity: 0;
+    }
 }
 
 .footer {
