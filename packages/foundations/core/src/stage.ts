@@ -5,7 +5,7 @@ import { APP, LIMITS, RTC, signalUrl } from "./config";
 import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { broadcast as lobbyBroadcast, lobbyClient, on, peerOf, profileOf, readMember, send as lobbySend } from "./lobby";
-import { log } from "./log";
+import { log, logClient } from "./log";
 import { lobbyStatus, me, members, prefs, setStages, stages, toast } from "./state";
 import type { ChatMessage, Gif, Invite, Profile, StageSummary } from "./types";
 import { cleanGif } from "./gif";
@@ -74,6 +74,7 @@ export class Stage {
         [this.streams, this.setStreams] = signal<Record<string, MediaStream>>({});
         [this.viewers, this.setViewers] = signal(0);
 
+        logClient(client, "stage");
         client.addEventListener("message", this.handleMessage);
         client.addEventListener("members", this.handleMembers);
         client.addEventListener("error", this.handleError);

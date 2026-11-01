@@ -9,7 +9,7 @@ import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { PROOF, Verifier } from "./keys";
 import { profileOf, readMember, send as lobbySend, sendAll as lobbySendAll, serverId, type Member } from "./lobby";
-import { log } from "./log";
+import { log, logClient } from "./log";
 import { personOf, samePerson } from "./people";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
@@ -1254,6 +1254,7 @@ export class Room extends EventTarget {
     // ------------------------------------------------------------ client events (never throw)
 
     private attach(c: Client) {
+        logClient(c, "room");
         c.addEventListener("members", this.handleMembers);
         c.addEventListener("message", this.handleMessage);
         c.addEventListener("status", this.handleClientStatus);

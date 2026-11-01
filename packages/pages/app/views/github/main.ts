@@ -12,6 +12,7 @@ import "@papchat/invite-picker";
 import "@papchat/settings";
 import "@papchat/link-device";
 import "@papchat/accounts";
+import "@papchat/logs";
 import "@papchat/toaster";
 import type { AppHeader } from "@papchat/app-header";
 import type { MemberList } from "@papchat/member-list";
@@ -23,6 +24,7 @@ import type { InvitePicker } from "@papchat/invite-picker";
 import type { Settings } from "@papchat/settings";
 import type { LinkDevice } from "@papchat/link-device";
 import type { Accounts } from "@papchat/accounts";
+import type { Logs } from "@papchat/logs";
 import type { Toaster } from "@papchat/toaster";
 
 import {
@@ -43,6 +45,9 @@ import {
     denoise,
     disablePush,
     logOut,
+    logLines,
+    logging,
+    setLogging,
     openAccount,
     removeAccount,
     savedAccounts,
@@ -149,6 +154,9 @@ const overlay = document.querySelector<HTMLElement>(".incoming")!;
 const settings = document.querySelector<Settings>("pc-settings")!;
 const linker = document.querySelector<LinkDevice>("pc-link-device")!;
 const accounts = document.querySelector<Accounts>("pc-accounts")!;
+const logsView = document.querySelector<Logs>("pc-logs")!;
+const logsButton = document.querySelector<HTMLButtonElement>(".logs-open")!;
+const mainArea = document.querySelector<HTMLElement>(".main")!;
 const toaster = document.querySelector<Toaster>("pc-toaster")!;
 const empty = document.querySelector<HTMLElement>(".empty")!;
 const shell = document.querySelector<HTMLElement & { sidebaropen: boolean }>("pc-app-shell")!;
@@ -167,6 +175,7 @@ fetch("version.json", { cache: "no-cache" })
     .then(response => response.json())
     .then(({ version }: { version: string }) => {
         const link = document.querySelector<HTMLAnchorElement>(".version")!;
+        log("version", version);
         link.textContent = version;
         link.href = `version#${version}`;
         link.hidden = false;
@@ -260,6 +269,7 @@ async function changeLanguage(code: string) {
     settings.language = code;
     onboarding.language = code;
     empty.textContent = t("empty");
+    logsButton.textContent = t("logs");
     setLanguage(code);
     settings.shortcuts = [
         { keys: "M", label: t("shortcutMic") },
@@ -284,6 +294,7 @@ async function registerWorker() {
 }
 
 async function boot() {
+    log("browser", navigator.userAgent);
     void registerWorker();
     for (const id of LANGUAGES) translator.add({ id, url: `/translations/${id}.json` });
     await changeLanguage(pickLanguage());
@@ -937,9 +948,49 @@ effect(() =>
     document.title = total > 0 ? `(${total}) papchat` : "papchat";
 });
 
+// the logs page sits over the main area: logging carries on behind it, and going anywhere closes it
+const [logsOpen, setLogsOpen] = signal(false);
+effect(() =>
+{
+    const open = logsOpen();
+    mainArea.classList.toggle("logging", open);
+    logsView.hidden = !open;
+});
+effect(() => { logsView.enabled = logging(); });
+effect(() =>
+{
+    const lines = logLines();
+    if (logsOpen()) logsView.lines = lines;
+});
+// only moving somewhere else counts: a new message updates what's on screen without going anywhere
+let logsPlace = "";
+effect(() =>
+{
+    const place = globalOpen() ? GLOBAL_ID : viewing()?.conversation.id ?? shownStage()?.id ?? activeRoom() ?? "";
+    if (place !== logsPlace) setTimeout(() => setLogsOpen(false), 0);
+    logsPlace = place;
+});
+logsButton.addEventListener("click", () =>
+{
+    setLogsOpen(true);
+    if (matchMedia("(max-width: 799.98px)").matches) shell.sidebaropen = false;
+});
+logsView.addEventListener("logs-close", () => setLogsOpen(false));
+logsView.addEventListener("logs-enable", () => setLogging(true));
+logsView.addEventListener("logs-disable", () => setLogging(false));
+logsView.addEventListener("logs-copy", () =>
+{
+    const text = logLines().map(line => `${new Date(line.at).toISOString()} ${line.text}`).join("\n");
+    navigator.clipboard.writeText(text).then(
+        () => toast("info", t("logsCopied")),
+        () => toast("warning", t("logsCopyFailed")),
+    );
+});
+
 // components → state
 roomList.addEventListener("select", (e) =>
 {
+    setLogsOpen(false);
     const { id } = (e as CustomEvent<{ id: string }>).detail;
     if (id === GLOBAL_ID) showGlobal();
     else if (id === currentStage()?.id) showStage();

@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "region": "SE",
+    "language": "sv"
+  },
+  "pc-logs": {
+    "title": "Loggar",
+    "intro": "Loggar visar vad papchat gör, vilket hjälper till att ta reda på varför något inte fungerade. Chattmeddelanden och lösenord loggas aldrig.",
+    "on": "Slå på loggar",
+    "off": "Stäng av",
+    "copy": "Kopiera",
+    "close": "Stäng",
+    "hint": "För att se vad som händer när papchat startar: ladda om sidan och öppna Loggar igen. Omladdning tömmer listan, men loggningen fortsätter vara på."
+  }
+}

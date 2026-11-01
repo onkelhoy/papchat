@@ -38,6 +38,9 @@
     "cantQueue": "Chats aren't saved on this device, so this can't wait until they're back",
     "savedFiles": "Files can only be sent while someone's online",
     "chatsDeleted": "Saved chats deleted",
-    "accountRemoveFailed": "Couldn't remove that account"
+    "accountRemoveFailed": "Couldn't remove that account",
+    "logs": "Logs",
+    "logsCopied": "Logs copied",
+    "logsCopyFailed": "Couldn't copy the logs"
   }
 }

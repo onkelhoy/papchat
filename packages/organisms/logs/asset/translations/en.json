@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "region": "GB",
+    "language": "en"
+  },
+  "pc-logs": {
+    "title": "Logs",
+    "intro": "Logs show what papchat is doing, which helps find out why something didn't work. Chat messages and passwords are never logged.",
+    "on": "Turn on logs",
+    "off": "Turn off",
+    "copy": "Copy",
+    "close": "Close",
+    "hint": "To see what happens when papchat starts, reload the page and open Logs again. A reload clears this list, but logging stays on."
+  }
+}

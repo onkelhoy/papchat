@@ -3,7 +3,7 @@ import { Client } from "@papit/webrtc";
 import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
 import { readNetworkSaves } from "./history";
 import { PROOF, Verifier } from "./keys";
-import { log } from "./log";
+import { log, logClient } from "./log";
 import { devicesOf, personOf, samePerson } from "./people";
 import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
 import type { Network, NetworkEntry, Profile, Status } from "./types";
@@ -882,6 +882,7 @@ function attach(c: Client) {
         send: (peer, payload) => { c.send(peer, PROOF, payload); },
         changed: () => { if (c === client) applyProofs(); },
     });
+    logClient(c, "lobby");
     c.addEventListener("peer", handlePeer);
     c.addEventListener("status", handleStatus);
     c.addEventListener("members", handleMembers);

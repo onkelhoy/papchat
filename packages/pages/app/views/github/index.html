@@ -22,11 +22,15 @@
         <div slot="sidebar" class="sidebar">
             <pc-room-list></pc-room-list>
             <pc-member-list></pc-member-list>
-            <a class="version" target="_blank" rel="noopener" hidden></a>
+            <div class="foot">
+                <button class="logs-open" type="button"></button>
+                <a class="version" target="_blank" rel="noopener" hidden></a>
+            </div>
         </div>
         <main slot="main" class="main">
             <pc-room hidden></pc-room>
             <p class="empty"></p>
+            <pc-logs hidden></pc-logs>
         </main>
         <div slot="overlay" class="incoming"></div>
         <pc-toaster slot="toasts"></pc-toaster>

@@ -38,6 +38,9 @@
     "cantQueue": "Chattar sparas inte på den här enheten, så det här kan inte vänta tills de är tillbaka",
     "savedFiles": "Filer kan bara skickas när någon är online",
     "chatsDeleted": "Sparade chattar borttagna",
-    "accountRemoveFailed": "Kunde inte ta bort kontot"
+    "accountRemoveFailed": "Kunde inte ta bort kontot",
+    "logs": "Loggar",
+    "logsCopied": "Loggarna kopierade",
+    "logsCopyFailed": "Kunde inte kopiera loggarna"
   }
 }

@@ -1,0 +1,92 @@
+:host {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-block-size: 0;
+    color: var(--text);
+}
+
+:host([hidden]) {
+    display: none;
+}
+
+section {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-3, 0.75rem);
+    min-block-size: 0;
+    padding: var(--space-4, 1rem);
+}
+
+header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+}
+
+h2,
+p {
+    margin: 0;
+}
+
+h2 {
+    font-size: 1.125rem;
+}
+
+.actions,
+.tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1, 0.25rem);
+}
+
+.hint {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.intro {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-3, 0.75rem);
+    max-inline-size: 32rem;
+}
+
+ol {
+    flex: 1;
+    min-block-size: 0;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    list-style: none;
+}
+
+ol:empty {
+    display: none;
+}
+
+ol:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: -2px;
+}
+
+li {
+    display: flex;
+    gap: var(--space-2, 0.5rem);
+}
+
+time {
+    flex: none;
+    color: var(--text-secondary);
+}
+
+li span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+}

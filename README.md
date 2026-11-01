@@ -94,7 +94,7 @@ The presenter creates a public `multicast` network with a fanout of 3, so the tr
 
 ### Poking at it
 
-Core is available in the console as `papchat` (state, storage, lobby, rooms, stage). Turn on logging with `papchat.setLogging(true)`.
+Core is available in the console as `papchat` (state, storage, lobby, rooms, stage). Turn on logging with `papchat.setLogging(true)`, or use Logs at the bottom of the sidebar, which lists the same lines and lets anyone copy them without opening the console. The list is in memory only and a reload clears it; the switch stays on, so reloading logs from the start. Chat text is never logged, and passwords, tokens and signatures are hidden.
 
 ## Run it locally
 

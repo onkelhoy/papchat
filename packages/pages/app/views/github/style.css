@@ -25,15 +25,36 @@ html:has(pc-settings[open], pc-invite-picker[open], pc-onboarding[open], pc-link
     min-block-size: 100%;
 }
 
-.version {
+.foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-block-start: auto;
-    align-self: flex-end;
+}
+
+.version,
+.logs-open {
     padding: var(--space-1) var(--space-2);
     color: var(--text-secondary);
     font-size: 0.6875rem;
 }
 
-pc-app-shell:not([sidebaropen]) .version {
+.logs-open {
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.logs-open:hover {
+    color: var(--text);
+}
+
+.logs-open:focus-visible {
+    outline: 2px solid var(--focus-color);
+}
+
+pc-app-shell:not([sidebaropen]) .foot {
     display: none;
 }
 
@@ -46,6 +67,11 @@ pc-app-shell:not([sidebaropen]) .version {
 .main pc-room {
     flex: 1;
     min-height: 0;
+}
+
+/* the logs page takes the main area; a call behind it carries on */
+.main.logging > :not(pc-logs) {
+    display: none;
 }
 
 .empty {

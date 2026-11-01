@@ -69,7 +69,8 @@
     "@papchat/settings": "*",
     "@papchat/onboarding": "*",
     "@papchat/link-device": "*",
-    "@papchat/accounts": "*"
+    "@papchat/accounts": "*",
+    "@papchat/logs": "*"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
