@@ -2,7 +2,7 @@ import { effect, signal } from "@papit/signals";
 
 import { conversations, directId, moveConversation } from "./history";
 import { deviceKey, signedBy, uidOfKey } from "./keys";
-import { lobbyClient, on, peerOf, quietSend, refreshMembers } from "./lobby";
+import { lobbyNetwork, on, peerOf, quietSend, refreshMembers } from "./lobby";
 import { log } from "./log";
 import { people, personOf, setPeople } from "./people";
 import { allRooms, getRoom, rekeyDirects, Room } from "./room";
@@ -255,7 +255,7 @@ function tell(uid: string) {
     const data = ownAccount();
     const stamp = version(data);
     if (stamp === 0 || told.get(uid) === stamp) return;
-    const sent = peerOf(uid) && lobbyClient() ? quietSend(uid, TYPE, data) : allRooms().some(room => room.sendTo(uid, TYPE, data));
+    const sent = peerOf(uid) && lobbyNetwork() ? quietSend(uid, TYPE, data) : allRooms().some(room => room.sendTo(uid, TYPE, data));
     if (sent) told.set(uid, stamp);
 }
 

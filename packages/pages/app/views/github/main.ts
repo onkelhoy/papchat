@@ -429,7 +429,7 @@ function followLink(link: JoinLink, hash: string) {
     }
     else if (sameNetwork(link.network, network()))
     {
-        void joinSharedCall(link.room, link.password);
+        void joinSharedCall(link.room, link.password, link.by);
     }
     else
     {

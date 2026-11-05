@@ -2,7 +2,7 @@ import { effect, signal } from "@papit/signals";
 
 import { LIMITS } from "./config";
 import { conversations } from "./history";
-import { lobbyClient, on, peerOf } from "./lobby";
+import { on, peerOf, sendTo } from "./lobby";
 import { log } from "./log";
 import { samePerson } from "./people";
 import { pushToken } from "./push";
@@ -97,7 +97,7 @@ function reachLobby(uid: string, token: string): boolean {
     if (!peer) return false;
     try
     {
-        return lobbyClient()?.send(peer, TYPE, { token }) ?? false;
+        return sendTo(peer, TYPE, { token });
     }
     catch (error)
     {

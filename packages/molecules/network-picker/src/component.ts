@@ -24,7 +24,7 @@ import type { NetworkChangeEvent, NetworkEntry, NetworkHealth } from "./types";
  * @property {string} network name of the network in use (or picked), "" for the public one
  * @property {NetworkEntry[]} networks the networks on the server (property only)
  * @property {boolean} separated a same-name network with an unknown password exists: says so above the form (property only)
- * @property {NetworkHealth | undefined} health how this device is doing in its network: host, socket, who it's linked to (property only)
+ * @property {NetworkHealth | undefined} health how this device is doing in its network: anchor, socket, who it's linked to (property only)
  * @property {string} link invite link for the network in use, "" hides the button (property only)
  *
  * @fires network-change `CustomEvent<{ network }>` a network was picked, `null` = public (bubbles, composed)
@@ -88,7 +88,7 @@ export class NetworkPicker extends CustomElement {
 
     private socketText(health: NetworkHealth) {
         if (health.socket) return this.t("socket-on");
-        return this.t(health.host ? "socket-lost" : "socket-off");
+        return this.t(health.anchor ? "socket-lost" : "socket-off");
     }
 
     private peerText(peer: NetworkHealth["peers"][number]) {
@@ -97,13 +97,12 @@ export class NetworkPicker extends CustomElement {
     }
 
     private renderHealth(health: NetworkHealth) {
-        const hostPeer = health.peers.find(peer => peer.host);
         const merge = health.merge;
         return html`
             <div part="health" class="section">
                 <span class="label">${this.t("health")}</span>
-                <div class="row"><span class="hint">${this.t("host")}</span><span>${health.host ? this.t("host-you") : hostPeer?.name || hostPeer?.id || "?"}</span></div>
-                <div class="row"><span class="hint">${this.t("socket")}</span><span class="${health.host && !health.socket ? "warn" : ""}">${this.socketText(health)}</span></div>
+                <div class="row"><span class="hint">${this.t("anchor")}</span><span>${this.t(health.anchor ? "anchor-yes" : "anchor-no")}</span></div>
+                <div class="row"><span class="hint">${this.t("socket")}</span><span class="${health.anchor && !health.socket ? "warn" : ""}">${this.socketText(health)}</span></div>
                 ${health.listed === undefined ? "" : html`<div class="row"><span class="hint">${this.t("listed")}</span><span class="${health.listed ? "" : "warn"}">${this.t(health.listed ? "listed-yes" : "listed-no")}</span></div>`}
                 <div class="row"><span class="hint">${this.t("kind")}</span><span>${health.topology} · ${health.id}</span></div>
                 ${merge ? html`<div class="row"><span class="hint">${this.t("merge")}</span><span class="${merge.outcome === "merged" ? "" : "warn"}">${new Date(merge.at).toLocaleTimeString()} · ${this.t(`merge-${merge.outcome}`)}</span></div>` : ""}
@@ -112,7 +111,7 @@ export class NetworkPicker extends CustomElement {
                 ${health.peers.length === 0 ? html`<p class="hint">${this.t("alone")}</p>` : ""}
                 ${health.peers.map(peer => html`
                     <div class="row" key="${peer.id}">
-                        <span>${peer.name || peer.id}${peer.host ? ` · ${this.t("host")}` : ""}</span>
+                        <span>${peer.name || peer.id}</span>
                         <span class="${peer.linked || peer.proven ? "hint" : "warn"}">${this.peerText(peer)}</span>
                     </div>
                 `)}

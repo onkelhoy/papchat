@@ -1,16 +1,16 @@
 import { effect } from "@papit/signals";
-import { Client } from "@papit/webrtc";
+import { ParentBootstrap, type Network as Net } from "@papit/webrtc";
 
 import { ownAccount, receiveAccount } from "./account";
 import { refreshViewing } from "./chats";
-import { APP, LIMITS, RTC, signalUrl } from "./config";
+import { APP, LIMITS } from "./config";
 import { addLinkedContact, contacts } from "./contacts";
 import { canSave, conversations, messageIds, messagesById, onSaved, readMessage, saveMessages } from "./history";
 import { adoptProfile } from "./identity";
-import { on, otherDevices, quietSend, send as lobbySend } from "./lobby";
+import { appClient, lobbyNetwork, on, otherDevices, quietSend, send as lobbySend } from "./lobby";
 import { log } from "./log";
 import { samePerson } from "./people";
-import { allRooms } from "./room";
+import { allRooms, readEntry } from "./room";
 import { me, members, prefs } from "./state";
 import type { ChatMessage, Contact, Conversation, ConversationMember } from "./types";
 
@@ -294,52 +294,81 @@ on<unknown>(LIVE, (payload, from) => {
 
 // ---------------------------------------------------------------- catching up
 
-// a private network of two, so all of this goes straight between the devices. The smaller uid opens it
+// a private network of two carried by the lobby, so all of this goes straight between the devices and
+// nothing touches the server. The smaller uid opens it
 const syncing = new Set<string>();
 const done = new Set<string>();
 
-function client(): Client {
-    return new Client({ url: signalUrl(), rtc: RTC, topology: "mesh", accept: (_newcomer, info) => info.size < 2 });
-}
+type Message = { meta: { type: string; sender: string }; parse(): unknown };
 
-function run(c: Client, device: string) {
-    const peers = () => c.links[0];
+function run(net: Net, device: string) {
+    let peer: string | null = null;
     const out: Out = (type, payload) => {
-        const peer = peers();
-        if (peer) c.send(peer, type, payload);
+        if (!peer) return;
+        try { net.send(peer, type, payload ?? null); } catch (error) { log("sync: send failed", type, error); }
+    };
+    const finish = () => {
+        syncing.delete(device);
+        try { net.leave(); } catch { /* already closed */ }
     };
     const sync = new DeviceSync(out, () => undefined, () => {
-        syncing.delete(device);
         done.add(device);
-        try { c.close(); } catch { /* already closed */ }
+        finish();
     });
-    c.addEventListener("peer", () => void sync.start());
-    c.addEventListener("message", (event) => {
-        const { type, payload } = (event as CustomEvent<{ type: string; payload: unknown }>).detail;
-        if (type.startsWith("sync.")) sync.receive(type, payload);
+    const meet = (other: string) => {
+        if (peer) return;
+        peer = other;
+        void sync.start();
+    };
+    net.addEventListener("link", (event) => {
+        const { peer: other, open } = (event as CustomEvent<{ peer: string; open: boolean }>).detail;
+        if (open) meet(other);
+        else if (other === peer)
+        {
+            sync.stop();
+            finish();
+        }
     });
-    c.addEventListener("peer-left", () => {
+    net.addEventListener("message", (event) => {
+        const message = (event as CustomEvent<Message>).detail;
+        const { type, sender } = message.meta;
+        if (!type.startsWith("sync.")) return;
+        meet(sender);
+        try { sync.receive(type, message.parse()); } catch (error) { log("sync: bad message", type, error); }
+    });
+    net.addEventListener("close", () => {
         sync.stop();
         syncing.delete(device);
-        try { c.close(); } catch { /* already closed */ }
     });
+    // linked before we were listening
+    for (const other of net.linked) meet(other);
 }
 
 async function openSync(device: string) {
     const password = crypto.randomUUID();
-    const c = client();
-    run(c, device);
+    const lobby = lobbyNetwork();
+    const c = appClient();
+    if (!lobby || !c)
+    {
+        syncing.delete(device);
+        return;
+    }
+    const id = crypto.randomUUID();
+    let net: Net | null = null;
     try
     {
-        await c.ready;
-        const info = await c.create({ name: `papchat:sync:${crypto.randomUUID()}`, private: true, password, meta: { app: APP, kind: "sync" } });
-        lobbySend(device, OPEN, { network: info.id, password });
+        net = await c.create(
+            { name: "papchat:sync", topology: "mesh", private: true, password, meta: { app: APP, kind: "sync" } },
+            { bootstrap: new ParentBootstrap(lobby, id), accept: () => (net?.linked.size ?? 0) === 0 },
+        );
+        run(net, device);
+        lobbySend(device, OPEN, { network: id, password, info: net.invite() });
     }
     catch (error)
     {
         log("sync: couldn't open", error);
         syncing.delete(device);
-        try { c.close(); } catch { /* already closed */ }
+        try { net?.leave(); } catch { /* already closed */ }
     }
 }
 
@@ -347,23 +376,24 @@ on<unknown>(OPEN, async (payload, from) => {
     const mine = me()?.uid;
     if (!mine || !from.uid || !samePerson(from.uid, mine) || from.uid === mine || syncing.has(from.uid)) return;
     if (typeof payload !== "object" || payload === null) return;
-    const { network, password } = payload as Record<string, unknown>;
+    const { network, password, info } = payload as Record<string, unknown>;
     if (typeof network !== "string" || typeof password !== "string") return;
+    const entry = readEntry(info, network);
+    const lobby = lobbyNetwork();
+    const c = appClient();
+    if (!entry || !lobby || !c) return;
 
     syncing.add(from.uid);
     const device = from.uid;
-    const c = client();
-    run(c, device);
     try
     {
-        await c.ready;
-        await c.join(network, password);
+        const net = await c.join(entry as Parameters<typeof c.join>[0], { password }, { bootstrap: new ParentBootstrap(lobby, network), accept: () => false });
+        run(net, device);
     }
     catch (error)
     {
         log("sync: couldn't join", error);
         syncing.delete(device);
-        try { c.close(); } catch { /* already closed */ }
     }
 });
 

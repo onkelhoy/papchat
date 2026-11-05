@@ -21,15 +21,22 @@ export const LIMITS = {
     contacts: 100,
     chunk: 16 * 1024,
     batch: 64,
-    // the server strikes messages sent < 200 ms apart, keep our own calls well above that
-    serverGapMs: 1_000,
+    // the public network keeps this many anchors (peers with a socket, so newcomers can find it); a
+    // network someone made keeps one
+    lobbyAnchors: 3,
+    networkAnchors: 1,
+    // the first anchor's beacon: a part that misses three heals back into the network
+    beaconMs: 10_000,
+    // an anchor looks for a same-name network this often, and merges into the one with the lowest id
+    mergeScanMs: 15_000,
+    // a new anchor (it just made the network, or was asked to keep a socket) looks this soon
     raceGuardMs: 2_000,
-    // the host checks this often for a more canonical lobby: a rogue group coming back only shows up later
-    rogueScanMs: 60_000,
-    // a merged network has to fit one message of 256 KB: papit's own limit for full profiles
-    mergeMembers: 250,
-    // after a merge the host tells everyone the password: first this long after it, then this long again
-    mergePasswordMs: [5_000, 25_000],
+    // listed lobbies tried before making one: a merge brings the rest together later
+    joinTries: 3,
+    // how long to wait for a room member in the lobby to answer where the room is
+    askMs: 6_000,
+    // a room member that isn't in the lobby yet (it's still loading) gets this long to show up
+    askWaitMs: 12_000,
     messageChars: 4_000,
     // messages kept per room when chats aren't saved
     messagesKept: 500,
@@ -48,14 +55,13 @@ export const LIMITS = {
     typingMs: 4_000,
     // a "left" system message waits this long, so a quick reconnect doesn't show left + joined
     leaveGraceMs: 5_000,
-    // presence: everyone broadcasts a tiny `here` this often (less while hidden); someone not heard
-    // from for `staleMs` (a closed phone the server hasn't noticed yet) drops out of the member list
+    // a stage viewer tells the presenter it's still watching this often
+    stageHereMs: 20_000,
+    // presence: everyone broadcasts their profile this often (less while hidden); someone not heard
+    // from for `staleMs` (a closed phone that never said goodbye) drops out of the member list
     heartbeatMs: 30_000,
     heartbeatHiddenMs: 60_000,
     staleMs: 150_000,
-    // a unicast that came back unreachable (routes still settling after a reload) is sent again
-    resendTries: 2,
-    resendGapMs: 1_500,
     // a buzz (shake + sound) at most this often per sender, checked on both ends
     buzzGapMs: 10_000,
     // global chat: posts from one sender closer together than this are dropped by everyone
@@ -63,7 +69,9 @@ export const LIMITS = {
 } as const;
 
 export const LOBBY_NAME = "papchat";
+// lobbies of older papchat versions are left alone: they can't talk to this one
 export const APP = "papchat";
+export const LOBBY_VERSION = 2;
 
 // ?signal=<url> overrides and is remembered, everything else (localhost too) uses the deployed server
 export function signalUrl(): string {
@@ -84,4 +92,9 @@ export function signalUrl(): string {
     if (stored) return stored;
 
     return DEFAULT_SIGNAL;
+}
+
+/** The signal server over http(s), for `/networks`, `/health` and `/push/*`. */
+export function httpUrl(): string {
+    return signalUrl().replace(/^ws/, "http").replace(/\/+$/, "");
 }

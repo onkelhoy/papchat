@@ -1,20 +1,28 @@
 import { effect, signal } from "@papit/signals";
-import { Client } from "@papit/webrtc";
+import { ParentBootstrap, type Network as Net } from "@papit/webrtc";
 
-import { APP, LIMITS, RTC, signalUrl } from "./config";
+import { APP, LIMITS } from "./config";
 import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
-import { broadcast as lobbyBroadcast, lobbyClient, on, peerOf, profileOf, readMember, send as lobbySend } from "./lobby";
+import { appClient, broadcast as lobbyBroadcast, lobbyNetwork, on, peerOf, profileOf, send as lobbySend, uidOf } from "./lobby";
 import { log, logClient } from "./log";
 import { lobbyStatus, me, members, prefs, setStages, stages, toast } from "./state";
-import type { ChatMessage, Gif, Invite, Profile, StageSummary } from "./types";
+import { readEntry, toEntry } from "./room";
+import type { ChatMessage, Gif, Invite, Profile, RoomEntry, StageSummary } from "./types";
 import { cleanGif } from "./gif";
 
 // Stages (PLAN §2.7): one presenter broadcasting to many viewers over a multicast tree rooted at
-// the presenter. Only the presenter captures; everyone chats with `client.broadcast`. The lobby
-// carries `stage.announce` / `stage.end` / `stage.query` so everyone has the `stages` list.
+// the presenter, carried by the lobby (no server involved). Only the presenter captures; everyone
+// chats with `broadcast`. The lobby carries `stage.announce` / `stage.end` / `stage.query` so everyone
+// has the `stages` list, and each announce says where to come in. The tree keeps no member list:
+// viewers tell the presenter they're watching (`stage.here`), which is the viewer count.
 
-type MediaPlan = NonNullable<Parameters<Client["create"]>[0]["media"]>;
+type MediaPlan = NonNullable<NonNullable<Net["info"]>["media"]>;
+type Message = { meta: { type: string; sender: string }; parse(): unknown };
+
+const HERE = "stage.here";
+const REFRESH_MS = 2_000;
+const BYE = "stage.bye";
 
 const STAGE_PLAN: MediaPlan = {
     streams: {
@@ -62,8 +70,12 @@ export class Stage {
     private ended = false;
     private lastAnnounce = 0;
     private announceTimer: ReturnType<typeof setTimeout> | undefined;
+    // presenter: viewer peer → when they last said they're watching
+    private watchers = new Map<string, number>();
+    private hereTimer: ReturnType<typeof setInterval> | undefined;
+    private refreshTimer: ReturnType<typeof setInterval> | undefined;
 
-    private constructor(private client: Client, id: string, title: string, presenter: Profile, mine: boolean) {
+    private constructor(private client: Net, id: string, title: string, presenter: Profile, mine: boolean, private presenterPeer: string) {
         this.id = id;
         this.title = title;
         this.presenter = presenter;
@@ -76,11 +88,19 @@ export class Stage {
 
         logClient(client, "stage");
         client.addEventListener("message", this.handleMessage);
-        client.addEventListener("members", this.handleMembers);
+        client.addEventListener("leader", this.handleLeader);
+        client.addEventListener("close", this.handleClose);
         client.addEventListener("error", this.handleError);
         client.media.addEventListener("stream", this.handleStream);
         client.media.addEventListener("stream-ended", this.handleStreamEnded);
-        this.countViewers();
+        // presenter: drop who stopped saying so; viewer: say so again
+        this.hereTimer = setInterval(() => (mine ? this.countViewers() : this.sayHere()), LIMITS.stageHereMs);
+        if (!mine) this.sayHere();
+        // a node takes its place in the tree after its link opened, and webrtc only re-applies streams
+        // on a link event (papit finding #33): look again now and then, it's a no-op when nothing moved
+        this.refreshTimer = setInterval(() => {
+            try { this.client.media.refresh(); } catch (error) { log("stage: refresh failed", error); }
+        }, REFRESH_MS);
     }
 
     // ------------------------------------------------------------ presenter
@@ -92,17 +112,19 @@ export class Stage {
         currentStage()?.end();
 
         const clean = title.trim().slice(0, 80) || `${profile.name}'s stage`;
-        const client = newClient(profile, { name: "multicast", fanout });
+        const lobby = lobbyNetwork();
+        const c = appClient();
+        if (!lobby || !c) throw new Error("not in the lobby");
+        const id = crypto.randomUUID();
+        const client = await c.create({
+            name: "papchat:stage",
+            topology: { name: "multicast", fanout },
+            meta: { app: APP, kind: "stage", title: clean, presenter: profile.uid },
+            media: STAGE_PLAN,
+        }, { bootstrap: new ParentBootstrap(lobby, id) });
         try
         {
-            await client.ready;
-            const info = await client.create({
-                name: `papchat:stage:${crypto.randomUUID()}`,
-                private: false,
-                meta: { app: APP, kind: "stage", title: clean, presenter: profile.uid },
-                media: STAGE_PLAN,
-            });
-            const stage = new Stage(client, info.id, clean, profile, true);
+            const stage = new Stage(client, id, clean, profile, true, client.me);
             setCurrentStage(stage);
             stage.announce();
             upsert(stage.summary());
@@ -111,7 +133,7 @@ export class Stage {
         }
         catch (error)
         {
-            client.close();
+            client.leave();
             throw error;
         }
     }
@@ -166,43 +188,54 @@ export class Stage {
     /** Invites someone in the lobby to watch (presenter only). */
     invite(uid: string): boolean {
         if (!this.mine || this.ended) return false;
-        const invite: Invite = { room: this.id, password: "", kind: "stage", title: this.title, from: this.presenter.uid, members: [] };
+        const info = this.entry();
+        const invite: Invite = { room: this.id, password: "", kind: "stage", title: this.title, from: this.presenter.uid, members: [], ...(info ? { info } : {}) };
         return lobbySend(uid, "invite", invite);
     }
 
     // ------------------------------------------------------------ viewer
 
-    /** Joins a stage as a viewer. Rejects when it's gone. */
-    static async watch(id: string): Promise<Stage> {
+    /** Joins a stage as a viewer, through `info` or what its announce said. Rejects when it's gone. */
+    static async watch(id: string, info?: RoomEntry): Promise<Stage> {
         const profile = me();
         if (!profile) throw new Error("a stage needs a profile");
         const existing = currentStage();
         if (existing?.id === id) return existing;
         existing?.end();
 
-        const client = newClient(profile);
+        const entry = info?.id === id ? info : entries.get(id);
+        const lobby = lobbyNetwork();
+        const c = appClient();
+        if (!entry || !lobby || !c) throw new Error("the stage can't be found");
+
+        const client = await c.join(entry as Parameters<typeof c.join>[0], {}, { bootstrap: new ParentBootstrap(lobby, id) });
         try
         {
-            await client.ready;
-            const info = await client.join(id);
-            const meta = info.meta ?? {};
+            const meta = client.info?.meta ?? {};
             if (meta.app !== APP || meta.kind !== "stage") throw new Error("not a papchat stage");
 
             const uid = typeof meta.presenter === "string" ? meta.presenter : "";
-            const presenter = profileOf(uid) ?? readMember(info.host, client.profile(info.host))?.profile;
-            if (!presenter) throw new Error("presenter unknown");
+            const presenter = profileOf(uid);
+            const presenterPeer = peerOf(uid);
+            if (!presenter || !presenterPeer) throw new Error("presenter unknown");
 
             const title = typeof meta.title === "string" ? meta.title : "";
-            const stage = new Stage(client, info.id, title, presenter, false);
+            const stage = new Stage(client, id, title, presenter, false, presenterPeer);
             setCurrentStage(stage);
             log("stage: watching", stage.id);
             return stage;
         }
         catch (error)
         {
-            client.close();
+            client.leave();
             throw error;
         }
+    }
+
+    /** Where to come in: the stage's info with a few entry peers. */
+    entry(): RoomEntry | null {
+        const info = this.client.invite();
+        return info ? toEntry(info) : null;
     }
 
     // ------------------------------------------------------------ everyone
@@ -233,6 +266,9 @@ export class Stage {
         if (this.ended) return;
         this.ended = true;
         clearTimeout(this.announceTimer);
+        clearInterval(this.hereTimer);
+        clearInterval(this.refreshTimer);
+        if (!this.mine) this.tell(BYE);
 
         if (this.mine)
         {
@@ -242,13 +278,14 @@ export class Stage {
         for (const name of [...this.local.keys()]) this.release(name);
 
         this.client.removeEventListener("message", this.handleMessage);
-        this.client.removeEventListener("members", this.handleMembers);
+        this.client.removeEventListener("leader", this.handleLeader);
+        this.client.removeEventListener("close", this.handleClose);
         this.client.removeEventListener("error", this.handleError);
         this.client.media.removeEventListener("stream", this.handleStream);
         this.client.media.removeEventListener("stream-ended", this.handleStreamEnded);
         try
         {
-            this.client.close();
+            if (!this.client.closed) this.client.leave();
         }
         catch (error)
         {
@@ -271,7 +308,8 @@ export class Stage {
     /** Tells the lobby about this stage (all, or one uid: a `stage.query` or a new member). */
     announce(to?: string) {
         if (!this.mine || this.ended) return;
-        const payload = { stage: this.id, title: this.title, presenter: this.presenter.uid, viewers: this.viewers() };
+        const info = this.entry();
+        const payload = { stage: this.id, title: this.title, presenter: this.presenter.uid, viewers: this.viewers(), ...(info ? { info } : {}) };
         if (to) lobbySend(to, "stage.announce", payload);
         else
         {
@@ -298,11 +336,31 @@ export class Stage {
     }
 
     private countViewers() {
-        const host = this.client.host;
-        const count = this.client.members.filter(p => p !== host).length;
+        const now = Date.now();
+        for (const [peer, at] of this.watchers)
+        {
+            if (now - at > LIMITS.stageHereMs * 2.5) this.watchers.delete(peer);
+        }
+        const count = this.watchers.size;
         if (count === this.viewers()) return;
         this.setViewers(count);
         if (this.mine) this.reannounce();
+    }
+
+    // viewer → presenter, through the tree
+    private tell(type: string) {
+        try
+        {
+            this.client.send(this.presenterPeer, type, {});
+        }
+        catch (error)
+        {
+            log("stage: send failed", type, error);
+        }
+    }
+
+    private sayHere() {
+        if (!this.ended && !this.mine) this.tell(HERE);
     }
 
     // viewer counts reach the lobby, throttled
@@ -317,10 +375,22 @@ export class Stage {
     }
 
     private handleMessage = (event: Event) => {
-        const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
-        if (type !== "chat" || typeof payload !== "object" || payload === null) return;
+        const message = (event as CustomEvent<Message>).detail;
+        const { type, sender } = message.meta;
+        if (this.mine && (type === HERE || type === BYE))
+        {
+            if (type === HERE) this.watchers.set(sender, Date.now());
+            else this.watchers.delete(sender);
+            this.countViewers();
+            return;
+        }
+        if (type !== "chat") return;
+        let payload: unknown;
+        try { payload = message.parse(); } catch { return; }
+        if (typeof payload !== "object" || payload === null) return;
         const value = payload as Record<string, unknown>;
-        const uid = readMember(sender, this.client.profile(sender))?.profile.uid;
+        // the same peer id as in the lobby, where they proved who they are
+        const uid = uidOf(sender);
         if (!uid || typeof value.text !== "string") return;
 
         const text = value.text.trim().slice(0, LIMITS.messageChars);
@@ -331,20 +401,21 @@ export class Stage {
         this.push(gif ? { id, uid, at, variant: "gif", text, gif } : { id, uid, at, variant: "text", text });
     };
 
-    private handleMembers = () => {
-        // the host is the root of the tree: without it the stage is over
-        if (!this.mine && !this.client.members.includes(this.client.network?.host ?? ""))
-        {
-            this.hostLost();
-            return;
-        }
-        this.countViewers();
+    // the presenter is the root of the tree: a new root means they're gone
+    private handleLeader = (event: Event) => {
+        const { root } = (event as CustomEvent<{ root: string | null }>).detail ?? { root: null };
+        if (!this.mine && root !== this.presenterPeer) this.hostLost();
+    };
+
+    // the lobby carrying it went away
+    private handleClose = () => {
+        if (this.mine) this.end();
+        else this.hostLost();
     };
 
     private handleError = (event: Event) => {
         const detail = (event as CustomEvent<{ type: string; message: string }>).detail;
         log("stage: error", this.id, detail?.type, detail?.message);
-        if (!this.mine && (detail?.type === "reconnect" || detail?.type === "closed")) this.hostLost();
     };
 
     private hostLost() {
@@ -384,10 +455,10 @@ export async function goLive(title: string): Promise<Stage | null> {
 }
 
 /** Watches stage `id`. Null (plus a toast) when it's gone. */
-export async function watch(id: string): Promise<Stage | null> {
+export async function watch(id: string, info?: RoomEntry): Promise<Stage | null> {
     try
     {
-        return await Stage.watch(id);
+        return await Stage.watch(id, info);
     }
     catch (error)
     {
@@ -403,22 +474,17 @@ export function leaveStage() {
     currentStage()?.end();
 }
 
-function newClient(profile: Profile, topology?: { name: string; fanout: number }): Client {
-    return new Client({
-        url: signalUrl(),
-        rtc: RTC,
-        ...(topology ? { topology } : {}),
-        profile: { ...profile, at: Date.now() },
-    });
-}
-
 // ---------------------------------------------------------------- the stages list
+
+// stage id → where to come in, from its announce
+const entries = new Map<string, RoomEntry>();
 
 function upsert(summary: StageSummary) {
     setStages(list => [...list.filter(s => s.id !== summary.id), summary]);
 }
 
 function remove(id: string) {
+    entries.delete(id);
     if (stages().some(s => s.id === id)) setStages(list => list.filter(s => s.id !== id));
 }
 
@@ -439,7 +505,10 @@ function readAnnounce(payload: unknown, uid: string | null): StageSummary | null
 
 on<unknown>("stage.announce", (payload, from) => {
     const summary = readAnnounce(payload, from.uid);
-    if (summary && !summary.mine) upsert(summary);
+    if (!summary || summary.mine) return;
+    const info = readEntry((payload as { info?: unknown }).info, summary.id);
+    if (info) entries.set(summary.id, info);
+    upsert(summary);
 });
 
 on<unknown>("stage.end", (payload, from) => {
@@ -472,9 +541,9 @@ effect(() => {
     if (asked) return;
     asked = true;
 
-    const c = lobbyClient();
-    if (c?.links.length) askWhoIsLive();
-    else c?.addEventListener("peer", askWhoIsLive, { once: true });
+    const c = lobbyNetwork();
+    if (c?.linked.size) askWhoIsLive();
+    else c?.addEventListener("link", askWhoIsLive, { once: true });
 });
 
 function askWhoIsLive() {

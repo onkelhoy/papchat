@@ -1,5 +1,5 @@
 import { signal } from "@papit/signals";
-import { Client } from "@papit/webrtc";
+import { Client, type Network as Net } from "@papit/webrtc";
 
 import { addLink, deviceLabel, linkText, nameDevice, validLink } from "./account";
 import { APP, LIMITS, RTC, signalUrl } from "./config";
@@ -47,6 +47,8 @@ type Who = { name: string; color: string; network: Network | null };
 
 type Session = {
     client: Client;
+    // the one-time network, once created or joined
+    net: Net | null;
     host: boolean;
     peer: string | null;
     greeted: boolean;
@@ -90,7 +92,7 @@ function send(target: Session, type: string, payload?: unknown) {
     if (!target.peer) return;
     try
     {
-        target.client.send(target.peer, type, payload);
+        target.net?.send(target.peer, type, payload ?? null);
     }
     catch (error)
     {
@@ -100,30 +102,41 @@ function send(target: Session, type: string, payload?: unknown) {
 
 function open(host: boolean): Session {
     if (session) close(session);
-    const client = new Client({ url: signalUrl(), rtc: RTC, topology: "mesh", accept: (_newcomer, info) => info.size < 2 });
-    const target: Session = { client, host, peer: null, greeted: false, other: null, accepted: false, theyAccepted: false, finished: false, theirs: null, sync: null, early: [], timer: undefined };
+    const client = new Client({ url: signalUrl(), rtc: RTC });
+    const target: Session = { client, net: null, host, peer: null, greeted: false, other: null, accepted: false, theyAccepted: false, finished: false, theirs: null, sync: null, early: [], timer: undefined };
     session = target;
+    return target;
+}
 
-    // one-time: whoever came first is the other device
-    const meet = (peer: string): boolean => {
-        if (target.peer && target.peer !== peer) return false;
-        target.peer = peer;
-        if (!target.greeted)
-        {
-            target.greeted = true;
-            void hello(target);
-        }
-        return true;
-    };
+// one-time: whoever came first is the other device
+function meet(target: Session, peer: string): boolean {
+    if (target.peer && target.peer !== peer) return false;
+    target.peer = peer;
+    if (!target.greeted)
+    {
+        target.greeted = true;
+        void hello(target);
+    }
+    return true;
+}
 
-    client.addEventListener("peer", (event) => { meet((event as CustomEvent<string>).detail); });
-    client.addEventListener("peer-left", (event) => {
-        if ((event as CustomEvent<string>).detail === target.peer) fail(target, "lost");
+type Message = { meta: { type: string; sender: string }; parse(): unknown };
+
+// listens once the network is there; whatever linked before that is met right away
+function listen(target: Session, net: Net) {
+    target.net = net;
+    net.addEventListener("link", (event) => {
+        const { peer, open } = (event as CustomEvent<{ peer: string; open: boolean }>).detail;
+        if (open) meet(target, peer);
+        else if (peer === target.peer) fail(target, "lost");
     });
-    client.addEventListener("message", (event) => {
-        const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
+    net.addEventListener("message", (event) => {
+        const message = (event as CustomEvent<Message>).detail;
+        const { type, sender } = message.meta;
         // their first message can get here before our side says the link is open
-        if (!meet(sender)) return;
+        if (!meet(target, sender)) return;
+        let payload: unknown;
+        try { payload = message.parse(); } catch { return; }
         if (type.startsWith("sync."))
         {
             if (target.sync) target.sync.receive(type, payload);
@@ -131,7 +144,7 @@ function open(host: boolean): Session {
         }
         else void handle(target, type, payload).catch(error => log("link: failed on", type, error));
     });
-    return target;
+    for (const peer of net.linked) meet(target, peer);
 }
 
 async function hello(target: Session) {
@@ -168,6 +181,9 @@ async function handle(target: Session, type: string, payload: unknown) {
         // a key that isn't one fails here, not at the signatures
         await uidOfKey(value.key);
         target.other = { key: value.key, label: typeof value.label === "string" ? value.label.slice(0, 64) : "" };
+        // ours may have reached them before they were listening (webrtc hands out the network only once
+        // joined): once more, they ignore a second one
+        void hello(target);
         clearTimeout(target.timer);
         update({ phase: "confirm", url: "", code: await shortCode(own.key, value.key), other: target.other.label, host: target.host });
         return;
@@ -288,8 +304,13 @@ export async function startLink() {
     try
     {
         await loadDeviceKey();
-        await target.client.ready;
-        const info = await target.client.create({ name: `papchat:link:${crypto.randomUUID()}`, private: true, password, meta: { app: APP, kind: "link" } });
+        const net: Net = await target.client.create(
+            { name: "papchat:link", topology: "mesh", private: true, password, meta: { app: APP, kind: "link" } },
+            // one other device, once
+            { accept: () => target.peer === null && net.linked.size === 0 },
+        );
+        listen(target, net);
+        const info = net.info!;
         if (target.finished || session !== target) return;
         const expires = Date.now() + LIMITS.linkMs;
         update({ phase: "showing", url: deviceLink(info.id, password, expires) });
@@ -309,8 +330,8 @@ export async function joinLink(id: string, key: string) {
     try
     {
         await loadDeviceKey();
-        await target.client.ready;
-        await target.client.join(id, key);
+        const net = await target.client.join(id, { password: key }, { accept: () => false });
+        listen(target, net);
     }
     catch (error)
     {

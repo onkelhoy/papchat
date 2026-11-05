@@ -1,29 +1,40 @@
 import { signal } from "@papit/signals";
-import { Client } from "@papit/webrtc";
+import { ParentBootstrap, type Network as Net } from "@papit/webrtc";
 
-import { APP, LIMITS, RTC, signalUrl } from "./config";
+import { APP, LIMITS } from "./config";
 import { denoise, releaseDenoise } from "./denoise";
 import { constraints, listDevices, screenHint, type CaptureName } from "./devices";
 import { canSave, conversations, directId, hasMessage, loadMessages, markSent, messageIds, messagesById, networkSaves, readMessage, saveConversation, saveMessages, setViewing, unsent, viewing } from "./history";
 import { setStatus } from "./identity";
 import { ping } from "./ringtone";
 import { PROOF, Verifier } from "./keys";
-import { greet, profileOf, readMember, send as lobbySend, sendAll as lobbySendAll, type Member } from "./lobby";
+import { appClient, on as onLobby, peersOf, profileOf, readMember, send as lobbySend, sendAll as lobbySendAll, sendTo as lobbySendTo, whenLobby, type Member } from "./lobby";
 import { log, logClient } from "./log";
 import { personOf, samePerson } from "./people";
 import { activeRoom, me, prefs, setActiveRoom, setBuzzed, setRooms, toast } from "./state";
 import { storage } from "./storage";
 import { Transfers } from "./transfer";
-import type { ChatMessage, Conversation, ConversationMember, FileEntry, Gif, Invite, InviteKind, Profile, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
+import type { ChatMessage, Conversation, ConversationMember, FileEntry, Gif, Invite, InviteKind, Profile, RoomEntry, RoomKind, RoomStatus, RoomSummary, SessionRoom, Status } from "./types";
 import { cleanGif } from "./gif";
 
-// A room (PLAN §2.5): one private mesh network with its own Client. Chat over `client.broadcast`,
-// ephemeral state (typing; mute flags in T3.1) over the `state` channel, files (T4.1) over `file`.
-// Peer links outlive the server: Client reconnects and re-registers the network by itself. That gives it
-// a new server id, which the host shares so everyone's invites keep working.
+// A room (PLAN §2.5): one private mesh network carried by the lobby. Its join and every handshake go
+// through the lobby's ring, never the signal server; after that each member has a direct link to each
+// other one. Chat over `broadcast`, ephemeral state (typing, mute flags) over the `state` channel, files
+// over `file`. The network keeps no member list: everyone says who they are (`room.hello`) on each new
+// link, and a link that closes is someone leaving.
+//
+// To join you need a member to come in through. An invite names a few; without one (a call link, a
+// push, a refresh) the room's members in the lobby are asked where it is (`room.ask` → `room.here`).
 
-type NetworkInfo = NonNullable<Client["network"]>;
-type MediaPlan = NonNullable<Parameters<Client["create"]>[0]["media"]>;
+type Info = NonNullable<Net["info"]>;
+type MediaPlan = NonNullable<Info["media"]>;
+type Message = { meta: { type: string; sender: string }; parse(): unknown };
+
+// member → member: who I am; `ask` wants yours back
+const HELLO = "room.hello";
+// lobby: where is this room? Only members who know its password answer
+const ASK = "room.ask";
+const HERE = "room.here";
 
 export const ROOM_PLAN: MediaPlan = {
     channels: {
@@ -55,6 +66,10 @@ export type MediaFlags = { mic: boolean; camera: boolean; screen: boolean; call:
 export type RoomOptions = {
     // the other uid of a 1:1 chat: stored in the network meta so both ends map uid → room
     direct?: string;
+    // joining: where to come in (from an invite)
+    info?: RoomEntry;
+    // joining: uids who may be in the room, asked in the lobby where it is
+    ask?: string[];
     // start with this many unread (a chat invite counts as one)
     unread?: number;
     // a group chat that already exists: its saved conversation
@@ -65,19 +80,23 @@ const TITLE_MAX = 80;
 
 class Cancelled extends Error { }
 
+const REJOIN_TRIES = 3;
+// existing members' hellos arrive within this after joining
+const SETTLE_MS = 2_500;
+
 const registry = new Map<string, Room>();
 // session entries not rejoined yet: kept in storage until restoreRooms settles them
 const restoring = new Map<string, SessionRoom>();
 
 /**
- * Fires `client` (detail: the new `Client`) once a client is in the network, after create or
- * join: attach media/channel listeners there (T3.1, T4.1). Fires `leave` once.
+ * Fires `client` (detail: the new `Network`) once in the network, after create, join or a rejoin:
+ * attach media/channel listeners there (T3.1, T4.1). Fires `leave` once.
  */
 export class Room extends EventTarget {
     /** Stable local id: the first network id. Used by `rooms`, `activeRoom` and `getRoom`. */
     readonly id: string;
     readonly kind: RoomKind;
-    /** The id the server knows the network by (differs from `id` after a re-register). */
+    /** The network id. The same as `id`: a carried network keeps its id. */
     network: string;
     password: string;
     title: string;
@@ -124,10 +143,16 @@ export class Room extends EventTarget {
     // the captures themselves; the client gets clones, so a rebuild can hand them to the next client
     private local = new Map<string, MediaStream>();
     private localEnded = new Map<string, () => void>();
-    private mediaClient: Client | null = null;
+    private mediaClient: Net | null = null;
     private starting = new Set<string>();
 
-    private _client: Client | null = null;
+    private _net: Net | null = null;
+    // uids who may be in the room, asked where it is on a rejoin
+    private asked: string[] = [];
+    // existing members say hello right after we come in: until then nobody counts as joining
+    private settleUntil = 0;
+    // what everyone says they are, by peer; `memberByPeer` is those who proved it
+    private claims = new Map<string, Member>();
     private epoch = 0;
     private closed = false;
     private startedAt = 0;
@@ -145,8 +170,6 @@ export class Room extends EventTarget {
     private stateHandlers = new Map<string, Set<RoomHandler>>();
     private stateListener: ((event: Event) => void) | null = null;
 
-    // peers already seen in the member list
-    private known = new Set<string>();
 
     private constructor(id: string, kind: RoomKind, password: string, title: string, direct: string | null, unread: number) {
         super();
@@ -168,8 +191,7 @@ export class Room extends EventTarget {
         [this.flags, this.setFlags] = signal<Record<string, MediaFlags>>({});
         [this.oncall, this.setOncall] = signal(false);
 
-        // only has to arrive, see `greet`
-        this.onMessage("here", () => { });
+        this.onMessage(HELLO, this.handleHello);
         this.onMessage("chat", this.handleChat);
         this.onMessage("buzz", this.handleBuzz);
         this.onMessage("ack", this.handleAck);
@@ -199,13 +221,13 @@ export class Room extends EventTarget {
         const draft = new Room("", kind, password, cleanTitle(title), direct, options.unread ?? 0);
         draft.group = group;
         draft.saves = networkSaves();
-        const info = await draft.connect(c => c.create({
-            name: `papchat:room:${crypto.randomUUID()}`,
-            private: true,
-            password,
-            meta,
-            media: ROOM_PLAN,
-        }));
+        const id = crypto.randomUUID();
+        const info = await draft.connect(async (accept) => {
+            const lobby = await whenLobby(0);
+            const c = appClient();
+            if (!lobby || !c) throw new Error("not in the lobby");
+            return c.create({ name: "papchat:room", topology: "mesh", private: true, password, meta, media: ROOM_PLAN }, { bootstrap: new ParentBootstrap(lobby, id), accept });
+        });
 
         const room = draft.register(info.id);
         log("room: created", room.id, kind);
@@ -213,8 +235,9 @@ export class Room extends EventTarget {
     }
 
     /**
-     * Joins an existing room. Rejects when it doesn't exist (any more) or is full
-     * (`isRejected(error)` tells those apart). Joining a room you're already in returns that room.
+     * Joins an existing room, through `options.info` or by asking `options.ask` in the lobby. Rejects
+     * when it doesn't exist (any more) or is full (`isRejected(error)` tells those apart). Joining a room
+     * you're already in returns that room.
      */
     static async join(id: string, password: string, kind: RoomKind, options: RoomOptions = {}): Promise<Room> {
         const existing = findRoom(id);
@@ -222,7 +245,8 @@ export class Room extends EventTarget {
         if (!me()) throw new Error("a room needs a profile");
 
         const draft = new Room("", kind, password, "", null, options.unread ?? 0);
-        const info = await draft.connect(c => c.join(id, password));
+        draft.asked = [...new Set(options.ask ?? [])];
+        const info = await draft.connect(accept => enter(id, password, options.info ?? null, draft.asked, accept));
         draft.readMeta(info);
 
         const room = draft.register(info.id);
@@ -232,9 +256,15 @@ export class Room extends EventTarget {
 
     // ------------------------------------------------------------ public API
 
-    /** The current client (null while rebuilding or once closed), for media (T3.1) and console checks. */
-    get client(): Client | null {
-        return this._client;
+    /** The room's network (null while joining, rejoining or once closed), for media and console checks. */
+    get net(): Net | null {
+        return this._net;
+    }
+
+    /** Where to come in: the room's info with a few members as entries. Null while not in it. */
+    entry(): RoomEntry | null {
+        const info = this._net?.invite();
+        return info ? toEntry(info) : null;
     }
 
     /** Files sent and received in this room (with transfer state), oldest first. */
@@ -262,8 +292,8 @@ export class Room extends EventTarget {
         const profile = me();
         const sent = gif ? cleanGif(gif) : null;
         const clean = sent ? sent.url : String(text ?? "").trim().slice(0, LIMITS.messageChars);
-        const c = this._client;
-        if (!clean || !profile || !c?.network) return false;
+        const c = this._net;
+        if (!clean || !profile || !c) return false;
 
         const message: ChatMessage = { id: crypto.randomUUID(), uid: profile.uid, at: Date.now(), variant: sent ? "gif" : "text", text: clean, state: "sending", ...(sent ? { gif: sent } : {}) };
         try
@@ -316,9 +346,9 @@ export class Room extends EventTarget {
      */
     buzz(): boolean {
         const profile = me();
-        const c = this._client;
+        const c = this._net;
         const now = Date.now();
-        if (!profile || !c?.network || now - this.lastBuzzSent < LIMITS.buzzGapMs) return false;
+        if (!profile || !c || now - this.lastBuzzSent < LIMITS.buzzGapMs) return false;
         try
         {
             c.broadcast("buzz", { at: now });
@@ -388,7 +418,7 @@ export class Room extends EventTarget {
      * permission, toasts and returns false when that fails (cancelling the screen picker is silent).
      */
     async start(name: CaptureName): Promise<boolean> {
-        if (this.closed || !this._client?.network) return false;
+        if (this.closed || !this._net) return false;
         if (this.local.has(name)) return true;
         if (this.starting.has(name)) return false;
 
@@ -396,7 +426,7 @@ export class Room extends EventTarget {
         try
         {
             const source = await capture(name);
-            if (this.closed || !this._client?.network || this.local.has(name))
+            if (this.closed || !this._net || this.local.has(name))
             {
                 source.getTracks().forEach(t => t.stop());
                 releaseDenoise(source);
@@ -409,7 +439,7 @@ export class Room extends EventTarget {
             this.local.set(name, source);
             this.localEnded.set(name, () => source.getTracks()[0]?.removeEventListener("ended", onEnded));
 
-            await this._client.media.start(name, source.clone());
+            await this._net.media.start(name, source.clone());
             this.captured();
             this.joinCall();
             void listDevices();
@@ -436,7 +466,7 @@ export class Room extends EventTarget {
         this.release(name);
         try
         {
-            this._client?.media.stop(name);
+            this._net?.media.stop(name);
         }
         catch (error)
         {
@@ -450,6 +480,7 @@ export class Room extends EventTarget {
         const profile = me();
         if (!profile || this.closed) return false;
 
+        const info = this.entry();
         const invite: Invite = {
             room: this.network,
             password: this.password,
@@ -458,6 +489,7 @@ export class Room extends EventTarget {
             from: profile.uid,
             members: [profile.uid, ...this.present.keys()],
             ...(this.direct && samePerson(this.direct, uid) ? { direct: true } : {}),
+            ...(info ? { info } : {}),
             ...extra,
         };
         // a chat goes to one device and the others follow; a call rings them all
@@ -468,14 +500,14 @@ export class Room extends EventTarget {
 
     /** Sends an app message to one person in the room. False when they aren't here. */
     sendTo(uid: string, type: string, payload?: unknown): boolean {
-        const c = this._client;
-        if (!c?.network) return false;
+        const c = this._net;
+        if (!c) return false;
         for (const [peer, profile] of this.memberByPeer)
         {
             if (profile.uid !== uid) continue;
             try
             {
-                return c.send(peer, type, payload);
+                return c.send(peer, type, payload ?? null);
             }
             catch (error)
             {
@@ -518,8 +550,8 @@ export class Room extends EventTarget {
 
     /** Sends ephemeral state to every linked peer over the `state` channel. Returns how many got it. */
     sendState(type: string, payload?: unknown): number {
-        const c = this._client;
-        if (!c?.network) return 0;
+        const c = this._net;
+        if (!c) return 0;
         try
         {
             return c.media.channel("state").broadcast(JSON.stringify({ type, payload }));
@@ -529,6 +561,11 @@ export class Room extends EventTarget {
             log("room: state send failed", type, error);
             return 0;
         }
+    }
+
+    /** @internal uids of everyone else here, or last asked: what a refresh asks where the room is. */
+    memberUids(): string[] {
+        return [...new Set([...this.present.keys(), ...this.asked])].slice(0, 16);
     }
 
     /** The uid behind a room peer id. */
@@ -588,16 +625,11 @@ export class Room extends EventTarget {
         log("room: absorbed", other.id, "into", this.id, moved.length, "messages");
     }
 
-    /** @internal */
+    /** @internal tells everyone in the room about the change */
     setProfile(profile: Profile) {
-        try
-        {
-            this._client?.setProfile(this.wire(profile));
-        }
-        catch (error)
-        {
-            log("room: setProfile failed", error);
-        }
+        const c = this._net;
+        if (!c) return;
+        for (const peer of c.linked) this.hello(c, peer, false, profile);
     }
 
     // ------------------------------------------------------------ media
@@ -633,9 +665,9 @@ export class Room extends EventTarget {
         this.sendState("flags", this.ownFlags());
     }
 
-    // a new client: listen to its media and hand it our captures again
+    // a new network: listen to its media and hand it our captures again
     private handleClientMedia = (event: Event) => {
-        const c = (event as CustomEvent<Client>).detail;
+        const c = (event as CustomEvent<Net>).detail;
         this.unlistenMedia();
         this.mediaClient = c;
         c.media.addEventListener("stream", this.handleStream);
@@ -717,50 +749,27 @@ export class Room extends EventTarget {
         return this;
     }
 
-    // a fresh client into the network; rejects (and cleans up) when `run` fails
-    private async connect(run: (c: Client) => Promise<NetworkInfo>): Promise<NetworkInfo> {
+    // into the network (create, join or rejoin); rejects (and cleans up) when `run` fails
+    private async connect(run: (accept: () => boolean) => Promise<Net>): Promise<Info> {
         const current = ++this.epoch;
         this.dropClient();
         this.setStatus(this.baseline ? "reconnecting" : "connecting");
 
         const profile = me();
         if (!profile) throw new Error("a room needs a profile");
-
         this.startedAt = Date.now();
-        const c = new Client({
-            url: signalUrl(),
-            rtc: RTC,
-            topology: "mesh",
-            profile: this.wire(profile),
-            accept: (_newcomer, info) => info.size < LIMITS.roomSize,
-        });
-        this._client = c;
-        this.verifier = new Verifier({
-            me: () => c.id,
-            ready: () => c.links.length > 0,
-            send: (peer, payload) => { c.send(peer, PROOF, payload); },
-            changed: () => { if (c === this._client) this.readMembers(c); },
-        });
-        c.addEventListener("peer", this.handlePeer);
-        this.attach(c);
 
         try
         {
-            await c.ready;
-            this.alive(current);
-            const info = await run(c);
-            this.alive(current);
-
-            // before anything else: messages on a channel arrive only after its first channel() call
-            c.media.channel("file");
-            const state = c.media.channel("state");
-            this.stateListener = (event: Event) => this.handleState(event);
-            state.addEventListener("message", this.stateListener);
-
-            this.setStatus("connected");
-            this.readMembers(c);
-            this.dispatchEvent(new CustomEvent("client", { detail: c }));
-            return info;
+            // the entry decides: a full room turns newcomers away
+            const c = await run(() => this._net !== null && this._net.linked.size + 1 < LIMITS.roomSize);
+            if (current !== this.epoch || this.closed)
+            {
+                c.leave();
+                throw new Cancelled();
+            }
+            this.use(c);
+            return c.info!;
         }
         catch (error)
         {
@@ -770,13 +779,41 @@ export class Room extends EventTarget {
         }
     }
 
+    private use(c: Net) {
+        this._net = c;
+        this.verifier = new Verifier({
+            me: () => c.me,
+            ready: () => c.linked.size > 0,
+            send: (peer, payload) => { c.send(peer, PROOF, payload); },
+            changed: () => { if (c === this._net) this.applyMembers(); },
+        });
+        this.attach(c);
+
+        // before anything else: messages on a channel arrive only after its first channel() call
+        c.media.channel("file");
+        const state = c.media.channel("state");
+        this.stateListener = (event: Event) => this.handleState(event);
+        state.addEventListener("message", this.stateListener);
+
+        this.setStatus("connected");
+        if (!this.baseline)
+        {
+            this.settleUntil = Date.now() + SETTLE_MS;
+            setTimeout(() => { if (this._net === c) this.applyMembers(); }, SETTLE_MS + 50);
+        }
+        // whoever is here already sent their hello before we were listening: ask again
+        for (const peer of c.linked) this.hello(c, peer, true);
+        this.applyMembers();
+        this.dispatchEvent(new CustomEvent("client", { detail: c }));
+    }
+
     private dropClient() {
-        const old = this._client;
-        this._client = null;
+        const old = this._net;
+        this._net = null;
         this.verifier?.stop();
         this.verifier = null;
+        this.claims.clear();
         if (!old) return;
-        old.removeEventListener("peer", this.handlePeer);
         this.unlistenMedia();
         this.setStreams([]);
         this.detach(old);
@@ -791,12 +828,35 @@ export class Room extends EventTarget {
         }
         try
         {
-            old.close();
+            if (!old.closed) old.leave();
         }
         catch (error)
         {
-            log("room: close failed", error);
+            log("room: leave failed", error);
         }
+    }
+
+    // the network closed under us (the lobby carrying it went away): come back in through whoever is left
+    private async rejoin() {
+        if (this.closed) return;
+        const uids = [...new Set([...this.present.keys(), ...this.asked])];
+        log("room: lost, rejoining", this.id, uids.length);
+        for (let attempt = 0; attempt < REJOIN_TRIES && !this.closed; attempt++)
+        {
+            try
+            {
+                await this.connect(accept => enter(this.id, this.password, null, uids, accept));
+                log("room: back in", this.id);
+                return;
+            }
+            catch (error)
+            {
+                if (error instanceof Cancelled) return;
+                log("room: rejoin failed", this.id, error);
+            }
+        }
+        // nobody to come back to: a chat lives on in the history, a call is over
+        if (!this.closed) this.leave();
     }
 
     // stops networking
@@ -826,12 +886,6 @@ export class Room extends EventTarget {
         this.stateHandlers.clear();
     }
 
-    private useNetwork(id: string) {
-        log("room: new server id", this.network, "→", id);
-        this.network = id;
-        saveSession();
-    }
-
     private alive(current: number) {
         if (current !== this.epoch || this.closed) throw new Cancelled();
     }
@@ -845,7 +899,7 @@ export class Room extends EventTarget {
         return { ...profile, at: this.startedAt };
     }
 
-    private readMeta(info: NetworkInfo) {
+    private readMeta(info: Info) {
         const meta = info.meta ?? {};
         if (typeof meta.title === "string") this.title = cleanTitle(meta.title);
         this.group = typeof meta.conversation === "string" && meta.conversation ? meta.conversation : info.id;
@@ -862,24 +916,36 @@ export class Room extends EventTarget {
 
     // ------------------------------------------------------------ members → participants + system messages
 
-    private readMembers(c: Client) {
-        this.applyMembers(c, [...c.members], c.profiles as Record<string, unknown>);
+    private hello(c: Net, peer: string, ask: boolean, profile = me()) {
+        if (!profile) return;
+        try
+        {
+            c.send(peer, HELLO, { profile: this.wire(profile), ...(ask ? { ask: true } : {}) });
+        }
+        catch (error)
+        {
+            log("room: hello failed", error);
+        }
     }
 
-    private applyMembers(c: Client, peers: string[], profiles: Record<string, unknown>) {
+    // a hello goes by peer id: it is the claim the verifier then checks
+    private handleHello = (payload: { profile?: unknown; ask?: unknown }, from: RoomFrom) => {
+        const c = this._net;
+        if (!c) return;
+        const member = readMember(from.peer, payload?.profile);
+        if (!member) return;
+        const before = this.claims.get(from.peer);
+        this.claims.set(from.peer, member);
+        if (payload.ask === true) this.hello(c, from.peer, false);
+        if (!before || before.profile.uid !== member.profile.uid || before.profile.key !== member.profile.key) this.verifier?.sync([...this.claims]);
+        this.applyMembers();
+    };
+
+    private applyMembers() {
         const mine = me()?.uid;
         const byPeer = new Map<string, Profile>();
         const newest = new Map<string, { at: number; peer: string; profile: Profile }>();
-
-        const claims = new Map<string, Member>();
-        for (const peer of peers)
-        {
-            const member = peer === c.id ? null : readMember(peer, profiles[peer]);
-            if (member) claims.set(peer, member);
-        }
-        this.verifier?.sync([...claims]);
-        greet(c, [...claims.keys()].filter(peer => !this.known.has(peer)));
-        this.known = new Set(claims.keys());
+        const claims = this.claims;
 
         for (const [peer, member] of claims)
         {
@@ -935,10 +1001,13 @@ export class Room extends EventTarget {
                 this.stopTyping(uid);
             }
         }
-        // nobody who was already here counts as joining, however long their proof takes
-        if (!this.verifier?.pending) this.baseline = true;
+        // nobody who was already here counts as joining, however long their hello or proof takes
+        if (!this.verifier?.pending && Date.now() >= this.settleUntil) this.baseline = true;
         const arrived = [...next.keys()].filter(uid => !this.present.has(uid));
+        const changed = arrived.length > 0 || [...this.present.keys()].some(uid => !next.has(uid));
         this.present = next;
+        // a refresh finds the room again through these people
+        if (changed) saveSession();
 
         // a third person turns a 1:1 into a group: openChat makes a new 1:1 after that, and what
         // the group says from here on is kept apart from the 1:1
@@ -1029,9 +1098,9 @@ export class Room extends EventTarget {
 
     // sends everything of ours nobody has confirmed, in order
     private flush() {
-        const c = this._client;
+        const c = this._net;
         const mine = me()?.uid;
-        if (!c?.network || !mine || this.present.size === 0) return;
+        if (!c || !mine || this.present.size === 0) return;
 
         const unconfirmed = this.messages().filter(message => message.uid === mine && (message.state === "sending" || message.state === "failed"));
         if (unconfirmed.length === 0) return;
@@ -1125,7 +1194,7 @@ export class Room extends EventTarget {
     private receipt(peer: string, id: string) {
         try
         {
-            this._client?.send(peer, "ack", { ids: [id] });
+            this._net?.send(peer, "ack", { ids: [id] });
         }
         catch (error)
         {
@@ -1225,45 +1294,66 @@ export class Room extends EventTarget {
 
     // ------------------------------------------------------------ client events (never throw)
 
-    private attach(c: Client) {
+    private attach(c: Net) {
         logClient(c, "room");
-        c.addEventListener("members", this.handleMembers);
         c.addEventListener("message", this.handleMessage);
-        c.addEventListener("server-id", this.handleServerId);
+        c.addEventListener("link", this.handleLink);
+        c.addEventListener("close", this.handleClose);
         c.addEventListener("error", this.handleError);
     }
 
-    private detach(c: Client) {
-        c.removeEventListener("members", this.handleMembers);
+    private detach(c: Net) {
         c.removeEventListener("message", this.handleMessage);
-        c.removeEventListener("server-id", this.handleServerId);
+        c.removeEventListener("link", this.handleLink);
+        c.removeEventListener("close", this.handleClose);
         c.removeEventListener("error", this.handleError);
     }
 
-    private handleMembers = (event: Event) => {
-        if (event.target !== this._client) return;
-        try
+    // a mesh: everyone is linked to everyone, so a link is a member
+    private handleLink = (event: Event) => {
+        const c = this._net;
+        if (!c || event.target !== c) return;
+        const { peer, open } = (event as CustomEvent<{ peer: string; open: boolean }>).detail;
+        if (open)
         {
-            const { members, profiles } = (event as CustomEvent<{ members: string[]; profiles: Record<string, unknown> }>).detail;
-            this.applyMembers(this._client!, members, profiles);
+            this.verifier?.poke();
+            this.hello(c, peer, !this.claims.has(peer));
+            return;
         }
-        catch (error)
-        {
-            log("room: members handler failed", error);
-        }
+        if (!this.claims.delete(peer)) return;
+        this.verifier?.sync([...this.claims]);
+        this.applyMembers();
     };
 
-    // a re-register: fires on the host, and on the members when its member list says so
-    private handleServerId = (event: Event) => {
-        if (event.target === this._client) this.useNetwork((event as CustomEvent<string>).detail);
+    private handleClose = (event: Event) => {
+        if (event.target !== this._net || this.closed) return;
+        this.dropClient();
+        this.setStatus("reconnecting");
+        void this.rejoin();
     };
 
     private handleMessage = (event: Event) => {
-        if (event.target !== this._client) return;
-        const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
+        if (event.target !== this._net) return;
+        const message = (event as CustomEvent<Message>).detail;
+        const { type, sender } = message.meta;
+        let payload: unknown;
+        try
+        {
+            payload = message.parse();
+        }
+        catch
+        {
+            return;
+        }
         if (type === PROOF)
         {
             this.verifier?.receive(sender, payload);
+            return;
+        }
+        // the claim the proof is about can't wait for the proof
+        if (type === HELLO)
+        {
+            dispatch(this.handlers, type, payload, this.from(sender));
             return;
         }
         this.whenProven(sender, () => dispatch(this.handlers, type, payload, this.from(sender)));
@@ -1274,10 +1364,6 @@ export class Room extends EventTarget {
         if (this.verifier?.verified(peer)) run();
         else this.verifier?.hold(peer, run);
     }
-
-    private handlePeer = (event: Event) => {
-        if (event.target === this._client) this.verifier?.poke();
-    };
 
     private handleState(event: Event) {
         const { peer, data } = (event as CustomEvent<{ peer: string; data: unknown }>).detail;
@@ -1296,7 +1382,7 @@ export class Room extends EventTarget {
     }
 
     private handleError = (event: Event) => {
-        if (event.target !== this._client) return;
+        if (event.target !== this._net) return;
         const detail = (event as CustomEvent<{ type: string; message: string; payload: unknown }>).detail;
         log("room: error", this.id, detail?.type, detail?.message);
     };
@@ -1434,7 +1520,7 @@ export function setRoomsProfile(profile: Profile) {
 export function saveSession() {
     const live = [...registry.values()]
         .filter(r => r.status() !== "closed")
-        .map((r): SessionRoom => ({ id: r.network, password: r.password, kind: r.kind }));
+        .map((r): SessionRoom => ({ id: r.network, password: r.password, kind: r.kind, members: r.memberUids() }));
     const ids = new Set(live.map(r => r.id));
     storage.session.set({ rooms: [...live, ...[...restoring.values()].filter(r => !ids.has(r.id))] });
 }
@@ -1453,7 +1539,8 @@ export async function restoreRooms(): Promise<Room[]> {
         try
         {
             if (entry.password === undefined) throw new Error("no password stored");
-            joined.push(await Room.join(entry.id, entry.password, entry.kind));
+            if (!entry.members?.length) throw new Error("nobody to ask where it is");
+            joined.push(await Room.join(entry.id, entry.password, entry.kind, { ask: entry.members }));
         }
         catch (error)
         {
@@ -1466,6 +1553,136 @@ export async function restoreRooms(): Promise<Room[]> {
         }
     }
     return joined;
+}
+
+// ---------------------------------------------------------------- finding a room through the lobby
+
+// room id → who's waiting for a `room.here`, and which peers it asked
+const asking = new Map<string, { peers: Set<string>; found: (info: RoomEntry | null) => void }>();
+
+/** Joins room `id` through `info`, or through what its members in the lobby say. */
+async function enter(id: string, password: string, info: RoomEntry | null, uids: string[], accept: () => boolean): Promise<Net> {
+    const lobby = await whenLobby(LIMITS.askWaitMs);
+    const c = appClient();
+    if (!lobby || !c) throw new Error("not in the lobby");
+
+    let entry = info?.id === id && info.entries.length > 0 ? info : null;
+    let failure: unknown = null;
+    // an invite's entries can be gone (they reloaded): then the members are asked
+    for (let round = 0; round < 2; round++)
+    {
+        if (!entry && uids.length > 0) entry = await locate(id, password, uids);
+        if (!entry) break;
+        try
+        {
+            return await c.join(entry as Info, { password }, { bootstrap: new ParentBootstrap(lobby, id), accept });
+        }
+        catch (error)
+        {
+            if (isRejected(error)) throw error;
+            log("room: couldn't come in through", entry.entries, error);
+            failure = error;
+            entry = null;
+        }
+    }
+    throw failure ?? new Error("gone");
+}
+
+// asks every device of each uid; the first member that knows the room and its password answers
+function locate(id: string, password: string, uids: string[]): Promise<RoomEntry> {
+    // a newer look for the same room replaces this one
+    asking.get(id)?.found(null);
+    return new Promise((resolve, reject) => {
+        const peers = new Set<string>();
+        const started = Date.now();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const finish = (info: RoomEntry | null) => {
+            clearTimeout(timer);
+            if (asking.get(id) === waiting) asking.delete(id);
+            if (info) resolve(info);
+            else reject(new Error("gone"));
+        };
+        const waiting = { peers, found: finish };
+        asking.set(id, waiting);
+
+        // someone just reloaded (their peer is new), or isn't in the lobby yet: keep looking for a while
+        const round = () => {
+            for (const uid of uids)
+            {
+                for (const peer of peersOf(uid))
+                {
+                    if (peers.has(peer)) continue;
+                    if (lobbySendTo(peer, ASK, { room: id, password })) peers.add(peer);
+                }
+            }
+            const waited = Date.now() - started;
+            if (waited > LIMITS.askWaitMs + LIMITS.askMs || (peers.size > 0 && waited > LIMITS.askMs && !uids.some(uid => peersOf(uid).some(peer => !peers.has(peer)))))
+            {
+                finish(null);
+                return;
+            }
+            timer = setTimeout(round, ASK_ROUND_MS);
+        };
+        round();
+    });
+}
+
+const ASK_ROUND_MS = 1_000;
+
+onLobby<{ room?: unknown; password?: unknown }>(ASK, (payload, from) => {
+    if (!isId(payload?.room) || typeof payload.password !== "string") return;
+    const room = findRoom(payload.room);
+    if (!room || room.password !== payload.password) return;
+    const info = room.entry();
+    if (info) lobbySendTo(from.peer, HERE, { room: payload.room, info });
+}, { anyone: true });
+
+onLobby<{ room?: unknown; info?: unknown }>(HERE, (payload, from) => {
+    if (!isId(payload?.room)) return;
+    const waiting = asking.get(payload.room);
+    // only the peers we asked: anyone else could send us into a room of their own
+    if (!waiting?.peers.has(from.peer)) return;
+    const info = readEntry(payload.info, payload.room);
+    if (info) waiting.found(info);
+}, { anyone: true });
+
+/** Reads a room's info from the wire; null when it isn't one for room `id`. */
+export function readEntry(raw: unknown, id: string): RoomEntry | null {
+    if (typeof raw !== "object" || raw === null) return null;
+    const value = raw as Record<string, unknown>;
+    if (value.id !== id || typeof value.name !== "string" || typeof value.private !== "boolean" || typeof value.size !== "number") return null;
+    const topology = value.topology;
+    const named = typeof topology === "object" && topology !== null && typeof (topology as Record<string, unknown>).name === "string";
+    if (typeof topology !== "string" && !named) return null;
+    if (!Array.isArray(value.entries)) return null;
+    const entries = value.entries.filter(isId).slice(0, 8);
+    if (entries.length === 0) return null;
+    return {
+        id,
+        name: value.name.slice(0, 200),
+        topology: topology as RoomEntry["topology"],
+        private: value.private,
+        size: value.size,
+        entries,
+        ...(typeof value.meta === "object" && value.meta !== null ? { meta: value.meta as Record<string, unknown> } : {}),
+    };
+}
+
+/** The part of a network's invite that goes in an invite, an announce or a `room.here`. */
+export function toEntry(info: Info): RoomEntry {
+    return {
+        id: info.id,
+        name: info.name,
+        topology: info.topology,
+        private: info.private,
+        size: info.size,
+        entries: info.entries ?? [],
+        ...(info.meta ? { meta: info.meta } : {}),
+    };
+}
+
+function isId(value: unknown): value is string {
+    return typeof value === "string" && value.length > 0 && value.length <= 200;
 }
 
 // ---------------------------------------------------------------- helpers
@@ -1546,14 +1763,14 @@ function randomPassword(): string {
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// a real unload: close every room client so the others see us leave at once (the session stays for the refresh)
+// a real unload: leave every room so the others see us go at once (the session stays for the refresh)
 function handlePageHide(event: PageTransitionEvent) {
     if (event.persisted) return;
     for (const room of registry.values())
     {
         try
         {
-            room.client?.close();
+            room.net?.leave();
         }
         catch { /* unloading anyway */ }
     }

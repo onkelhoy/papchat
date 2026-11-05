@@ -11,10 +11,10 @@ export type NetworkEntry = {
 export type NetworkHealth = {
     id: string;
     topology: string;
-    host: boolean;
+    anchor: boolean;
     socket: boolean;
     listed?: boolean;
-    peers: { id: string; name: string; host: boolean; linked: boolean; proven: boolean }[];
+    peers: { id: string; name: string; linked: boolean; proven: boolean }[];
     merge?: { at: number; outcome: "merged" | "refused" | "failed"; detail: string };
 };
 

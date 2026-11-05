@@ -1,6 +1,6 @@
 import { signal } from "@papit/signals";
 
-import { LIMITS, signalUrl } from "./config";
+import { httpUrl, LIMITS } from "./config";
 import { deviceKey } from "./keys";
 import { log } from "./log";
 import { me } from "./state";
@@ -61,7 +61,7 @@ function startingState(): PushState {
 }
 
 function httpBase(): string {
-    return signalUrl().replace(/^ws/, "http").replace(/\/+$/, "");
+    return httpUrl();
 }
 
 // a sleeping server takes 30-60 s to answer: wait for it, and go again once if the wait broke

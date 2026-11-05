@@ -1,6 +1,6 @@
 import { log } from "./log";
 import { isRejected, Room, selectRoom } from "./room";
-import { network, toast } from "./state";
+import { me, network, toast } from "./state";
 import type { Contact, Network, Ring } from "./types";
 
 // Invite links. Everything sits in the hash, so it never reaches a server or its logs. Anyone holding
@@ -8,7 +8,7 @@ import type { Contact, Network, Ring } from "./types";
 
 export type ShareLink =
     | { kind: "network"; network: Network | null }
-    | { kind: "call"; room: string; password: string; network: Network | null }
+    | { kind: "call"; room: string; password: string; network: Network | null; by: string[] }
     | { kind: "contact"; contact: Omit<Contact, "at"> }
     | { kind: "ring"; ring: Ring }
     | { kind: "link"; network: string; key: string };
@@ -32,10 +32,14 @@ export function networkLink(net: Network | null): string {
     return linkTo({ join: net?.name ?? "", ...(net?.password ? { key: net.password } : {}) });
 }
 
-/** A link to a call. It carries your network too, so whoever follows it ends up where you are. */
+/**
+ * A link to a call. It carries your network too, so whoever follows it ends up where you are, and who's
+ * in the call: one of them is asked in the lobby where it is.
+ */
 export function callLink(room: Room): string {
     const net = network();
-    return linkTo({ call: room.network, key: room.password, join: net?.name ?? "", ...(net?.password ? { netkey: net.password } : {}) });
+    const by = [me()?.uid, ...room.memberUids()].filter((uid): uid is string => !!uid).slice(0, 8);
+    return linkTo({ call: room.network, key: room.password, by: by.join(","), join: net?.name ?? "", ...(net?.password ? { netkey: net.password } : {}) });
 }
 
 /** A link that saves you as a contact. Whoever holds it can ring this device. */
@@ -73,7 +77,8 @@ export function readShareLink(hash: string): ShareLink | "expired" | "invalid" |
     if (room === null) return { kind: "network", network: clean ? { name: clean, password: key } : null };
 
     const net = clean ? { name: clean, password: params.get("netkey") ?? "" } : null;
-    return room && room.length <= ROOM_MAX && key ? { kind: "call", room, password: key, network: net } : "invalid";
+    const by = (params.get("by") ?? "").split(",").filter(uid => uid && uid.length <= ROOM_MAX).slice(0, 8);
+    return room && room.length <= ROOM_MAX && key && by.length > 0 ? { kind: "call", room, password: key, network: net, by } : "invalid";
 }
 
 function readDeviceLink(params: URLSearchParams): ShareLink | "expired" | "invalid" {
@@ -118,10 +123,10 @@ function readRing(params: URLSearchParams): ShareLink | "invalid" {
 }
 
 /** Joins the call behind a link: nobody rings, the people in it see you join. Null (plus a toast) when it's over. */
-export async function joinSharedCall(id: string, password: string): Promise<Room | null> {
+export async function joinSharedCall(id: string, password: string, by: string[]): Promise<Room | null> {
     try
     {
-        const room = await Room.join(id, password, "call");
+        const room = await Room.join(id, password, "call", { ask: by });
         selectRoom(room.id);
         // in the call even when the mic is refused: you still hear them
         room.joinCall();

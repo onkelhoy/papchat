@@ -9,7 +9,7 @@ import { devicesOf, personOf, samePerson } from "./people";
 import { callText, closeNotification, pushCall, pushCancel } from "./push";
 import { play, ringback, stop as stopRinging } from "./ringtone";
 import { watch } from "./stage";
-import { directRoom, getRoom, inAnyCall, isRejected, restoreRooms, Room, selectRoom } from "./room";
+import { directRoom, getRoom, inAnyCall, isRejected, readEntry, restoreRooms, Room, selectRoom } from "./room";
 import { activeRoom, incoming, lobbyStatus, me, prefs, setIncoming, toast, setCalling } from "./state";
 import type { Contact, DeclineReason, IncomingCall, Invite, InviteKind, Profile, Ring, RoomKind } from "./types";
 
@@ -106,7 +106,7 @@ export async function acceptInvite(roomId: string, withVideo = false): Promise<R
     // a stage invite: watch it (stages aren't rooms)
     if (invite.kind === "stage")
     {
-        await watch(invite.room);
+        await watch(invite.room, invite.info);
         return null;
     }
 
@@ -597,7 +597,9 @@ async function joinFromInvite(invite: Invite, announce: boolean): Promise<Room |
     try
     {
         const unread = invite.kind === "chat" ? 1 : 0;
-        const room = await Room.join(invite.room, invite.password ?? "", invite.kind, { unread });
+        // the invite says where to come in; if those peers are gone, its people are asked
+        const ask = [invite.from, ...invite.members];
+        const room = await Room.join(invite.room, invite.password ?? "", invite.kind, { unread, ask, ...(invite.info ? { info: invite.info } : {}) });
         if (announce)
         {
             toast("info", room.direct ? `${name} started a chat` : `${name} added you to a chat`, {
@@ -631,6 +633,7 @@ function readInvite(payload: unknown, sender: string | null): Invite | null {
     // only the lobby knows who really sent it, never the payload
     const from = sender;
     if (!from) return null;
+    const info = readEntry(value.info, value.room);
 
     return {
         room: value.room,
@@ -640,6 +643,7 @@ function readInvite(payload: unknown, sender: string | null): Invite | null {
         from,
         members: Array.isArray(value.members) ? value.members.filter(isId).slice(0, 16) : [],
         ...(value.direct === true ? { direct: true } : {}),
+        ...(info ? { info } : {}),
     };
 }
 

@@ -1,4 +1,4 @@
-import type { Client } from "@papit/webrtc";
+import type { Network as Client } from "@papit/webrtc";
 import { signal } from "@papit/signals";
 
 import { LIMITS } from "./config";
@@ -102,7 +102,7 @@ export class Transfers {
         for (let start = 0; start < total; start += LIMITS.batch)
         {
             if (job.cancelled) return;
-            const channel = this.room.client?.media.channel("file");
+            const channel = this.room.net?.media.channel("file");
             if (!channel) throw new Error("not connected");
 
             const offset = start * LIMITS.chunk;
@@ -242,7 +242,7 @@ export class Transfers {
     private broadcast(type: string, payload: unknown) {
         try
         {
-            this.room.client?.broadcast(type, payload);
+            this.room.net?.broadcast(type, payload);
         }
         catch (error)
         {

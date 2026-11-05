@@ -64,15 +64,17 @@ export type NetworkEntry = {
 
 /** How this device is doing in its network, for Settings and for copied logs. */
 export type NetworkHealth = {
-    // the id the server has, shortened
+    // the network's id, shortened. It changes when this network merges into another
     id: string;
     topology: string;
-    host: boolean;
-    // this device's own socket. Members let theirs go on purpose, a host needs it
+    // this device keeps a socket so newcomers can find the network
+    anchor: boolean;
+    // this device's own socket. Most devices let theirs go on purpose, an anchor needs it
     socket: boolean;
-    // a host's last look at the server's list, unset for a member or before the first look
+    // an anchor's last look at the server's list, unset for the others or before the first look
     listed?: boolean;
-    peers: { id: string; name: string; host: boolean; linked: boolean; proven: boolean }[];
+    // everyone this device has heard from: `linked` ones have a direct link, the others are reached through the ring
+    peers: { id: string; name: string; linked: boolean; proven: boolean }[];
     merge?: { at: number; outcome: "merged" | "refused" | "failed"; detail: string };
 };
 
@@ -158,6 +160,8 @@ export type SessionRoom = {
     id: string;
     password?: string;
     kind: RoomKind;
+    // who was in it: one of them tells us where it is now
+    members?: string[];
 };
 
 /** One account on this browser, as the list shows it. Its data stays closed until it's opened. */
@@ -197,6 +201,19 @@ export type Invite = {
     offline?: boolean;
     // the caller's name when they aren't in the lobby
     name?: string;
+    // where to join: the room's info with a few entry peers. Without it, `from` and `members` are asked
+    info?: RoomEntry;
+};
+
+/** Enough of a room network to join it through the lobby: its id and a few peers already in it. */
+export type RoomEntry = {
+    id: string;
+    name: string;
+    topology: string | ({ name: string } & Record<string, unknown>);
+    private: boolean;
+    size: number;
+    entries: string[];
+    meta?: Record<string, unknown>;
 };
 
 export type IncomingCall = {

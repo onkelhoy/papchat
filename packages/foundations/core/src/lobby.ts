@@ -1,18 +1,24 @@
 import { signal } from "@papit/signals";
-import { Client } from "@papit/webrtc";
+import { Client, type Network as Net } from "@papit/webrtc";
 
-import { APP, LIMITS, LOBBY_NAME, RTC, signalUrl } from "./config";
+import { APP, httpUrl, LIMITS, LOBBY_NAME, LOBBY_VERSION, RTC, signalUrl } from "./config";
 import { readNetworkSaves } from "./history";
 import { PROOF, Verifier } from "./keys";
 import { log, logClient } from "./log";
 import { devicesOf, personOf, samePerson } from "./people";
-import { me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
+import { lobbyStatus, me, network, separated, setLobbyStatus, setMembers, setNetwork, setSeparated, toast } from "./state";
 import type { Network, NetworkEntry, NetworkHealth, Profile, Status } from "./types";
 
-// The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in. A private network
-// (`network()`) is the same thing under its own name and password, so only its members meet. Find the canonical
-// lobby or create it, converge when two people create at once or a rogue group comes back, keep
-// `members` / `lobbyStatus` up to date and route app messages by uid.
+// The papchat lobby (PLAN §2.2–2.4): one chord network everyone online is in, found on the signal
+// server. A private network (`network()`) is the same thing under its own name and password, so only
+// its members meet. Rooms, calls, stages and device sync are networks carried by the lobby: their
+// handshakes go through the ring, never the socket.
+//
+// webrtc 0.1 keeps no member list. Only a few anchors hold a socket so newcomers find the lobby;
+// everyone else drops theirs after joining. Who is here is ours to find out: everyone broadcasts
+// their profile (`presence`) and proves it with their device key. Two lobbies under one name merge
+// into the one with the lowest id. They only stay apart when they can't: another password, or a
+// ring next to a chord.
 
 export type LobbyFrom = {
     peer: string;
@@ -23,56 +29,82 @@ export type LobbyFrom = {
 
 export type LobbyHandler<Payload = any> = (payload: Payload, from: LobbyFrom) => void;
 
-type NetworkInfo = Awaited<ReturnType<Client["list"]>>[number];
+type Info = NonNullable<Net["info"]>;
+type Message = { meta: { type: string; sender: string }; parse(): unknown };
 
 export type Member = { peer: string; at: number; profile: Profile };
 
 const STATUSES: Status[] = ["available", "busy", "away", "dnd"];
 const RETRY_MIN_MS = 3_000;
 const RETRY_MAX_MS = 30_000;
-const UNREACHABLE_QUIET_MS = 3_000;
-// some of what the health shows has no event, like a member's socket closing
+// some of what the health shows has no event, like our socket closing
 const HEALTH_MS = 3_000;
-// host → group: a merge keeps the staying network's password, this is it
-const PASSWORD = "lobby-password";
-// host → group: a same-name network exists that we can't get into
+// a server that hasn't answered by now is waking up
+const WAKING_AFTER_MS = 4_000;
+// after a merge the two rings need a moment before a broadcast reaches all of them
+const MERGE_SETTLE_MS = [2_000, 8_000];
+// someone asked everyone to announce: spread the answers out
+const ANNOUNCE_SPREAD_MS = 3_000;
+
+// everyone → everyone: who I am. `ask` wants yours back, `reply` is that answer
+const PRESENCE = "presence";
+// everyone → everyone: I'm leaving
+const BYE = "presence.bye";
+// anchor → everyone: two networks just merged, announce yourselves to the new half
+const ANNOUNCE = "presence.all";
+// anchor → group: a same-name network exists that we can't get into
 const SEPARATED = "lobby-separated";
-// member → host: this password opens the network we're separated from
+// member → anchor: this password opens the network we're separated from
 const UNLOCK = "lobby-unlock";
-// host → member: that password didn't work
+// anchor → member: that password didn't work
 const UNLOCK_REFUSED = "lobby-unlock-refused";
+// anchor → group: we merged into a network with this password, use it from now on
+const PASSWORD = "lobby-password";
 
 class WrongPassword extends Error { }
 
-// a boot belongs to one epoch; stop/reconnect bumps it so stale async work bails out
+// a boot belongs to one epoch; stop bumps it so stale async work bails out
 class Cancelled extends Error { }
 
+// one client for everything (lobby, rooms, stages, sync), so this device has one peer id everywhere
 let client: Client | null = null;
+let lobby: Net | null = null;
 let epoch = 0;
 let running = false;
 let booting = false;
-let guarding = false;
-// the client's re-register failed: the group still works, but nobody can find it until it's sent again
-let unregistered = false;
-// network + password pairs the host already tried, so a scan doesn't knock on the same door every minute
-const refused = new Set<string>();
-// passwords waiting for the host's test, with who sent each: however many people send one, it's tested once
-const unlocks = new Map<string, string[]>();
-let unlockQueue: Promise<void> = Promise.resolve();
+let waking = false;
+// we were in a lobby before: a new boot is a reconnect
+let wasIn = false;
 let retryMs = RETRY_MIN_MS;
-let nextServerSlot = 0;
-// when this client started: sent in the profile so "newest peer wins" is the same for everyone
+// when this client started: sent with the profile so "newest peer wins" is the same for everyone
 let startedAt = 0;
 let profile: Profile | null = null;
+const waiters = new Set<(net: Net | null) => void>();
 
-let peerByUid = new Map<string, string>();
-// everyone in the network, by what they say; `memberByPeer` is those who proved it
+// merging
+let checking = false;
+// network + password pairs that were refused, so a scan doesn't knock on the same door every time
+const refused = new Set<string>();
+// the anchor that told us about the network we're separated from: it tests passwords for us
+let separatedBy: string | null = null;
+const unlocks = new Map<string, string[]>();
+let unlockQueue: Promise<void> = Promise.resolve();
+
+// presence: everyone by what they say (`claimed`), and the ones who proved it (`memberByPeer`)
 let claimed = new Map<string, Member>();
-let verifier: Verifier | null = null;
 let memberByPeer = new Map<string, Member>();
+let peerByUid = new Map<string, string>();
+let verifier: Verifier | null = null;
+// peer → when we last heard from it (any message)
+const heardAt = new Map<string, number>();
+let heartbeat: ReturnType<typeof setTimeout> | null = null;
+// after our own tab was asleep we heard nothing either: don't drop anyone until they had time to beat
+let graceUntil = 0;
+
 const handlers = new Map<string, Set<LobbyHandler>>();
+// these go by peer id, not by person, so they don't wait for a proof
+const ANYONE = new Set([PRESENCE, BYE, ANNOUNCE, SEPARATED, UNLOCK, UNLOCK_REFUSED]);
 const timers = new Set<{ id: ReturnType<typeof setTimeout>; resolve: () => void }>();
-const lastUnreachable = new Map<string, number>();
 
 /** How this device is doing in its network, null while it isn't in one. */
 export const [networkHealth, setNetworkHealth] = signal<NetworkHealth | null>(null);
@@ -81,27 +113,15 @@ let healthShown = "null";
 let listed: boolean | undefined;
 let lastMerge: NetworkHealth["merge"];
 
-// presence (PLAN §2.2): peer → when we last heard from it (any message, or its arrival)
-const heardAt = new Map<string, number>();
-let heartbeat: ReturnType<typeof setTimeout> | null = null;
-// after our own tab was asleep we heard nothing either: don't drop anyone until they had time to beat
-let graceUntil = 0;
-
-// recent unicasts by receiving peer, to send again when they come back unreachable
-type Sent = { uid: string; type: string; payload: unknown; tries: number; at: number };
-const RECENT_MS = 10_000;
-const recent = new Map<string, Sent[]>();
-const retrying = new Set<string>();
-
 // ---------------------------------------------------------------- public API
 
 /**
- * Connects to the signal server and lands in the lobby (find, join or create). Needs a profile.
+ * Lands in the lobby: finds it on the signal server and joins it, or creates it. Needs a profile.
  * Resolves true once in the lobby, false if the first attempt didn't make it (it keeps retrying).
  * Never rejects. Calling it again while running returns immediately.
  */
 export async function startLobby(): Promise<boolean> {
-    if (running) return client?.network != null;
+    if (running) return lobby != null;
 
     profile = me();
     if (!profile)
@@ -114,46 +134,65 @@ export async function startLobby(): Promise<boolean> {
     if (typeof window !== "undefined") window.addEventListener("pagehide", handlePageHide);
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleVisibility);
     beat();
-    healthTimer = setInterval(reportHealth, HEALTH_MS);
+    healthTimer = setInterval(tick, HEALTH_MS);
     return startClient();
 }
 
-/** Leaves the lobby, closes the socket and clears every timer and listener. */
+/** Leaves the lobby (and with it every room and stage), closes the socket, clears every timer. */
 export function stopLobby() {
     running = false;
+    say(BYE);
     stopClient();
     if (typeof window !== "undefined") window.removeEventListener("pagehide", handlePageHide);
     if (typeof document !== "undefined") document.removeEventListener("visibilitychange", handleVisibility);
     if (heartbeat) clearTimeout(heartbeat);
     heartbeat = null;
     clearInterval(healthTimer);
+    clearPresence();
+    wasIn = false;
     reportHealth();
-    heardAt.clear();
-    recent.clear();
-    retrying.clear();
-    peerByUid = new Map();
-    claimed = new Map();
-    memberByPeer = new Map();
-    setMembers([]);
     setLobbyStatus("idle");
 }
 
-/**
- * Unicast an app message to whoever has `uid` (their newest peer). False when unknown or not in the
- * lobby. Comes back unreachable → sent again a couple of times before "Couldn't reach" shows.
- */
-export function send(uid: string, type: string, payload?: unknown): boolean {
-    return sendTry(uid, type, payload, 0);
+/** The client every network of this device goes through. Null while the lobby isn't running. */
+export function appClient(): Client | null {
+    return client;
 }
 
-function sendTry(uid: string, type: string, payload: unknown, tries: number): boolean {
+/** The lobby network, null while not in it. Rooms, stages and sync are carried by it. */
+export function lobbyNetwork(): Net | null {
+    return lobby && !lobby.closed ? lobby : null;
+}
+
+/** Resolves with the lobby once in it, or null after `ms` (or when stopped). */
+export function whenLobby(ms: number): Promise<Net | null> {
+    const now = lobbyNetwork();
+    if (now) return Promise.resolve(now);
+    if (!running) return Promise.resolve(null);
+    return new Promise(resolve => {
+        const done = (net: Net | null) => {
+            clearTimeout(timer);
+            waiters.delete(done);
+            resolve(net);
+        };
+        const timer = setTimeout(() => done(null), ms);
+        waiters.add(done);
+    });
+}
+
+/** Unicast an app message to whoever has `uid` (their newest peer). False when unknown or not in the lobby. */
+export function send(uid: string, type: string, payload?: unknown): boolean {
     const peer = peerOf(uid);
-    if (!client?.network || !peer) return false;
+    return peer ? sendTo(peer, type, payload) : false;
+}
+
+/** Unicast to a lobby peer id. False when not in the lobby or there's no route. */
+export function sendTo(peer: string, type: string, payload?: unknown): boolean {
+    const net = lobbyNetwork();
+    if (!net) return false;
     try
     {
-        const sent = client.send(peer, type, payload);
-        if (sent) remember(peer, { uid, type, payload, tries, at: Date.now() });
-        return sent;
+        return net.send(peer, type, payload ?? null);
     }
     catch (error)
     {
@@ -164,10 +203,11 @@ function sendTry(uid: string, type: string, payload: unknown, tries: number): bo
 
 /** Broadcast an app message to everyone in the lobby. */
 export function broadcast(type: string, payload?: unknown): boolean {
-    if (!client?.network) return false;
+    const net = lobbyNetwork();
+    if (!net) return false;
     try
     {
-        return client.broadcast(type, payload);
+        return net.broadcast(type, payload ?? null);
     }
     catch (error)
     {
@@ -176,8 +216,12 @@ export function broadcast(type: string, payload?: unknown): boolean {
     }
 }
 
-/** Listens for lobby app messages of `type`. Returns the unsubscribe function. Survives reconnects. */
-export function on<Payload = any>(type: string, handler: LobbyHandler<Payload>): () => void {
+/**
+ * Listens for lobby app messages of `type`. Returns the unsubscribe function. Survives reconnects.
+ * Only proven senders get through, unless `anyone` (for messages that go by peer id, not by person).
+ */
+export function on<Payload = any>(type: string, handler: LobbyHandler<Payload>, options: { anyone?: boolean } = {}): () => void {
+    if (options.anyone) ANYONE.add(type);
     let set = handlers.get(type);
     if (!set)
     {
@@ -194,15 +238,7 @@ export function on<Payload = any>(type: string, handler: LobbyHandler<Payload>):
 /** Pushes a changed profile to the lobby (identity.ts calls this on every change). */
 export function setLobbyProfile(next: Profile) {
     profile = next;
-    if (!client) return;
-    try
-    {
-        client.setProfile(wire(next));
-    }
-    catch (error)
-    {
-        log("lobby: setProfile failed", error);
-    }
+    announce(false);
 }
 
 /** The newest peer of `uid`, or of another device of theirs when that one isn't here. */
@@ -216,6 +252,11 @@ function online(uid: string): string[] {
     return list.sort((a, b) => Number(b === uid) - Number(a === uid)).map(device => peerByUid.get(device)!);
 }
 
+/** The lobby peer of `uid` itself and of each of its owner's other devices that are here. */
+export function peersOf(uid: string): string[] {
+    return devicesOf(uid).map(device => peerByUid.get(device)).filter((peer): peer is string => !!peer);
+}
+
 /** uids of your other devices that are in the lobby right now. */
 export function otherDevices(): string[] {
     const mine = me()?.uid;
@@ -227,7 +268,8 @@ export function sendAll(uid: string, type: string, payload?: unknown): boolean {
     let sent = false;
     for (const device of devicesOf(uid))
     {
-        if (peerByUid.has(device) && sendTry(device, type, payload, 0)) sent = true;
+        const peer = peerByUid.get(device);
+        if (peer && sendTo(peer, type, payload)) sent = true;
     }
     return sent;
 }
@@ -235,27 +277,7 @@ export function sendAll(uid: string, type: string, payload?: unknown): boolean {
 /** Sends something nobody asked for: a peer that can't be reached is no reason for a toast. */
 export function quietSend(uid: string, type: string, payload?: unknown): boolean {
     const peer = peerByUid.get(uid);
-    if (!peer || !client?.network) return false;
-    try
-    {
-        return client.send(peer, type, payload);
-    }
-    catch (error)
-    {
-        log("lobby: send failed", type, error);
-        return false;
-    }
-}
-
-/**
- * A host back on a new socket keeps its peer id, while the server only knows the socket's. A newcomer
- * can reach it once it has heard from that socket as a member, and in webrtc 0.0.7 the welcome is too
- * early to count. So whoever's id sorts first, and opens the link, would never get through. Anything
- * sent now goes through the socket: their first offer is lost, the retry a few seconds later isn't.
- */
-export function greet(c: Client, newcomers: string[]) {
-    if (c.host !== c.id || c.serverId === c.network?.id) return;
-    for (const peer of newcomers) c.send(peer, "here");
+    return peer ? sendTo(peer, type, payload) : false;
 }
 
 /** Reads the members again after the person map changed. */
@@ -263,6 +285,7 @@ export function refreshMembers() {
     if (running) publish();
 }
 
+/** The proven uid behind a lobby peer id. A room or stage peer is the same id. */
 export function uidOf(peer: string): string | null {
     return memberByPeer.get(peer)?.profile.uid ?? null;
 }
@@ -272,50 +295,47 @@ export function profileOf(uid: string): Profile | null {
     return (peer && memberByPeer.get(peer)?.profile) || null;
 }
 
+/** The proven profile behind a lobby peer id. */
+export function profileOfPeer(peer: string): Profile | null {
+    return memberByPeer.get(peer)?.profile ?? null;
+}
+
 /**
  * Tries a password on the network this group is separated from. True when that was handled here, so
- * the page must not switch network: the host tests it and moves the group, or says it was wrong.
+ * the page must not switch network: an anchor tests it and merges the group, or says it was wrong.
  * False when this is a real change of network: a normal switch.
  */
 export async function unlockNetwork(next: Network | null): Promise<boolean> {
-    const c = client;
-    const net = network();
-    if (!c?.network || !next || !net || next.name !== net.name) return false;
+    const net = lobbyNetwork();
+    const current = network();
+    if (!net || !next || !current || next.name !== current.name) return false;
     // someone else got there first: we already have it, and reloading would end our calls
-    if (next.password === net.password) return true;
+    if (next.password === current.password) return true;
     if (!separated()) return false;
 
-    if (c.host === c.id) queueUnlock(next.password, c.id!);
-    else c.send(c.host!, UNLOCK, { password: next.password });
+    if (net.anchored) queueUnlock(next.password, net.me);
+    else if (separatedBy) sendTo(separatedBy, UNLOCK, { password: next.password });
+    else return false;
     return true;
-}
-
-/** The underlying client, for console checks. Null while stopped. */
-export function lobbyClient(): Client | null {
-    return client;
 }
 
 /**
  * The papchat networks on the signal server: the public one first (always listed), then the
- * private ones by name. Uses the lobby's socket, or a short-lived one when we're not in a lobby
- * (e.g. after a wrong password). Resolves to just the public one when the server can't be reached.
+ * private ones by name. Resolves to just the public one when the server can't be reached.
  */
 export async function listNetworks(): Promise<NetworkEntry[]> {
-    const own = client;
-    const c = own ?? new Client({ url: signalUrl(), rtc: RTC, topology: "chord" });
     const found = new Map<string, NetworkEntry>([["", { name: "", members: 0, locked: false }]]);
     try
     {
-        await c.ready;
-        for (const info of await c.list())
+        for (const info of await fetchNetworks())
         {
-            if (info.meta?.app !== APP || info.meta?.kind !== "lobby") continue;
-            const name = typeof info.meta.network === "string" ? info.meta.network : "";
-            // two lobbies under one name (a race that hasn't converged yet) count as one network
+            if (!isLobby(info)) continue;
+            const name = nameOf(info);
+            // two lobbies under one name (a merge that hasn't happened yet) count as one network
             const entry = found.get(name) ?? { name, members: 0, locked: false };
             entry.members += info.size;
-            entry.locked ||= info.meta.locked === true;
-            entry.nosave ||= info.meta.history === false;
+            entry.locked ||= info.meta?.locked === true;
+            entry.nosave ||= info.meta?.history === false;
             entry.ring ||= topologyOf(info) === "ring";
             found.set(name, entry);
         }
@@ -324,10 +344,10 @@ export async function listNetworks(): Promise<NetworkEntry[]> {
     {
         log("lobby: listing networks failed", error);
     }
-    finally
-    {
-        if (!own) try { c.close(); } catch { /* already closed */ }
-    }
+    // the network we're in counts everyone we know of, the server only its anchors
+    const mine = lobbyNetwork();
+    const entry = found.get(network()?.name ?? "");
+    if (mine && entry) entry.members = Math.max(entry.members, claimed.size + 1);
     return [...found.values()].sort((a, b) => (a.name === "" ? -1 : b.name === "" ? 1 : a.name.localeCompare(b.name)));
 }
 
@@ -336,19 +356,11 @@ export async function listNetworks(): Promise<NetworkEntry[]> {
 function startClient(): Promise<boolean> {
     const current = ++epoch;
     startedAt = Date.now();
-    nextServerSlot = 0;
     retryMs = RETRY_MIN_MS;
 
     try
     {
-        client = new Client({
-            url: signalUrl(),
-            rtc: RTC,
-            // only counts for a network this client creates: a joined one keeps its own
-            topology: network()?.ring ? "ring" : "chord",
-            profile: wire(profile!),
-            acceptMerge,
-        });
+        client = new Client({ url: signalUrl(), rtc: RTC });
     }
     catch (error)
     {
@@ -361,8 +373,8 @@ function startClient(): Promise<boolean> {
         return Promise.resolve(false);
     }
 
-    attach(client);
-    syncStatus();
+    logClient(client, "client");
+    client.addEventListener("error", handleClientError);
     void scan(current);
     return boot(current);
 }
@@ -370,10 +382,10 @@ function startClient(): Promise<boolean> {
 function stopClient() {
     epoch++;
     booting = false;
-    guarding = false;
-    unregistered = false;
+    checking = false;
     refused.clear();
     unlocks.clear();
+    separatedBy = null;
     listed = undefined;
     lastMerge = undefined;
     setSeparated(null);
@@ -384,98 +396,84 @@ function stopClient() {
     }
     timers.clear();
 
+    const net = lobby;
+    lobby = null;
+    if (net) detach(net);
     const old = client;
     client = null;
-    if (!old) return;
-    detach(old);
-    try
+    if (old)
     {
-        old.close();
+        old.removeEventListener("error", handleClientError);
+        try
+        {
+            old.close();
+        }
+        catch (error)
+        {
+            log("lobby: close failed", error);
+        }
     }
-    catch (error)
-    {
-        log("lobby: close failed", error);
-    }
+    settleWaiters();
 }
 
-// ---------------------------------------------------------------- boot and election (§2.2)
+// ---------------------------------------------------------------- finding the lobby
 
 async function boot(current: number): Promise<boolean> {
     const c = client;
     if (!c) return false;
     booting = true;
     syncStatus();
+    let joined: Net | null = null;
 
     try
     {
-        await c.ready;
+        // join the lowest id we can enter
+        const found = (await fetchNetworks()).filter(isOurs).sort(byId);
         alive(current);
-
-        // steps 1, 2 and 5: join the most canonical lobby we can enter, retry once from the top
         let locked = false;
-        for (let attempt = 0; attempt < 2 && !c.network; attempt++)
+        for (const target of found.slice(0, LIMITS.joinTries))
         {
-            const lobbies = await findLobbies(current, c);
-            if (lobbies.length === 0) break;
-
-            for (const target of lobbies)
+            try
             {
-                try
-                {
-                    log("lobby: joining", target.id, target.meta);
-                    await join(current, c, target.id);
-                    break;
-                }
-                catch (error)
-                {
-                    alive(current);
-                    // a rogue member who reloads gets back to its group here, behind the locked one
-                    if (error instanceof WrongPassword)
-                    {
-                        locked = true;
-                        continue;
-                    }
-                    log("lobby: join failed", error);
-                    break;
-                }
+                log("lobby: joining", target.id);
+                joined = await join(c, target.id);
+                break;
+            }
+            catch (error)
+            {
+                alive(current);
+                // a rogue member who reloads gets back to its group here, behind the locked one
+                if (error instanceof WrongPassword) locked = true;
+                else log("lobby: join failed", target.id, error);
             }
         }
-        // the network exists but isn't ours to enter: creating a second one would split it
-        if (locked && !c.network) throw new WrongPassword();
+        alive(current);
+        // the network exists but isn't ours to enter: making a second one would only split it
+        if (!joined && locked) throw new WrongPassword();
 
-        // step 3: none (or joining keeps failing): we host it
-        if (!c.network)
+        // none (or none would have us): we make it, and a merge brings any other one in later
+        if (!joined)
         {
-            const net = network();
-            log("lobby: creating", net?.name ?? LOBBY_NAME);
-            await serverCall(current, () => c.create({
-                name: net?.name ?? LOBBY_NAME,
-                ...(net?.password ? { password: net.password } : {}),
-                // only flags: anyone listing networks can read this
-                meta: { app: APP, kind: "lobby", v: 1, created: Date.now(), ...(net ? { network: net.name, locked: !!net.password } : {}), ...(net?.nosave ? { history: false } : {}) },
-            }));
+            log("lobby: creating", network()?.name ?? LOBBY_NAME);
+            joined = await create(c);
         }
         alive(current);
-
-        readNetworkSaves(c.network?.meta);
-        rememberTopology(c);
-        booting = false;
-        retryMs = RETRY_MIN_MS;
-        syncStatus();
-        log("lobby: in", c.network?.id, c.host === c.id ? "(host)" : "");
-
-        // step 4
-        await raceGuard(current);
-        return client === c && c.network != null;
+        enter(joined);
+        return true;
     }
     catch (error)
     {
-        if (error instanceof Cancelled) return false;
+        if (error instanceof Cancelled || current !== epoch)
+        {
+            // stopped while joining: don't stay in a network nobody watches
+            if (joined && joined !== lobby) joined.leave();
+            return false;
+        }
+        booting = false;
         if (error instanceof WrongPassword)
         {
             // retrying can't help: stay out until the user picks another password in the settings
             log("lobby: wrong password for", network()?.name);
-            booting = false;
             running = false;
             stopClient();
             setLobbyStatus("closed");
@@ -483,7 +481,6 @@ async function boot(current: number): Promise<boolean> {
             return false;
         }
         log("lobby: boot failed, retrying", error);
-        booting = false;
         syncStatus();
         retry(current);
         return false;
@@ -493,79 +490,215 @@ async function boot(current: number): Promise<boolean> {
 function retry(current: number) {
     const delay = retryMs;
     retryMs = Math.min(retryMs * 2, RETRY_MAX_MS);
-    wait(delay).then(() => {
-        if (current !== epoch || !client || client.network) return;
+    void wait(delay).then(() => {
+        if (current !== epoch || !client || lobby) return;
         void boot(current);
     });
 }
 
-// after creating, and on every scan: if a more canonical lobby showed up, merge with it. Only the
-// younger network's host asks, so simultaneous creators end up in one lobby and never ask each other.
-async function raceGuard(current: number) {
-    const c = client;
-    if (!c || guarding) return;
-    guarding = true;
+function create(c: Client): Promise<Net> {
+    const net = network();
+    return c.create({
+        name: net?.name ?? LOBBY_NAME,
+        topology: net?.ring ? "ring" : "chord",
+        ...(net?.password ? { password: net.password } : {}),
+        // only flags: anyone listing networks can read this
+        meta: {
+            app: APP,
+            kind: "lobby",
+            v: LOBBY_VERSION,
+            ...(net ? { network: net.name, locked: !!net.password } : {}),
+            ...(net?.nosave ? { history: false } : {}),
+        },
+        anchors: net ? LIMITS.networkAnchors : LIMITS.lobbyAnchors,
+        beacon: LIMITS.beaconMs,
+    }, { acceptMerge });
+}
 
+async function join(c: Client, id: string): Promise<Net> {
+    const password = network()?.password || undefined;
     try
     {
-        await wait(LIMITS.raceGuardMs);
-        alive(current);
-        // only a host can merge, and a member has no socket to look with
-        if (!c.network || c.host !== c.id) return;
-
-        const lobbies = await findLobbies(current, c);
-        // not listed yet (a re-register is still under way): our id and order aren't known, so decide nothing
-        const mine = lobbies.find(n => n.id === c.serverId);
-        listed = !!mine;
-        reportHealth();
-        if (!mine)
-        {
-            log("lobby: not listed yet, checking again later", c.serverId);
-            return;
-        }
-
-        // an older network we can't enter doesn't stop us joining one we can
-        let wall: string | null = null;
-        for (const target of lobbies)
-        {
-            if (compare(target, mine) >= 0) break;
-            // a merge needs the same topology, so asking would only be refused every scan
-            if (topologyOf(target) !== topologyOf(mine)) continue;
-            // the password is only sent to a network that asks for one
-            const password = target.meta?.locked === true ? network()?.password ?? "" : "";
-            if (!refused.has(refusedKey(target.id, password)))
-            {
-                log("lobby: a more canonical lobby exists, merging", mine.id, "→", target.id);
-                const outcome = await merge(current, c, target.id, password);
-                // anything else is worth another try on the next scan
-                if (outcome !== "refused") return;
-            }
-            wall ??= target.id;
-        }
-        log(wall ? "lobby: staying separate from" : "lobby: already the canonical lobby", wall ?? mine.id);
-        markSeparated(wall);
+        // acceptMerge here too: any member may become an anchor later
+        return await c.join(id, password ? { password } : {}, { acceptMerge });
     }
     catch (error)
     {
-        if (!(error instanceof Cancelled)) log("lobby: race guard failed", error);
+        if (isWrongPassword(error)) throw new WrongPassword();
+        throw error;
+    }
+}
+
+function enter(net: Net) {
+    lobby = net;
+    wasIn = true;
+    booting = false;
+    retryMs = RETRY_MIN_MS;
+    attach(net);
+    readNetworkSaves(net.info?.meta);
+    rememberTopology(net);
+    log("lobby: in", net.info?.id, net.anchored ? "(anchor)" : "");
+    // who's here: everyone answers this one
+    announce(true);
+    syncStatus();
+    settleWaiters();
+    if (net.anchored) void later(LIMITS.raceGuardMs, () => check(epoch));
+}
+
+function settleWaiters() {
+    const net = lobbyNetwork();
+    if (net === null && running) return;
+    for (const done of [...waiters]) done(net);
+}
+
+/** The public networks on the signal server, over http. */
+async function fetchNetworks(): Promise<Info[]> {
+    const slow = setTimeout(() => {
+        waking = true;
+        syncStatus();
+    }, WAKING_AFTER_MS);
+    try
+    {
+        const response = await fetch(`${httpUrl()}/networks`, { signal: AbortSignal.timeout(LIMITS.wakeMs), cache: "no-store" });
+        if (!response.ok) throw new Error(`the server said ${response.status}`);
+        const list: unknown = await response.json();
+        return Array.isArray(list) ? list.filter(isInfo) : [];
     }
     finally
     {
-        if (current === epoch)
+        clearTimeout(slow);
+        if (waking)
         {
-            guarding = false;
-            booting = false;
+            waking = false;
             syncStatus();
         }
     }
 }
 
-// Both groups stay up throughout: the two hosts find each other over the server once, everyone else
-// moves over peer links, and peer ids stay the same. The larger network stays, whichever one asked.
-async function merge(current: number, c: Client, target: string, password: string): Promise<"merged" | "refused" | "failed"> {
+function isInfo(value: unknown): value is Info {
+    if (typeof value !== "object" || value === null) return false;
+    const info = value as Record<string, unknown>;
+    return typeof info.id === "string" && typeof info.name === "string" && typeof info.size === "number";
+}
+
+// a papchat lobby of this version, of any network
+function isLobby(info: Info): boolean {
+    return info.meta?.app === APP && info.meta?.kind === "lobby" && info.meta?.v === LOBBY_VERSION;
+}
+
+// "" for the public one
+function nameOf(info: Info): string {
+    return typeof info.meta?.network === "string" ? info.meta.network : "";
+}
+
+// a lobby of the network we're set to be in
+function isOurs(info: Info): boolean {
+    return isLobby(info) && nameOf(info) === (network()?.name ?? "");
+}
+
+function byId(a: Info, b: Info): number {
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+function topologyOf(info: Pick<Info, "topology">): string {
+    return typeof info.topology === "string" ? info.topology : info.topology.name;
+}
+
+// whoever ends up alone and reloads creates the network again, and it should come back as what it was
+function rememberTopology(net: Net) {
+    const current = network();
+    if (!current || !net.info) return;
+    const ring = topologyOf(net.info) === "ring";
+    if (ring !== !!current.ring) setNetwork({ ...current, ring });
+}
+
+function isWrongPassword(error: unknown): boolean {
+    return /wrong password|forbidden/i.test(String((error as Error)?.message ?? error));
+}
+
+// ---------------------------------------------------------------- merging (one network per name)
+
+// Every scan, the first anchor looks at the server's list. A same-name lobby with a lower id is the one
+// to be in, so we merge into it: the whole group moves over peer links and takes its id. The other side
+// never asks, so two groups never merge into each other at once. What stops a merge for good is a
+// password we don't have or another topology. Anything else (a timeout, links that didn't open) is
+// tried again on the next scan.
+async function scan(current: number) {
     try
     {
-        await serverCall(current, () => c.merge(target, password || undefined));
+        while (true)
+        {
+            await wait(LIMITS.mergeScanMs * (0.75 + Math.random() * 0.5));
+            alive(current);
+            await check(current);
+        }
+    }
+    catch (error)
+    {
+        if (!(error instanceof Cancelled)) log("lobby: scan stopped", error);
+    }
+}
+
+async function check(current: number) {
+    const net = lobbyNetwork();
+    if (!net?.info || checking || booting || !net.anchored || !firstAnchor(net)) return;
+    checking = true;
+
+    try
+    {
+        const lobbies = (await fetchNetworks()).filter(isOurs).sort(byId);
+        alive(current);
+        if (lobby !== net || !net.info) return;
+        const mine = net.info.id;
+        listed = lobbies.some(n => n.id === mine);
+        reportHealth();
+
+        // an older network we can't enter doesn't stop us joining one we can
+        let wall: string | null = null;
+        for (const target of lobbies)
+        {
+            if (target.id >= mine) break;
+            // a ring and a chord can't be one network: they stay apart on purpose
+            if (topologyOf(target) !== topologyOf(net.info)) continue;
+            // the password only goes to a network that asks for one
+            const password = target.meta?.locked === true ? network()?.password ?? "" : "";
+            if (refused.has(refusedKey(target.id, password)))
+            {
+                wall ??= target.id;
+                continue;
+            }
+
+            log("lobby: a same-name network with a lower id exists, merging", mine, "→", target.id);
+            const outcome = await merge(current, net, target.id, password);
+            if (outcome === "merged") return;
+            if (outcome === "refused") wall ??= target.id;
+            // anything else is worth another try on the next scan
+            if (outcome === "failed") return;
+        }
+        log(wall ? "lobby: staying separate from" : "lobby: this is the network", wall ?? mine);
+        markSeparated(wall);
+    }
+    catch (error)
+    {
+        if (!(error instanceof Cancelled)) log("lobby: check failed", error);
+    }
+    finally
+    {
+        checking = false;
+    }
+}
+
+// The beacon goes out from the first anchor, so that's the one that merges. webrtc doesn't show the
+// anchor list yet (papit finding #32): without it every anchor counts as first.
+function firstAnchor(net: Net): boolean {
+    const anchors = (net as unknown as { anchors?: { anchors?: string[] } | null }).anchors?.anchors;
+    return !anchors?.length || anchors[0] === net.me;
+}
+
+async function merge(current: number, net: Net, target: string, password: string): Promise<"merged" | "refused" | "declined" | "failed"> {
+    try
+    {
+        await net.merge(target, password || undefined);
         alive(current);
         noteMerge("merged", target);
         return "merged";
@@ -574,14 +707,22 @@ async function merge(current: number, c: Client, target: string, password: strin
     {
         if (error instanceof Cancelled) throw error;
         alive(current);
-        if (/wrong password/i.test(String((error as Error)?.message ?? error)))
+        const reason = String((error as Error)?.message ?? error);
+        if (isWrongPassword(error))
         {
             refused.add(refusedKey(target, password));
-            noteMerge("refused", String((error as Error)?.message ?? error));
+            noteMerge("refused", reason);
             return "refused";
         }
-        log("lobby: merge failed", error);
-        noteMerge("failed", String((error as Error)?.message ?? error));
+        // their side said no for another reason (an older papchat, another topology config): not again
+        if (/merge refused|topology/i.test(reason))
+        {
+            refused.add(refusedKey(target, password));
+            noteMerge("refused", reason);
+            return "declined";
+        }
+        log("lobby: merge failed", target, error);
+        noteMerge("failed", reason);
         return "failed";
     }
 }
@@ -591,22 +732,13 @@ function noteMerge(outcome: "merged" | "refused" | "failed", detail: string) {
     reportHealth();
 }
 
-// the other host checks the password itself. A merge can move this whole group, so only our own kind counts
-function acceptMerge(info: NetworkInfo, size: number): boolean {
-    const c = client;
-    return !!c?.network
-        && info.meta?.app === APP
-        && info.meta?.kind === "lobby"
-        && info.meta?.network === network()?.name
-        && c.members.length + size <= LIMITS.mergeMembers;
+// A merge can move this whole group, so only our own kind counts. The password was checked already.
+function acceptMerge(info: Info): boolean {
+    return isOurs(info);
 }
 
 function refusedKey(id: string, password: string): string {
     return `${id}\n${password}`;
-}
-
-function isWrongPassword(error: unknown): boolean {
-    return /wrong password|forbidden/i.test(String((error as Error)?.message ?? error));
 }
 
 // sent on every scan, because members who joined since then haven't heard
@@ -616,53 +748,35 @@ function markSeparated(target: string | null) {
     if (target || changed) broadcast(SEPARATED, { network: target });
 }
 
-function handlePassword(payload: { password?: unknown }, from: LobbyFrom) {
-    const c = client;
-    const net = network();
-    if (!c?.network || !net || c.host === c.id || from.peer !== c.host || typeof payload?.password !== "string") return;
-    if (payload.password !== net.password) setNetwork({ ...net, password: payload.password });
-}
-
-// whoever moved doesn't know the password yet, and their next reload would be refused. Links are still
-// opening after a merge, so it goes out more than once
-async function sharePassword(current: number) {
-    for (const delay of LIMITS.mergePasswordMs)
-    {
-        await wait(delay);
-        const net = network();
-        if (current !== epoch || !net || client?.host !== client?.id) return;
-        broadcast(PASSWORD, { password: net.password });
-    }
-}
-
 function handleSeparated(payload: { network?: unknown }, from: LobbyFrom) {
-    const c = client;
-    if (!c?.network || c.host === c.id || from.peer !== c.host) return;
-    setSeparated(typeof payload?.network === "string" ? payload.network : null);
+    const net = lobbyNetwork();
+    if (!net || net.anchored) return;
+    const target = typeof payload?.network === "string" ? payload.network : null;
+    separatedBy = target ? from.peer : null;
+    setSeparated(target);
 }
 
 function handleUnlock(payload: { password?: unknown }, from: LobbyFrom) {
-    const c = client;
-    if (!c?.network || c.host !== c.id || typeof payload?.password !== "string") return;
+    if (!lobbyNetwork()?.anchored || typeof payload?.password !== "string") return;
     queueUnlock(payload.password, from.peer);
 }
 
 function handleUnlockRefused(_payload: unknown, from: LobbyFrom) {
-    if (from.peer === client?.host) wrongPassword();
+    if (from.peer === separatedBy) wrongPassword();
 }
 
 function wrongPassword() {
     toast("warning", `That isn't the password for "${network()?.name ?? ""}"`);
 }
 
-// one at a time: only the host tests, so a big group pressing at once costs one test per different password
+// one at a time: however many people press at once, each different password is tested once
 function queueUnlock(password: string, peer: string) {
-    const c = client;
+    const net = lobbyNetwork();
     const target = separated();
-    if (!c?.network || !target) return;
+    if (!net || !target) return;
     if (refused.has(refusedKey(target, password)))
     {
-        refuse(c, [peer]);
+        refuse(net, [peer]);
         return;
     }
 
@@ -674,20 +788,20 @@ function queueUnlock(password: string, peer: string) {
     }
     unlocks.set(password, [peer]);
     const current = epoch;
-    unlockQueue = unlockQueue.then(() => tryUnlock(current, c, password));
+    unlockQueue = unlockQueue.then(() => tryUnlock(current, net, password));
 }
 
-async function tryUnlock(current: number, c: Client, password: string) {
+async function tryUnlock(current: number, net: Net, password: string) {
     try
     {
         alive(current);
         const target = separated();
-        const net = network();
         // an earlier password in the queue already worked
-        if (!target || !net) return;
+        if (!target || lobby !== net) return;
 
-        const outcome = await merge(current, c, target, password);
-        if (outcome === "refused") refuse(c, unlocks.get(password) ?? []);
+        const outcome = await merge(current, net, target, password);
+        if (outcome === "merged") sharePassword(current, password);
+        else if (outcome === "refused") refuse(net, unlocks.get(password) ?? []);
     }
     catch (error)
     {
@@ -699,143 +813,100 @@ async function tryUnlock(current: number, c: Client, password: string) {
     }
 }
 
-function refuse(c: Client, peers: string[]) {
+function refuse(net: Net, peers: string[]) {
     for (const peer of peers)
     {
-        if (peer === c.id) wrongPassword();
-        else c.send(peer, UNLOCK_REFUSED);
+        if (peer === net.me) wrongPassword();
+        else sendTo(peer, UNLOCK_REFUSED);
     }
 }
 
-// these go by peer id, not by person, so they don't wait for a proof
-const ANYONE = new Set(["here", PASSWORD, SEPARATED, UNLOCK, UNLOCK_REFUSED]);
+// the group moved into a network with another password: without it, their next reload is refused
+function sharePassword(current: number, password: string) {
+    const name = network()?.name;
+    if (!name) return;
+    const net = network();
+    if (net) setNetwork({ ...net, password });
+    for (const delay of MERGE_SETTLE_MS)
+    {
+        void later(delay, () => {
+            if (current === epoch) broadcast(PASSWORD, { network: name, password });
+        });
+    }
+}
 
-on(PASSWORD, handlePassword);
+function handlePassword(payload: { network?: unknown; password?: unknown }) {
+    const net = network();
+    if (!net || payload?.network !== net.name || typeof payload.password !== "string") return;
+    if (payload.password !== net.password) setNetwork({ ...net, password: payload.password });
+}
+
 on(SEPARATED, handleSeparated);
 on(UNLOCK, handleUnlock);
 on(UNLOCK_REFUSED, handleUnlockRefused);
+on(PASSWORD, handlePassword);
 
-// the race guard runs once after joining, which misses a rogue group that comes back later: keep looking
-async function scan(current: number) {
-    try
-    {
-        while (true)
-        {
-            await wait(LIMITS.rogueScanMs);
-            alive(current);
-            await recheck(current);
-        }
-    }
-    catch (error)
-    {
-        if (!(error instanceof Cancelled)) log("lobby: scan stopped", error);
-    }
-}
-
-// only the host has a socket, so it looks for everyone
-async function recheck(current: number) {
-    const c = client;
-    if (!c?.network || c.host !== c.id || c.status !== "connected" || booting) return;
-
-    try
-    {
-        if (unregistered)
-        {
-            log("lobby: registering the network again");
-            unregistered = false;
-            await serverCall(current, () => c.reregister()).catch((error) => {
-                unregistered = true;
-                throw error;
-            });
-        }
-        await raceGuard(current);
-    }
-    catch (error)
-    {
-        if (!(error instanceof Cancelled)) log("lobby: recheck failed", error);
-    }
-}
-
-async function findLobbies(current: number, c: Client): Promise<NetworkInfo[]> {
-    const all = await serverCall(current, () => c.list());
-    alive(current);
-    const name = network()?.name;
-    return all
-        // the public lobby has no `network`, a private one carries its name
-        .filter(n => n.meta?.app === APP && n.meta?.kind === "lobby" && n.meta?.network === name)
-        .sort(compare);
-}
-
-async function join(current: number, c: Client, id: string) {
-    const password = network()?.password || undefined;
-    try
-    {
-        await serverCall(current, () => c.join(id, password));
-    }
-    catch (error)
-    {
-        if (isWrongPassword(error)) throw new WrongPassword();
-        throw error;
-    }
-}
-
-function topologyOf(n: NetworkInfo): string {
-    return typeof n.topology === "string" ? n.topology : n.topology.name;
-}
-
-// whoever ends up alone and reloads creates the network again, and it should come back as what it was
-function rememberTopology(c: Client) {
-    const net = network();
-    if (!net || !c.network) return;
-    const ring = topologyOf(c.network) === "ring";
-    if (ring !== !!net.ring) setNetwork({ ...net, ring });
-}
-
-// canonical = smallest meta.created, then smallest id
-function compare(a: NetworkInfo, b: NetworkInfo): number {
-    const ca = created(a);
-    const cb = created(b);
-    if (ca !== cb) return ca < cb ? -1 : 1;
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-}
-
-function created(n: NetworkInfo): number {
-    const value = n.meta?.created;
-    return typeof value === "number" && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
-}
-
-// ---------------------------------------------------------------- helpers
-
-// the server strikes messages to it that come < 200 ms apart: space ours ≥ LIMITS.serverGapMs
-async function serverCall<T>(current: number, run: () => Promise<T>): Promise<T> {
-    const now = Date.now();
-    const at = Math.max(now, nextServerSlot);
-    nextServerSlot = at + LIMITS.serverGapMs;
-    if (at > now) await wait(at - now);
-    alive(current);
-    return run();
-}
-
-function wait(ms: number): Promise<void> {
-    return new Promise(resolve => {
-        const timer = {
-            id: setTimeout(() => {
-                timers.delete(timer);
-                resolve();
-            }, ms),
-            resolve,
-        };
-        timers.add(timer);
-    });
-}
-
-function alive(current: number) {
-    if (current !== epoch || !client) throw new Cancelled();
-}
+// ---------------------------------------------------------------- presence
 
 // what goes over the wire: the profile plus when this client started
 function wire(p: Profile): Record<string, unknown> {
     return { ...p, at: startedAt };
+}
+
+function announce(ask: boolean) {
+    if (!profile || !lobbyNetwork()) return;
+    broadcast(PRESENCE, { profile: wire(profile), ...(ask ? { ask: true } : {}) });
+}
+
+function say(type: string) {
+    if (lobbyNetwork()) broadcast(type, {});
+}
+
+function handlePresence(payload: { profile?: unknown; ask?: unknown; reply?: unknown }, from: LobbyFrom) {
+    const member = readMember(from.peer, payload?.profile);
+    if (!member) return;
+    const before = claimed.get(from.peer);
+    claimed.set(from.peer, member);
+    heardAt.set(from.peer, Date.now());
+
+    // they're new here (or after a merge): tell them who we are, straight back
+    if (payload.ask === true && payload.reply !== true && profile) sendTo(from.peer, PRESENCE, { profile: wire(profile), reply: true });
+
+    if (!before || before.profile.uid !== member.profile.uid || before.profile.key !== member.profile.key) verifier?.sync([...claimed]);
+    applyProofs();
+}
+
+function handleBye(_payload: unknown, from: LobbyFrom) {
+    forget([from.peer]);
+}
+
+// two networks merged: everyone announces once, spread out, so both halves learn each other
+function handleAnnounce() {
+    void later(Math.random() * ANNOUNCE_SPREAD_MS, () => announce(false));
+}
+
+on(PRESENCE, handlePresence);
+on(BYE, handleBye);
+on(ANNOUNCE, handleAnnounce);
+
+function forget(peers: string[]) {
+    let changed = false;
+    for (const peer of peers)
+    {
+        heardAt.delete(peer);
+        if (claimed.delete(peer)) changed = true;
+    }
+    if (!changed) return;
+    verifier?.sync([...claimed]);
+    applyProofs();
+}
+
+function clearPresence() {
+    heardAt.clear();
+    peerByUid = new Map();
+    claimed = new Map();
+    memberByPeer = new Map();
+    setMembers([]);
 }
 
 /** Reads a wire profile (Profile + `at`) as sent by `wire()`; null when it is not a usable profile. Rooms reuse it. */
@@ -860,7 +931,85 @@ export function readMember(peer: string, raw: unknown): Member | null {
     };
 }
 
-// lobbyStatus: the socket status, except "connected" only counts once we're in the lobby
+// only members who proved their uid count
+function applyProofs() {
+    memberByPeer = new Map([...claimed].filter(([peer]) => verifier?.verified(peer)));
+    publish();
+    reportHealth();
+}
+
+// one peer per uid and one entry per person (newest wins). Your own peer is left out, and so are your
+// other devices: they're you, not someone to chat with
+function publish() {
+    const byUid = new Map<string, Member>();
+    for (const member of memberByPeer.values())
+    {
+        const current = byUid.get(member.profile.uid);
+        if (newer(member, current)) byUid.set(member.profile.uid, member);
+    }
+    peerByUid = new Map([...byUid.values()].map(m => [m.profile.uid, m.peer]));
+
+    const mine = me()?.uid;
+    const byPerson = new Map<string, Member>();
+    for (const member of byUid.values())
+    {
+        const { uid } = member.profile;
+        if (uid === mine || (mine && samePerson(uid, mine))) continue;
+        const person = personOf(uid);
+        if (newer(member, byPerson.get(person))) byPerson.set(person, member);
+    }
+    setMembers(
+        [...byPerson.values()]
+            .map(m => m.profile)
+            .sort((a, b) => a.name.localeCompare(b.name) || (a.uid < b.uid ? -1 : 1)),
+    );
+}
+
+function newer(member: Member, current: Member | undefined): boolean {
+    return !current || member.at > current.at || (member.at === current.at && member.peer > current.peer);
+}
+
+// any message is a sign of life
+function heard(peer: string) {
+    if (claimed.has(peer)) heardAt.set(peer, Date.now());
+}
+
+// one small broadcast per interval, then drop whoever went quiet without saying goodbye
+function beat() {
+    if (heartbeat) clearTimeout(heartbeat);
+    heartbeat = null;
+    if (!running) return;
+
+    announce(false);
+    const now = Date.now();
+    if (now >= graceUntil)
+    {
+        const stale = [...claimed.keys()].filter(peer => now - (heardAt.get(peer) ?? 0) > LIMITS.staleMs);
+        if (stale.length > 0)
+        {
+            log("lobby: quiet for too long, dropping", stale);
+            forget(stale);
+        }
+    }
+
+    const hidden = typeof document !== "undefined" && document.hidden;
+    heartbeat = setTimeout(beat, hidden ? LIMITS.heartbeatHiddenMs : LIMITS.heartbeatMs);
+}
+
+// back in front: say so right away, and give everyone a hidden-interval to beat before ageing them
+function handleVisibility() {
+    if (document.hidden) return;
+    graceUntil = Date.now() + LIMITS.heartbeatHiddenMs + 10_000;
+    beat();
+}
+
+// ---------------------------------------------------------------- status and health
+
+function tick() {
+    syncStatus();
+}
+
+// lobbyStatus: "connected" once in the lobby and linked to someone (or keeping the socket as an anchor)
 function syncStatus() {
     reportHealth();
     if (!running)
@@ -874,92 +1023,35 @@ function syncStatus() {
         return;
     }
 
-    const status = client.status;
-    if (status === "connected" || status === "connecting")
+    const net = lobbyNetwork();
+    if (!net || booting)
     {
-        if (status === "connected" && client.network && !booting) setLobbyStatus("connected");
-        else setLobbyStatus("connecting");
+        setLobbyStatus(waking ? "waking" : wasIn ? "reconnecting" : "connecting");
         return;
     }
-    setLobbyStatus(status);
-}
-
-// ---------------------------------------------------------------- client events (never throw)
-
-function attach(c: Client) {
-    verifier = new Verifier({
-        me: () => c.id,
-        ready: () => c.links.length > 0,
-        send: (peer, payload) => { c.send(peer, PROOF, payload); },
-        changed: () => { if (c === client) applyProofs(); },
-    });
-    logClient(c, "lobby");
-    c.addEventListener("peer", handlePeer);
-    c.addEventListener("status", handleStatus);
-    c.addEventListener("members", handleMembers);
-    c.addEventListener("message", handleMessage);
-    c.addEventListener("unreachable", handleUnreachable);
-    c.addEventListener("host", handleHost);
-    c.addEventListener("merged", handleMerged);
-    c.addEventListener("error", handleError);
-}
-
-function detach(c: Client) {
-    verifier?.stop();
-    verifier = null;
-    c.removeEventListener("peer", handlePeer);
-    c.removeEventListener("status", handleStatus);
-    c.removeEventListener("members", handleMembers);
-    c.removeEventListener("message", handleMessage);
-    c.removeEventListener("unreachable", handleUnreachable);
-    c.removeEventListener("host", handleHost);
-    c.removeEventListener("merged", handleMerged);
-    c.removeEventListener("error", handleError);
-}
-
-function handlePeer(event: Event) {
-    if (event.target === client) verifier?.poke();
-}
-
-function handleStatus(event: Event) {
-    if (event.target !== client) return;
-    try
-    {
-        const status = (event as CustomEvent).detail;
-        log("lobby: status", status);
-        syncStatus();
-        // back from a drop: the server may have a same-name network now
-        if (status === "connected") void recheck(epoch);
-    }
-    catch (error)
-    {
-        log("lobby: status handler failed", error);
-    }
-}
-
-// only members who proved their uid count
-function applyProofs() {
-    memberByPeer = new Map([...claimed].filter(([peer]) => verifier?.verified(peer)));
-    publish();
-    reportHealth();
+    // cut off from everyone: the beacon heals it back
+    const alone = net.linked.size === 0 && (!net.anchored || !client.online);
+    const next = alone ? "reconnecting" : "connected";
+    if (lobbyStatus() !== next) log("lobby: status", next);
+    setLobbyStatus(next);
 }
 
 function reportHealth() {
-    const c = client;
-    const info = c?.network;
-    const next: NetworkHealth | null = !c || !info ? null : {
-        id: (c.serverId ?? info.id).slice(0, 8),
-        topology: topologyOf(info),
-        host: c.host === c.id,
-        socket: !!c.socket?.open,
-        listed: c.host === c.id ? listed : undefined,
-        peers: c.members.filter(peer => peer !== c.id).map(peer => ({
-            id: peer.slice(0, 8),
-            name: claimed.get(peer)?.profile.name ?? "",
-            host: peer === c.host,
-            linked: c.links.includes(peer),
-            proven: !!verifier?.verified(peer),
-        })),
+    const net = lobbyNetwork();
+    const next: NetworkHealth | null = !net?.info ? null : {
+        id: net.info.id.slice(0, 8),
+        topology: topologyOf(net.info),
+        anchor: net.anchored,
+        socket: !!client?.online,
+        listed: net.anchored ? listed : undefined,
+        peers: [...new Set([...claimed.keys(), ...net.linked])]
+            .filter(peer => peer !== net.me)
+            .map(peer => ({
+                id: peer.slice(0, 8),
+                name: claimed.get(peer)?.profile.name ?? "",
+                linked: net.linked.has(peer),
+                proven: !!verifier?.verified(peer),
+            })),
         merge: lastMerge,
     };
     const shown = JSON.stringify(next);
@@ -968,53 +1060,60 @@ function reportHealth() {
     setNetworkHealth(next);
 }
 
-// one entry per uid (newest peer wins), yourself left out
-function handleMembers(event: Event) {
-    if (event.target !== client) return;
+// ---------------------------------------------------------------- network events (never throw)
+
+function attach(net: Net) {
+    verifier = new Verifier({
+        me: () => net.me,
+        ready: () => net.linked.size > 0,
+        send: (peer, payload) => { sendTo(peer, PROOF, payload); },
+        changed: () => { if (net === lobby) applyProofs(); },
+    });
+    net.addEventListener("message", handleMessage);
+    net.addEventListener("link", handleLink);
+    net.addEventListener("merged", handleMerged);
+    net.addEventListener("update", handleUpdate);
+    net.addEventListener("anchored", handleAnchored);
+    net.addEventListener("close", handleClose);
+}
+
+function detach(net: Net) {
+    verifier?.stop();
+    verifier = null;
+    net.removeEventListener("message", handleMessage);
+    net.removeEventListener("link", handleLink);
+    net.removeEventListener("merged", handleMerged);
+    net.removeEventListener("update", handleUpdate);
+    net.removeEventListener("anchored", handleAnchored);
+    net.removeEventListener("close", handleClose);
     try
     {
-        const c = client!;
-        const { members, profiles } = (event as CustomEvent<{ members: string[]; profiles: Record<string, unknown> }>).detail;
-        const byPeer = new Map<string, Member>();
-        const newcomers: string[] = [];
-        const now = Date.now();
-
-        for (const peer of members)
-        {
-            if (peer === c.id) continue;
-            const member = readMember(peer, profiles[peer]);
-            if (!member) continue;
-            byPeer.set(peer, member);
-            // a newcomer counts as heard; a known one keeps its time (a join elsewhere isn't a sign of life)
-            if (!heardAt.has(peer))
-            {
-                heardAt.set(peer, now);
-                newcomers.push(peer);
-            }
-        }
-        for (const peer of heardAt.keys())
-        {
-            if (!byPeer.has(peer)) heardAt.delete(peer);
-        }
-
-        greet(c, newcomers);
-        claimed = byPeer;
-        verifier?.sync([...byPeer]);
-        applyProofs();
-        syncStatus();
+        if (!net.closed) net.leave();
     }
     catch (error)
     {
-        log("lobby: members handler failed", error);
+        log("lobby: leave failed", error);
     }
 }
 
 function handleMessage(event: Event) {
-    if (event.target !== client) return;
-    const { type, sender, payload } = (event as CustomEvent<{ type: string; sender: string; payload: unknown }>).detail;
+    if (event.target !== lobby) return;
+    const message = (event as CustomEvent<Message>).detail;
+    const { type, sender } = message.meta;
+    let payload: unknown;
+    try
+    {
+        payload = message.parse();
+    }
+    catch
+    {
+        log("lobby: unreadable message", type, sender);
+        return;
+    }
+
+    heard(sender);
     if (type === PROOF)
     {
-        heard(sender);
         verifier?.receive(sender, payload);
         return;
     }
@@ -1025,8 +1124,6 @@ function handleMessage(event: Event) {
         log("lobby: unhandled message", type, sender);
         return;
     }
-
-    heard(sender);
     if (ANYONE.has(type) || verifier?.verified(sender)) deliver(type, sender, payload, set);
     else verifier?.hold(sender, () => deliver(type, sender, payload, set));
 }
@@ -1047,183 +1144,70 @@ function deliver(type: string, sender: string, payload: unknown, set: Set<LobbyH
     }
 }
 
-function handleUnreachable(event: Event) {
-    if (event.target !== client) return;
-    try
+// a new direct link: someone we may not know yet (after a merge, or they just came in)
+function handleLink(event: Event) {
+    if (event.target !== lobby) return;
+    const { peer, open } = (event as CustomEvent<{ peer: string; open: boolean }>).detail;
+    if (open)
     {
-        const { receiver } = (event as CustomEvent<{ receiver: string; ref: string }>).detail;
-        log("lobby: unreachable", receiver);
-        // background traffic (proofs, broadcasts) isn't something the person sent
-        if (!recent.has(receiver) && !retrying.has(receiver)) return;
-        if (resend(receiver)) return;
-
-        // one toast per person for a burst of undeliverable messages
-        const now = Date.now();
-        if (now - (lastUnreachable.get(receiver) ?? 0) < UNREACHABLE_QUIET_MS) return;
-        lastUnreachable.set(receiver, now);
-
-        const name = memberByPeer.get(receiver)?.profile.name;
-        toast("warning", name ? `Couldn't reach ${name}` : "Couldn't reach that person");
+        verifier?.poke();
+        if (!claimed.has(peer) && profile) sendTo(peer, PRESENCE, { profile: wire(profile), ask: true });
     }
-    catch (error)
-    {
-        log("lobby: unreachable handler failed", error);
-    }
+    syncStatus();
 }
 
-// promoted to host (the old one left): our lobby might be a stale duplicate, check once
-function handleHost(event: Event) {
-    if (event.target !== client) return;
-    try
-    {
-        const c = client!;
-        if ((event as CustomEvent<string>).detail !== c.id || !c.network || booting) return;
-        log("lobby: we are the host now");
-        void raceGuard(epoch);
-    }
-    catch (error)
-    {
-        log("lobby: host handler failed", error);
-    }
-}
-
-// fires in both groups, and the one that moved has the other network's id, meta and password from here on
+// fires on the two ends of the bridge. The side that moved has the other network's id from here on
 function handleMerged(event: Event) {
-    if (event.target !== client) return;
-    try
-    {
-        const c = client!;
-        const merged = (event as CustomEvent<NetworkInfo>).detail;
-        log("lobby: merged into", merged.id, c.host === c.id ? "(host)" : "");
-        readNetworkSaves(merged.meta);
-        setSeparated(null);
-        syncStatus();
-        if (c.host === c.id && network()) void sharePassword(epoch);
-    }
-    catch (error)
-    {
-        log("lobby: merged handler failed", error);
-    }
-}
-
-function handleError(event: Event) {
-    if (event.target !== client) return;
-    const detail = (event as CustomEvent<{ type: string; message: string; payload: unknown }>).detail;
-    log("lobby: error", detail?.type, detail?.message, detail?.payload);
-    // the scan sends it again
-    if (detail?.type === "host") unregistered = true;
-}
-
-// ---------------------------------------------------------------- presence
-
-// one peer per uid and one entry per person (newest wins) among those heard from lately. Your own
-// peer is left out, and so are your other devices: they're you, not someone to chat with
-function publish() {
-    const now = Date.now();
-    const byUid = new Map<string, Member>();
-    for (const [peer, member] of memberByPeer)
-    {
-        if (!fresh(peer, now)) continue;
-        const current = byUid.get(member.profile.uid);
-        if (newer(member, current)) byUid.set(member.profile.uid, member);
-    }
-    peerByUid = new Map([...byUid.values()].map(m => [m.profile.uid, m.peer]));
-
-    const mine = me()?.uid;
-    const byPerson = new Map<string, Member>();
-    for (const member of byUid.values())
-    {
-        const { uid } = member.profile;
-        if (mine && uid !== mine && samePerson(uid, mine)) continue;
-        const person = personOf(uid);
-        if (newer(member, byPerson.get(person))) byPerson.set(person, member);
-    }
-    setMembers(
-        [...byPerson.values()]
-            .map(m => m.profile)
-            .sort((a, b) => a.name.localeCompare(b.name) || (a.uid < b.uid ? -1 : 1)),
-    );
-}
-
-function newer(member: Member, current: Member | undefined): boolean {
-    return !current || member.at > current.at || (member.at === current.at && member.peer > current.peer);
-}
-
-function fresh(peer: string, now: number): boolean {
-    return now < graceUntil || now - (heardAt.get(peer) ?? now) < LIMITS.staleMs;
-}
-
-// any message is a sign of life; one from someone we had dropped brings them back
-function heard(peer: string) {
-    const now = Date.now();
-    const was = fresh(peer, now);
-    if (memberByPeer.has(peer) || heardAt.has(peer)) heardAt.set(peer, now);
-    if (!was && memberByPeer.has(peer)) publish();
-}
-
-// one tiny broadcast per interval, then drop whoever went quiet (only republished when that changes)
-function beat() {
-    if (heartbeat) clearTimeout(heartbeat);
-    heartbeat = null;
-    if (!running) return;
-
-    if (client?.network) broadcast("here");
-    const now = Date.now();
-    // kept past a peer's departure (a send to someone who just reloaded is retried to their new peer)
-    for (const [peer, list] of recent)
-    {
-        if (now - (list.at(-1)?.at ?? 0) > RECENT_MS) recent.delete(peer);
-    }
-    const stale = [...peerByUid.values()].filter(peer => !fresh(peer, now));
-    if (stale.length > 0)
-    {
-        log("lobby: quiet for too long, dropping", stale);
-        publish();
-    }
-
-    const hidden = typeof document !== "undefined" && document.hidden;
-    heartbeat = setTimeout(beat, hidden ? LIMITS.heartbeatHiddenMs : LIMITS.heartbeatMs);
-}
-
-// back in front: say so right away, and give everyone a hidden-interval to beat before ageing them
-function handleVisibility() {
-    if (document.hidden) return;
-    graceUntil = Date.now() + LIMITS.heartbeatHiddenMs + 10_000;
-    beat();
-}
-
-// `here` only needs to arrive (handleMessage marks the sender heard)
-on("here", () => { });
-
-// ---------------------------------------------------------------- resend
-
-function remember(peer: string, entry: Sent) {
-    const list = (recent.get(peer) ?? []).filter(e => entry.at - e.at < RECENT_MS);
-    list.push(entry);
-    recent.set(peer, list.slice(-8));
-}
-
-// what was sent to `peer` lately goes out again shortly (to their newest peer by then); true while
-// a retry is on its way, so the burst of unreachables for one send stays quiet
-function resend(peer: string): boolean {
-    if (retrying.has(peer)) return true;
-    const now = Date.now();
-    const again = (recent.get(peer) ?? []).filter(e => now - e.at < RECENT_MS && e.tries < LIMITS.resendTries);
-    recent.delete(peer);
-    if (again.length === 0) return false;
-
-    retrying.add(peer);
+    if (event.target !== lobby) return;
+    const net = lobby!;
+    log("lobby: merged, now", net.info?.id);
+    readNetworkSaves(net.info?.meta);
+    setSeparated(null);
+    separatedBy = null;
+    syncStatus();
     const current = epoch;
-    void wait(LIMITS.resendGapMs).then(() => {
-        retrying.delete(peer);
-        if (current !== epoch) return;
-        for (const e of again)
-        {
-            log("lobby: sending again", e.type, "to", e.uid, `(${e.tries + 1})`);
-            sendTry(e.uid, e.type, e.payload, e.tries + 1);
-        }
-    });
-    return true;
+    for (const delay of MERGE_SETTLE_MS)
+    {
+        void later(delay, () => {
+            if (current !== epoch) return;
+            broadcast(ANNOUNCE, {});
+            announce(false);
+        });
+    }
+}
+
+function handleUpdate(event: Event) {
+    if (event.target !== lobby) return;
+    readNetworkSaves(lobby!.info?.meta);
+    reportHealth();
+}
+
+function handleAnchored(event: Event) {
+    if (event.target !== lobby) return;
+    const anchored = (event as CustomEvent<boolean>).detail;
+    log("lobby: anchor", anchored);
+    syncStatus();
+    if (anchored) void later(LIMITS.raceGuardMs, () => check(epoch));
+}
+
+// the lobby closed under us (its carrier is gone): find it again. Rooms carried by it close too
+function handleClose(event: Event) {
+    const net = event.target as Net;
+    if (net !== lobby) return;
+    log("lobby: closed, finding it again");
+    detach(net);
+    lobby = null;
+    clearPresence();
+    separatedBy = null;
+    setSeparated(null);
+    if (!running || !client) return;
+    syncStatus();
+    retry(epoch);
+}
+
+function handleClientError(event: Event) {
+    const detail = (event as CustomEvent<{ type: string; message: string }>).detail;
+    log("lobby: error", detail?.type, detail?.message);
 }
 
 function handlePageHide(event: PageTransitionEvent) {
@@ -1231,7 +1215,42 @@ function handlePageHide(event: PageTransitionEvent) {
     if (event.persisted) return;
     try
     {
+        say(BYE);
         client?.close();
     }
     catch { /* unloading anyway */ }
+}
+
+// ---------------------------------------------------------------- helpers
+
+function wait(ms: number): Promise<void> {
+    return new Promise(resolve => {
+        const timer = {
+            id: setTimeout(() => {
+                timers.delete(timer);
+                resolve();
+            }, ms),
+            resolve,
+        };
+        timers.add(timer);
+    });
+}
+
+// runs `fn` after `ms` unless the lobby stops first
+async function later(ms: number, fn: () => unknown) {
+    const current = epoch;
+    await wait(ms);
+    if (current !== epoch) return;
+    try
+    {
+        await fn();
+    }
+    catch (error)
+    {
+        log("lobby: timer failed", error);
+    }
+}
+
+function alive(current: number) {
+    if (current !== epoch || !client) throw new Cancelled();
 }
