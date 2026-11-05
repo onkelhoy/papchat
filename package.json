@@ -39,7 +39,7 @@
         "@papit/information": "0.0.11",
         "@papit/react": "0.0.5",
         "@papit/server": "1.0.15",
-        "@papit/signal-server": "0.1.1",
+        "@papit/signal-server": "0.1.2",
         "@papit/static": "0.0.8",
         "@papit/svg-spritesheet": "0.0.6",
         "@papit/terminal": "0.0.3",
